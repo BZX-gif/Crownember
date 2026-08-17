@@ -6,6 +6,7 @@ import { Avatar, FounderChip, RankBadge } from "@/components/ui";
 import { DevMessage } from "@/components/dev-message";
 import { ExpiryCountdown } from "@/components/expiry-countdown";
 import { VoicePanel } from "@/components/voice-panel";
+import { isSticker, STICKER_PACK } from "@/lib/stickers";
 import { cn } from "@/lib/utils";
 import type { ChatMessageDTO, PublicUser } from "@/lib/utils";
 
@@ -149,6 +150,7 @@ export function ChatRoom({
   const [loaded, setLoaded] = useState(false);
   const [abuse, setAbuse] = useState<AbuseAlert | null>(null);
   const [iAmDev, setIAmDev] = useState(false);
+  const [stickerOpen, setStickerOpen] = useState(false);
 
   const silenceExpired = useCallback(() => setAbuse(null), []);
 
@@ -263,9 +265,7 @@ export function ChatRoom({
       el.scrollHeight - el.scrollTop - el.clientHeight < 160;
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const content = input.trim();
+  async function sendContent(content: string) {
     if (!content || busy) return;
     setBusy(true);
     setError("");
@@ -306,6 +306,11 @@ export function ChatRoom({
       setBusy(false);
       inputRef.current?.focus();
     }
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    void sendContent(input.trim());
   }
 
   function addEmoji(emoji: string) {
@@ -398,6 +403,30 @@ export function ChatRoom({
         )}
         {messages.map((m) => {
           const mine = user?.id === m.user.id;
+          if (isSticker(m.content)) {
+            return (
+              <div key={m.id} className="sticker-drop flex flex-col">
+                <p
+                  className="w-fit select-none text-6xl leading-none"
+                  style={{ filter: "drop-shadow(0 6px 18px rgba(255,106,0,0.22))" }}
+                >
+                  {m.content}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/players/${encodeURIComponent(m.user.username)}`}
+                    className={cn(
+                      "text-[11px] font-bold hover:underline",
+                      mine ? "text-orange-400" : "text-slate-400",
+                    )}
+                  >
+                    {m.user.username}
+                  </Link>
+                  <ExpiryCountdown createdAt={m.createdAt} vault={vault} />
+                </div>
+              </div>
+            );
+          }
           if (m.user.dev) {
             return <DevMessage key={m.id} msg={m} vault={vault} />;
           }
@@ -480,7 +509,37 @@ export function ChatRoom({
               )}
             </div>
           )}
+          {stickerOpen && (
+            <div className="mb-2 grid grid-cols-8 gap-0.5 rounded-xl border border-white/10 bg-slate-950/80 p-2 sm:gap-1">
+              {STICKER_PACK.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => {
+                    setStickerOpen(false);
+                    void sendContent(s);
+                  }}
+                  className="rounded-lg p-1 text-2xl transition duration-150 hover:scale-125 hover:bg-white/10 sm:text-3xl"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="mb-2 flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setStickerOpen((o) => !o)}
+              title="Stickers"
+              className={cn(
+                "rounded-lg border px-2 py-0.5 text-sm transition",
+                stickerOpen
+                  ? "border-orange-500/50 bg-orange-500/15"
+                  : "border-white/5 bg-white/5 hover:bg-white/15",
+              )}
+            >
+              🤩
+            </button>
             {!vault &&
               QUICK_EMOJI.map((e) => (
                 <button

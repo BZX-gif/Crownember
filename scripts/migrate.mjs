@@ -154,6 +154,31 @@ CREATE TABLE IF NOT EXISTS direct_messages (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- ============ reconcile hand-edited schema variants (rename, keep data) ============
+DO $$
+BEGIN
+  -- direct_messages: some variants used receiver_id instead of recipient_id
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'direct_messages' AND column_name = 'receiver_id')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'direct_messages' AND column_name = 'recipient_id') THEN
+    ALTER TABLE direct_messages RENAME COLUMN receiver_id TO recipient_id;
+  END IF;
+  -- friendships: some variants used user_id/friend_id
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'friendships' AND column_name = 'user_id')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'friendships' AND column_name = 'requester_id') THEN
+    ALTER TABLE friendships RENAME COLUMN user_id TO requester_id;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'friendships' AND column_name = 'friend_id')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'friendships' AND column_name = 'addressee_id') THEN
+    ALTER TABLE friendships RENAME COLUMN friend_id TO addressee_id;
+  END IF;
+END $$;
+
 -- ============ drift-proof columns ============
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_bot boolean NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS founder boolean NOT NULL DEFAULT false;

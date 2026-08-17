@@ -95,6 +95,7 @@ export default async function HomePage() {
         .orderBy(asc(users.id))
         .limit(FOUNDING_LIMIT),
       getSeatStats(),
+      // PUBLIC feeds only — Vault whispers never reach the front page.
       db
         .select({
           content: messages.content,
@@ -103,14 +104,16 @@ export default async function HomePage() {
         })
         .from(messages)
         .innerJoin(users, eq(messages.userId, users.id))
-        .where(gte(messages.createdAt, cutoff))
+        .innerJoin(rooms, eq(messages.roomId, rooms.id))
+        .where(and(gte(messages.createdAt, cutoff), eq(rooms.isVault, false)))
         .orderBy(desc(messages.id))
         .limit(14),
       db
         .select({ message: messages, author: users })
         .from(messages)
         .innerJoin(users, eq(messages.userId, users.id))
-        .where(gte(messages.createdAt, cutoff))
+        .innerJoin(rooms, eq(messages.roomId, rooms.id))
+        .where(and(gte(messages.createdAt, cutoff), eq(rooms.isVault, false)))
         .orderBy(desc(messages.id))
         .limit(5),
     ]);

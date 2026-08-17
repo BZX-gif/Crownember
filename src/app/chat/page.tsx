@@ -49,12 +49,16 @@ export default async function ChatHomePage() {
   );
 
   const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  const vaultRoomIds = new Set(
+    allRooms.filter((r) => r.isVault).map((r) => r.id),
+  );
   const latestByRoom = new Map<
     number,
     { content: string; username: string; createdAt: Date }
   >();
   for (const row of latestRaw) {
     if (hidden.has(row.author.id)) continue; // sealed players leave no trace
+    if (vaultRoomIds.has(row.message.roomId)) continue; // vault stays silent
     if (!latestByRoom.has(row.message.roomId)) {
       latestByRoom.set(row.message.roomId, {
         content: row.message.content,
@@ -151,7 +155,9 @@ export default async function ChatHomePage() {
                     )}
                   </span>
                   <span className="mt-0.5 block truncate text-sm text-slate-400">
-                    {locked ? (
+                    {room.isVault ? (
+                      "🔒 what happens in the vault stays in the vault"
+                    ) : locked ? (
                       "Passcode required — members only"
                     ) : latest ? (
                       <>

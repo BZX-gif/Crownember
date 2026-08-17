@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, ilike, sql } from "drizzle-orm";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
 import { db } from "@/db";
 import { replies, topics, users } from "@/db/schema";
@@ -33,13 +33,18 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  // Case-insensitive lookup — /players/professor finds PROFESSOR.
   const rows = await db
     .select()
     .from(users)
-    .where(eq(users.username, username))
+    .where(ilike(users.username, username))
     .limit(1);
   const profile = rows[0];
   if (!profile) notFound();
+  // Canonicalize the URL to the exact username.
+  if (profile.username !== username) {
+    redirect(`/players/${encodeURIComponent(profile.username)}`);
+  }
 
   const viewer = await getSessionUser();
   const [relationship, blockState] = viewer
