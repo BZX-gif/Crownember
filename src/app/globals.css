@@ -1,0 +1,311 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-russo), "Arial Black", sans-serif;
+  --font-body: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-hud: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #020617;
+}
+
+::selection {
+  background-color: rgba(249, 115, 22, 0.45);
+  color: #fff;
+}
+
+/* ============ Fire accent ============ */
+.text-fire {
+  background: linear-gradient(92deg, #ff5e00 0%, #ffb347 45%, #ff5e00 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.display-glow {
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* ============ Esports angular cuts ============ */
+.clip-btn {
+  clip-path: polygon(
+    14px 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    0 100%,
+    0 14px
+  );
+}
+.clip-tag {
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+}
+.clip-card {
+  clip-path: polygon(
+    22px 0,
+    100% 0,
+    100% calc(100% - 22px),
+    calc(100% - 22px) 100%,
+    0 100%,
+    0 22px
+  );
+}
+.btn-glow {
+  filter: drop-shadow(0 6px 18px rgba(255, 106, 0, 0.22));
+}
+
+/* HUD corner brackets (two opposing corners) */
+.hud-corners {
+  position: relative;
+}
+.hud-corners::before,
+.hud-corners::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+.hud-corners::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid rgba(255, 130, 40, 0.38);
+  border-left: 2px solid rgba(255, 130, 40, 0.38);
+}
+.hud-corners::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid rgba(255, 130, 40, 0.38);
+  border-right: 2px solid rgba(255, 130, 40, 0.38);
+}
+
+/* ============ Ambient layers ============ */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.bg-scan {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.025) 0px,
+    rgba(255, 255, 255, 0.025) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.bg-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 106, 0, 0.12) 0 10px,
+    transparent 10px 22px
+  );
+}
+
+/* Rising embers — quiet background life, not fireworks */
+.ember {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 9999px;
+  background: #e8873f;
+  box-shadow: 0 0 6px 1px rgba(255, 122, 26, 0.3);
+  opacity: 0;
+  animation: ember-rise linear infinite;
+  pointer-events: none;
+}
+@keyframes ember-rise {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  60% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translateY(-72vh) translateX(22px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* ============ Motion ============ */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee 75s linear infinite;
+}
+.marquee-pause:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+@keyframes line-up {
+  from {
+    transform: translateY(112%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.mask-line > span {
+  display: block;
+  animation: line-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.animate-floaty {
+  animation: floaty 5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 18px rgba(255, 106, 0, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 38px rgba(255, 106, 0, 0.65));
+  }
+}
+.animate-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ============ Developer Signature ============ */
+@keyframes dev-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.dev-frame {
+  background: linear-gradient(
+    100deg,
+    #ff6a00,
+    #ffd166,
+    #34d399,
+    #ffd166,
+    #ff6a00
+  );
+  background-size: 200% 100%;
+  animation: dev-border-flow 4s linear infinite;
+  padding: 1.5px;
+}
+
+@keyframes dev-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+.dev-chip {
+  background: linear-gradient(
+    110deg,
+    #ff8c1a,
+    #ffd166 38%,
+    #fff7ed 50%,
+    #ffd166 62%,
+    #ff8c1a
+  );
+  background-size: 200% auto;
+  animation: dev-shimmer 2.5s linear infinite;
+}
+.dev-name {
+  background: linear-gradient(
+    110deg,
+    #ff7a1a,
+    #ffd166 38%,
+    #6ee7b7 50%,
+    #ffd166 62%,
+    #ff7a1a
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: dev-shimmer 3s linear infinite;
+}
+
+@keyframes dev-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.dev-cursor {
+  animation: dev-blink 0.9s step-end infinite;
+}
+
+/* The ghost sign — haunts the developer's avatar */
+@keyframes ghost-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(5deg);
+  }
+}
+.ghost-badge {
+  animation: ghost-bob 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.65));
+  pointer-events: none;
+}
+
+/* ============ Scrollbars ============ */
+.nice-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.nice-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.nice-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nice-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+.nice-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 122, 26, 0.55);
+}
