@@ -6,6 +6,7 @@ import { MESSAGE_TTL_MS, VAULT_TTL_MS } from "@/lib/retention";
  * Lazy self-destruct with per-room burn rates:
  *   - vault messages burn after 14 minutes
  *   - everything else burns after 3 hours
+ *   - direct messages burn after 3 hours (private talks stay lean too)
  * Piggybacks on chat API traffic — no cron jobs or paid workers needed.
  * SERVER ONLY — never import from client components.
  */
@@ -20,5 +21,8 @@ export async function purgeExpiredMessages(): Promise<void> {
         m.created_at < ${publicCutoff}
         or (r.is_vault and m.created_at < ${vaultCutoff})
       )
+  `);
+  await db.execute(sql`
+    delete from direct_messages where created_at < ${publicCutoff}
   `);
 }

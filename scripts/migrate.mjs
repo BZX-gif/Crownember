@@ -129,6 +129,31 @@ CREATE TABLE IF NOT EXISTS voice_notes (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS friendships (
+  id serial PRIMARY KEY,
+  requester_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  addressee_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (requester_id, addressee_id)
+);
+
+CREATE TABLE IF NOT EXISTS blocks (
+  id serial PRIMARY KEY,
+  blocker_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (blocker_id, blocked_id)
+);
+
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id serial PRIMARY KEY,
+  sender_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- ============ drift-proof columns ============
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_bot boolean NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS founder boolean NOT NULL DEFAULT false;
@@ -148,6 +173,13 @@ CREATE INDEX IF NOT EXISTS topics_category_idx ON topics (category);
 CREATE INDEX IF NOT EXISTS replies_topic_idx ON replies (topic_id);
 CREATE INDEX IF NOT EXISTS topic_likes_unique_idx ON topic_likes (topic_id, user_id);
 CREATE INDEX IF NOT EXISTS voice_notes_room_created_idx ON voice_notes (room_id, created_at);
+CREATE INDEX IF NOT EXISTS friendships_pair_idx ON friendships (requester_id, addressee_id);
+CREATE INDEX IF NOT EXISTS friendships_addressee_idx ON friendships (addressee_id, status);
+CREATE INDEX IF NOT EXISTS blocks_pair_idx ON blocks (blocker_id, blocked_id);
+CREATE INDEX IF NOT EXISTS blocks_blocked_idx ON blocks (blocked_id);
+CREATE INDEX IF NOT EXISTS dm_out_idx ON direct_messages (sender_id, recipient_id, id);
+CREATE INDEX IF NOT EXISTS dm_in_idx ON direct_messages (recipient_id, sender_id, id);
+CREATE INDEX IF NOT EXISTS dm_created_idx ON direct_messages (created_at);
 
 -- ============ live room layout (Global / Guides / Vault) ============
 -- Legacy cleanup only: renames/deletes from the original 6-room layout.

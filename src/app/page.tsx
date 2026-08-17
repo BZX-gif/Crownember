@@ -6,6 +6,8 @@ import { messages, rooms, users } from "@/db/schema";
 import { Avatar, RankBadge } from "@/components/ui";
 import { Reveal } from "@/components/reveal";
 import { FOUNDING_LIMIT, getSeatStats } from "@/lib/access";
+import { getSessionUser } from "@/lib/auth";
+import { getHiddenUserIds } from "@/lib/social";
 import {
   formatTimeLeft,
   messageCutoff,
@@ -94,7 +96,11 @@ export default async function HomePage() {
         .limit(FOUNDING_LIMIT),
       getSeatStats(),
       db
-        .select({ content: messages.content, username: users.username })
+        .select({
+          content: messages.content,
+          username: users.username,
+          authorId: users.id,
+        })
         .from(messages)
         .innerJoin(users, eq(messages.userId, users.id))
         .where(gte(messages.createdAt, cutoff))
@@ -118,7 +124,15 @@ export default async function HomePage() {
   const topPlayers = topPlayersRaw.map((u) => serializeUser(u));
   const founding: PublicUser[] = foundingRaw.map((u) => serializeUser(u));
   const globalRoom = allRooms[0];
+
+  // The block veil: sealed players leave no trace on the front page.
+  const viewer = await getSessionUser();
+  const hiddenIds = viewer
+    ? await getHiddenUserIds(viewer.id)
+    : new Set<number>();
+  const ticker = tickerRaw.filter((t) => !hiddenIds.has(t.authorId));
   const lobby = lobbyRaw
+    .filter((r) => !hiddenIds.has(r.author.id))
     .filter((r) => !globalRoom || r.message.roomId === globalRoom.id)
     .concat(
       lobbyRaw.filter((r) => globalRoom && r.message.roomId !== globalRoom.id),
@@ -297,7 +311,7 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-slate-950 to-transparent" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-slate-950 to-transparent" />
         <div className="animate-marquee flex w-max items-center gap-10 px-4 font-hud text-xs text-slate-500">
-          {[...tickerRaw, ...tickerRaw].map((m, i) => (
+          {[...ticker, ...ticker].map((m, i) => (
             <span key={i} className="flex items-center gap-2 whitespace-nowrap">
               <span className="font-bold text-orange-400/80">{m.username}</span>
               <span className="text-slate-700">▸</span>

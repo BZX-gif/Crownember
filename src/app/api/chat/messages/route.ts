@@ -11,6 +11,7 @@ import {
 } from "@/lib/moderation";
 import { purgeExpiredMessages } from "@/lib/purge";
 import { messageCutoff } from "@/lib/retention";
+import { getHiddenUserIds } from "@/lib/social";
 import { getVaultUser } from "@/lib/vault";
 import {
   MAX_MESSAGE_LENGTH,
@@ -112,7 +113,11 @@ export async function GET(req: Request) {
   if (purgedIds.length > 0) {
     await db.delete(messages).where(inArray(messages.id, purgedIds));
   }
-  const live = rows.filter((r) => !purgedIds.includes(r.message.id));
+  // The block veil: sealed players vanish from this viewer's screen.
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  const live = rows.filter(
+    (r) => !purgedIds.includes(r.message.id) && !hidden.has(r.author.id),
+  );
 
   return NextResponse.json({
     messages: live.map((r) => serializeMessage(r.message, r.author)),

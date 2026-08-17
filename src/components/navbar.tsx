@@ -9,6 +9,7 @@ import type { PublicUser } from "@/lib/utils";
 
 const LINKS = [
   { href: "/chat", label: "Chat" },
+  { href: "/messages", label: "DMs" },
   { href: "/forum", label: "Forum" },
   { href: "/players", label: "Players" },
 ];
@@ -24,15 +25,17 @@ export function Navbar({ user }: { user: PublicUser | null }) {
   const pathname = usePathname();
   const [online, setOnline] = useState(0);
   const [seats, setSeats] = useState<SeatInfo | null>(null);
+  const [pending, setPending] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
     async function poll() {
       try {
-        const [roomsRes, accessRes] = await Promise.all([
+        const [roomsRes, accessRes, meRes] = await Promise.all([
           fetch("/api/chat/rooms", { cache: "no-store" }),
           fetch("/api/access", { cache: "no-store" }),
+          fetch("/api/me", { cache: "no-store" }),
         ]);
         if (roomsRes.ok) {
           const data = await roomsRes.json();
@@ -41,6 +44,10 @@ export function Navbar({ user }: { user: PublicUser | null }) {
         if (accessRes.ok) {
           const access = await accessRes.json();
           if (active) setSeats(access);
+        }
+        if (meRes.ok) {
+          const me = await meRes.json();
+          if (active) setPending(Number(me.pendingRequests ?? 0));
         }
       } catch {
         /* ignore */
@@ -77,13 +84,18 @@ export function Navbar({ user }: { user: PublicUser | null }) {
               key={l.href}
               href={l.href}
               className={cn(
-                "rounded-lg px-4 py-2 text-sm font-semibold transition",
+                "relative rounded-lg px-4 py-2 text-sm font-semibold transition",
                 pathname.startsWith(l.href)
                   ? "bg-orange-500/15 text-orange-400"
                   : "text-slate-300 hover:bg-white/5 hover:text-white",
               )}
             >
               {l.label}
+              {l.href === "/messages" && pending > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 font-hud text-[9px] font-bold text-white">
+                  {pending}
+                </span>
+              )}
             </Link>
           ))}
           <span className="ml-2 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
@@ -205,13 +217,18 @@ export function Navbar({ user }: { user: PublicUser | null }) {
             key={l.href}
             href={l.href}
             className={cn(
-              "rounded-lg px-4 py-1.5 text-sm font-semibold transition",
+              "relative rounded-lg px-3 py-1.5 text-sm font-semibold transition sm:px-4",
               pathname.startsWith(l.href)
                 ? "bg-orange-500/15 text-orange-400"
                 : "text-slate-400 hover:bg-white/5 hover:text-white",
             )}
           >
             {l.label}
+            {l.href === "/messages" && pending > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 font-hud text-[9px] font-bold text-white">
+                {pending}
+              </span>
+            )}
           </Link>
         ))}
         <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-emerald-400">

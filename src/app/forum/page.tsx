@@ -4,6 +4,7 @@ import { TopicList } from "@/components/topic-list";
 import { db } from "@/db";
 import { topicLikes, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
+import { getHiddenUserIds } from "@/lib/social";
 import {
   CATEGORIES,
   cn,
@@ -46,9 +47,11 @@ export default async function ForumPage({
   ]);
 
   const likedIds = likedRows.map((r) => r.topicId);
-  const topicDtos: TopicDTO[] = rows.map((r) =>
-    serializeTopic(r.topic, r.author),
-  );
+  // The block veil: sealed players' topics disappear from the forum.
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  const topicDtos: TopicDTO[] = rows
+    .filter((r) => !hidden.has(r.author.id))
+    .map((r) => serializeTopic(r.topic, r.author));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">

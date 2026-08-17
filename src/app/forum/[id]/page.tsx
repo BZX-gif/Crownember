@@ -8,6 +8,7 @@ import { Replies } from "@/components/replies";
 import { db } from "@/db";
 import { replies, topicLikes, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
+import { getHiddenUserIds } from "@/lib/social";
 import {
   categoryMeta,
   formatDate,
@@ -73,10 +74,14 @@ export default async function TopicPage({
 
   if (!topicRow[0]) notFound();
 
+  // The block veil: sealed authors and their replies cease to exist here.
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  if (hidden.has(topicRow[0].author.id)) notFound();
+
   const topic = serializeTopic(topicRow[0].topic, topicRow[0].author);
-  const replyDtos: ReplyDTO[] = replyRows.map((r) =>
-    serializeReply(r.reply, r.author),
-  );
+  const replyDtos: ReplyDTO[] = replyRows
+    .filter((r) => !hidden.has(r.author.id))
+    .map((r) => serializeReply(r.reply, r.author));
   const meta = categoryMeta(topic.category);
 
   return (

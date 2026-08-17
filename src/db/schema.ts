@@ -149,6 +149,69 @@ export const replies = pgTable(
   (t) => [index("replies_topic_idx").on(t.topicId)],
 );
 
+export const friendships = pgTable(
+  "friendships",
+  {
+    id: serial("id").primaryKey(),
+    requesterId: integer("requester_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    addresseeId: integer("addressee_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"), // pending | accepted
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("friendships_pair_idx").on(t.requesterId, t.addresseeId),
+    index("friendships_addressee_idx").on(t.addresseeId, t.status),
+  ],
+);
+
+export const blocks = pgTable(
+  "blocks",
+  {
+    id: serial("id").primaryKey(),
+    blockerId: integer("blocker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedId: integer("blocked_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("blocks_pair_idx").on(t.blockerId, t.blockedId),
+    index("blocks_blocked_idx").on(t.blockedId),
+  ],
+);
+
+export const directMessages = pgTable(
+  "direct_messages",
+  {
+    id: serial("id").primaryKey(),
+    senderId: integer("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    recipientId: integer("recipient_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("dm_out_idx").on(t.senderId, t.recipientId, t.id),
+    index("dm_in_idx").on(t.recipientId, t.senderId, t.id),
+    index("dm_created_idx").on(t.createdAt),
+  ],
+);
+
 export const vaultAccess = pgTable("vault_access", {
   id: serial("id").primaryKey(),
   token: text("token").notNull().unique(),

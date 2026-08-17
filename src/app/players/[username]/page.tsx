@@ -5,6 +5,9 @@ import { notFound } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
 import { db } from "@/db";
 import { replies, topics, users } from "@/db/schema";
+import { getSessionUser } from "@/lib/auth";
+import { getBlockState, getRelationship } from "@/lib/social";
+import { ProfileActions } from "@/components/profile-actions";
 import { categoryMeta, formatDate, timeAgo } from "@/lib/utils";
 import { getRank } from "@/lib/ranks";
 
@@ -37,6 +40,32 @@ export default async function ProfilePage({
     .limit(1);
   const profile = rows[0];
   if (!profile) notFound();
+
+  const viewer = await getSessionUser();
+  const [relationship, blockState] = viewer
+    ? await Promise.all([
+        getRelationship(viewer.id, profile.id),
+        getBlockState(viewer.id, profile.id),
+      ])
+    : (["none", { iBlockedThem: false, theyBlockedMe: false, any: false }] as const);
+
+  // Sealed by them: this player has vanished from your world — minimal card.
+  if (blockState.theyBlockedMe && !blockState.iBlockedThem) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16">
+        <div className="hud-corners clip-card bg-slate-900/80 p-8 text-center">
+          <span className="text-5xl">🚫</span>
+          <h1 className="mt-4 font-display text-2xl uppercase tracking-wide text-white">
+            Presence <span className="text-fire">sealed</span>
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+            This player has sealed their presence from you. Their words,
+            topics and profile details no longer exist in your world.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const [counts, recentTopics] = await Promise.all([
     db.execute(sql`
@@ -84,6 +113,22 @@ export default async function ProfilePage({
                 {profile.founder && <FounderChip size="md" />}
                 {profile.isDev && <DevChip size="sm" />}
               </div>
+              {viewer && (
+                <ProfileActions
+                  targetUsername={profile.username}
+                  relationship={relationship}
+                  iBlockedThem={blockState.iBlockedThem}
+                  theyBlockedMe={blockState.theyBlockedMe}
+                />
+              )}
+              {!viewer && (
+                <p className="mt-3 font-hud text-[11px] uppercase tracking-wider text-slate-500">
+                  <Link href="/login" className="text-orange-400 hover:underline">
+                    Log in
+                  </Link>{" "}
+                  to add friends, message or block
+                </p>
+              )}
               <p className="mt-1 text-sm text-slate-400">
                 Level {rank.level} · Joined {formatDate(profile.createdAt)}
                 {profile.uid ? ` · UID ${profile.uid}` : ""}
@@ -152,8 +197,8 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* Public topics only */}
-      <section className="mt-8">
+      {/* Public topics only — hidden entirely across a block seal */}
+      <section className={blockState.any ? "mt-8 hidden" : "mt-8"}>
         <h2 className="text-lg font-black">✍️ Topics Started</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {recentTopics.length === 0 && (

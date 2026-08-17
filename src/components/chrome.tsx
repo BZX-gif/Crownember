@@ -21,7 +21,10 @@ export function Chrome({
 }) {
   const pathname = usePathname();
   const isChat =
-    pathname === "/chat" || pathname?.startsWith("/chat/") === true;
+    pathname === "/chat" ||
+    pathname?.startsWith("/chat/") === true ||
+    pathname === "/messages" ||
+    pathname?.startsWith("/messages/") === true;
 
   if (isChat) {
     return <div className="h-[100dvh] overflow-hidden">{children}</div>;

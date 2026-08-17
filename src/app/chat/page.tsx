@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { messages, rooms, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { messageCutoff } from "@/lib/retention";
+import { getHiddenUserIds } from "@/lib/social";
 import { getVaultUser } from "@/lib/vault";
 import { timeAgo } from "@/lib/utils";
 
@@ -47,11 +48,13 @@ export default async function ChatHomePage() {
     roomActivity.map((r) => [r.roomId, Number(r.n)]),
   );
 
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
   const latestByRoom = new Map<
     number,
     { content: string; username: string; createdAt: Date }
   >();
   for (const row of latestRaw) {
+    if (hidden.has(row.author.id)) continue; // sealed players leave no trace
     if (!latestByRoom.has(row.message.roomId)) {
       latestByRoom.set(row.message.roomId, {
         content: row.message.content,
