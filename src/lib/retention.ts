@@ -1,7 +1,7 @@
 /**
  * Ephemeral chat, per-room burn rates:
  *   - public rooms: messages self-destruct after 3 hours
- *   - the private room (vault): messages self-destruct after 15 minutes
+ *   - the private room (vault): messages self-destruct after 14 minutes
  * Keeps the free database tiny forever. The forum is the permanent archive —
  * anything worth keeping belongs in a topic.
  *
@@ -9,7 +9,7 @@
  * The actual database purge lives in src/lib/purge.ts (server-side).
  */
 export const MESSAGE_TTL_MS = 3 * 60 * 60 * 1000;
-export const VAULT_TTL_MS = 15 * 60 * 1000;
+export const VAULT_TTL_MS = 14 * 60 * 1000;
 
 export function ttlForRoom(isVault: boolean): number {
   return isVault ? VAULT_TTL_MS : MESSAGE_TTL_MS;

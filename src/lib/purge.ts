@@ -4,7 +4,7 @@ import { MESSAGE_TTL_MS, VAULT_TTL_MS } from "@/lib/retention";
 
 /**
  * Lazy self-destruct with per-room burn rates:
- *   - vault messages burn after 15 minutes
+ *   - vault messages burn after 14 minutes
  *   - everything else burns after 3 hours
  * Piggybacks on chat API traffic — no cron jobs or paid workers needed.
  * SERVER ONLY — never import from client components.

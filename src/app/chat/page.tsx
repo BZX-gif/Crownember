@@ -189,7 +189,7 @@ export default async function ChatHomePage() {
 
         {/* footer note */}
         <p className="mt-6 text-center font-hud text-[10px] uppercase tracking-wider text-slate-600">
-          ⏳ public rooms burn after 3h · 🔐 vault burns after 15 min
+          ⏳ public rooms burn after 3h · 🔐 vault burns after 14 min
         </p>
       </div>
     </div>

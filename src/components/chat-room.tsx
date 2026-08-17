@@ -354,7 +354,7 @@ export function ChatRoom({
         <p className="font-hud text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400/80">
           {vault ? (
             <>
-              sealed · messages burn 15 min after send · voice dies on exit
+              sealed · messages burn 14 min after send · voice dies on exit
             </>
           ) : (
             <>
