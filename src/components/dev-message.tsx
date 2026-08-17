@@ -67,9 +67,6 @@ export function DevMessage({
           <span className="h-2 w-2 rounded-full bg-rose-500/70" />
           <span className="h-2 w-2 rounded-full bg-amber-400/70" />
           <span className="h-2 w-2 rounded-full bg-emerald-400/70" />
-          <span className="ml-2 truncate font-hud text-[10px] text-emerald-500/70">
-            dev@embercrown:~$ ./transmit --signed
-          </span>
           <span className="ml-auto shrink-0">
             <ExpiryCountdown createdAt={msg.createdAt} vault={vault} />
           </span>
