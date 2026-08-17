@@ -35,9 +35,15 @@ Then upload: `src/`, `scripts/`, `public/`, `package.json`,
 ## After EVERY deploy — the 10-second ritual
 Open `https://your-site.vercel.app/api/health`:
 - `"db": "connected"` → all good 👑
+- `"db": "missing"` → **new Vercel projects start with NO env variables.**
+  Add `DATABASE_URL` (Settings → Environment Variables, Production ✓) with
+  the Neon pooled string, then **Deployments → Redeploy**.
 - `"hint": "...STALE PASSWORD..."` → update `DATABASE_URL` env variable with
   the newest Neon string, then **Deployments → Redeploy**
 - `"hint": "...schema..."` → build command is wrong, see step 5 above
+
+⚠️ Seeing the **"The arena is reconnecting 🛡️"** screen on the site?
+That shield always means one of the above — `/api/health` says which one.
 
 ## Reading the Vercel build log
 Only these lines matter:
