@@ -3,6 +3,7 @@ import { desc, eq, ilike, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
+import { AvatarEditor } from "@/components/avatar-editor";
 import { db } from "@/db";
 import { replies, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
@@ -91,6 +92,9 @@ export default async function ProfilePage({
     topics: number;
     replies: number;
   };
+  const avatarUrl = profile.avatarVersion
+    ? `/api/profile/avatar?username=${encodeURIComponent(profile.username)}&v=${profile.avatarVersion.getTime()}`
+    : undefined;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
@@ -104,13 +108,19 @@ export default async function ProfilePage({
         />
         <div className="px-5 pb-6 sm:px-8">
           <div className="-mt-11 flex flex-wrap items-end gap-4">
-            <Avatar
-              name={profile.username}
-              color={profile.avatarColor}
-              size={88}
-              dev={profile.isDev}
-              className="border-4 border-slate-950"
-            />
+            <div>
+              <Avatar
+                name={profile.username}
+                color={profile.avatarColor}
+                avatarUrl={avatarUrl}
+                size={88}
+                dev={profile.isDev}
+                className="border-4 border-slate-950"
+              />
+              {viewer?.id === profile.id && (
+                <AvatarEditor username={profile.username} avatarUrl={avatarUrl} />
+              )}
+            </div>
             <div className="flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-black">{profile.username}</h1>
