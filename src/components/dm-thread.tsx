@@ -15,7 +15,8 @@ interface DmMessage {
 }
 
 const MAX_LEN = 400;
-const EDIT_WINDOW_MS = 2 * 60 * 1000;
+const EDIT_WINDOW_MS = 3 * 60 * 1000;
+const REACTIONS = ["❤️", "😂", "🔥", "😭", "👍"];
 
 export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicUser; sealed: boolean }) {
   const [messages, setMessages] = useState<DmMessage[]>([]);
@@ -26,6 +27,10 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
   const [connLost, setConnLost] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [replyingTo, setReplyingTo] = useState<DmMessage | null>(null);
+  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+  const [reactionPickerId, setReactionPickerId] = useState<number | null>(null);
+  const [reactions, setReactions] = useState<Record<number, string>>({});
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastIdRef = useRef(0);
@@ -61,6 +66,10 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
     if (el && stickRef.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  useEffect(() => () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }, []);
+
   function onScroll() {
     const el = scrollerRef.current;
     if (!el) return;
@@ -68,6 +77,8 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
   }
 
   function startReply(message: DmMessage) {
+    setActiveMessageId(null);
+    setReactionPickerId(null);
     setEditingId(null);
     setReplyingTo(message);
     setInput("");
@@ -76,6 +87,8 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
 
   function startEdit(message: DmMessage) {
     if (!message.mine || Date.now() - new Date(message.createdAt).getTime() >= EDIT_WINDOW_MS) return;
+    setActiveMessageId(null);
+    setReactionPickerId(null);
     setReplyingTo(null);
     setEditingId(message.id);
     setInput(message.content.slice(0, MAX_LEN));
@@ -89,6 +102,29 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
     inputRef.current?.focus();
   }
 
+  function openActions(message: DmMessage) {
+    setActiveMessageId((id) => id === message.id ? null : message.id);
+    setReactionPickerId(null);
+  }
+
+  function beginLongPress(message: DmMessage) {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => openActions(message), 450);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function chooseReaction(message: DmMessage, reaction: string) {
+    setReactions((prev) => ({ ...prev, [message.id]: reaction }));
+    setReactionPickerId(null);
+    setActiveMessageId(null);
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const content = input.trim();
@@ -97,11 +133,7 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
     setError("");
     try {
       if (editingId !== null) {
-        const res = await fetch("/api/dm/messages", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editingId, content }),
-        });
+        const res = await fetch("/api/dm/messages", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingId, content }) });
         const data = await res.json();
         if (!res.ok) { setError(data.error ?? "Could not edit."); return; }
         const updated = data.message as DmMessage;
@@ -111,15 +143,9 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
         return;
       }
 
-      const replyPrefix = replyingTo
-        ? `↪ @${replyingTo.mine ? me.username : other.username}: "${replyingTo.content.slice(0, 180)}"\n`
-        : "";
+      const replyPrefix = replyingTo ? `↪ @${replyingTo.mine ? me.username : other.username}: "${replyingTo.content.slice(0, 180)}"\n` : "";
       const finalContent = `${replyPrefix}${content}`.slice(0, MAX_LEN);
-      const res = await fetch("/api/dm/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: other.username, content: finalContent }),
-      });
+      const res = await fetch("/api/dm/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: other.username, content: finalContent }) });
       const data = await res.json();
       if (!res.ok) {
         if (data.code) setAbuse({ code: data.code, message: data.error ?? "" });
@@ -165,14 +191,35 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
         {messages.length === 0 && <div className="pt-10 text-center"><p className="text-3xl">✉️</p><p className="mt-2 font-hud text-xs uppercase tracking-wider text-slate-500">Private line open — say something. It burns in 3h.</p></div>}
         {messages.map((m) => {
           const canEdit = m.mine && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS;
+          const active = activeMessageId === m.id;
           return (
             <div key={m.id} className={cn("group flex", m.mine ? "justify-end" : "justify-start")}>
-              <div className={cn("max-w-[80%] px-3.5 py-2.5 sm:max-w-[65%]", m.mine ? "clip-tag bg-gradient-to-br from-orange-500 to-amber-500 text-slate-950" : "clip-tag border border-white/10 bg-slate-800/90 text-slate-100")}>
-                <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{m.content}</p>
-                <div className={cn("mt-1 flex items-center justify-end gap-2", m.mine ? "text-slate-900/60" : "text-slate-500")}>
-                  {canEdit && <button type="button" onClick={() => startEdit(m)} className="text-[10px] font-bold uppercase hover:underline">edit</button>}
-                  <button type="button" onClick={() => startReply(m)} className="text-[10px] font-bold uppercase hover:underline">reply</button>
-                  <ExpiryCountdown createdAt={m.createdAt} vault={false} />
+              <div className="relative max-w-[80%] sm:max-w-[65%]">
+                {active && (
+                  <div className={cn("absolute bottom-full z-20 mb-2 flex items-center gap-1 rounded-xl border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur", m.mine ? "right-0" : "left-0")}>
+                    <button type="button" onClick={() => setReactionPickerId((id) => id === m.id ? null : m.id)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white hover:bg-white/10">❤️ React</button>
+                    <button type="button" onClick={() => startReply(m)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white hover:bg-white/10">↩ Reply</button>
+                    {canEdit && <button type="button" onClick={() => startEdit(m)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white hover:bg-white/10">✏️ Edit</button>}
+                  </div>
+                )}
+                {reactionPickerId === m.id && (
+                  <div className={cn("absolute bottom-full z-30 mb-12 flex gap-1 rounded-full border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl", m.mine ? "right-0" : "left-0")}>
+                    {REACTIONS.map((reaction) => <button key={reaction} type="button" onClick={() => chooseReaction(m, reaction)} className="rounded-full px-2 py-1 text-lg hover:bg-white/10">{reaction}</button>)}
+                  </div>
+                )}
+                <div
+                  onClick={() => openActions(m)}
+                  onContextMenu={(e) => { e.preventDefault(); openActions(m); }}
+                  onTouchStart={() => beginLongPress(m)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchCancel={cancelLongPress}
+                  className={cn("clip-tag cursor-pointer select-none px-3.5 py-2.5", m.mine ? "bg-gradient-to-br from-orange-500 to-amber-500 text-slate-950" : "border border-white/10 bg-slate-800/90 text-slate-100")}
+                >
+                  <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{m.content}</p>
+                  <div className={cn("mt-1 flex items-center justify-end gap-2", m.mine ? "text-slate-900/60" : "text-slate-500")}>
+                    {reactions[m.id] && <span title="Reaction" className="text-sm">{reactions[m.id]}</span>}
+                    <ExpiryCountdown createdAt={m.createdAt} vault={false} />
+                  </div>
                 </div>
               </div>
             </div>
