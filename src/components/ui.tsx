@@ -16,11 +16,12 @@ export function Avatar({
   dev?: boolean;
   className?: string;
 }) {
+  const resolvedAvatarUrl = avatarUrl ?? `/api/profile/avatar?username=${encodeURIComponent(name)}`;
   return (
     <div className={cn("relative shrink-0", className)}>
       <div
         className={cn(
-          "flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-2",
+          "relative flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-2",
           dev ? "ring-emerald-400/60" : "ring-white/10",
         )}
         style={{
@@ -30,11 +31,15 @@ export function Avatar({
           background: `linear-gradient(135deg, ${color}, ${color}88)`,
         }}
       >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={`${name}'s profile picture`} className="h-full w-full object-cover" />
-        ) : (
-          initials(name)
-        )}
+        {initials(name)}
+        <img
+          src={resolvedAvatarUrl}
+          alt={`${name}'s profile picture`}
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
       </div>
       {dev && (
         <span
