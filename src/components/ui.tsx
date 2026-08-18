@@ -4,12 +4,14 @@ import type { RankInfo } from "@/lib/ranks";
 export function Avatar({
   name,
   color,
+  avatarUrl,
   size = 40,
   dev = false,
   className,
 }: {
   name: string;
   color: string;
+  avatarUrl?: string;
   size?: number;
   dev?: boolean;
   className?: string;
@@ -18,7 +20,7 @@ export function Avatar({
     <div className={cn("relative shrink-0", className)}>
       <div
         className={cn(
-          "flex select-none items-center justify-center rounded-full font-bold text-white ring-2",
+          "flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-2",
           dev ? "ring-emerald-400/60" : "ring-white/10",
         )}
         style={{
@@ -28,7 +30,11 @@ export function Avatar({
           background: `linear-gradient(135deg, ${color}, ${color}88)`,
         }}
       >
-        {initials(name)}
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={`${name}'s profile picture`} className="h-full w-full object-cover" />
+        ) : (
+          initials(name)
+        )}
       </div>
       {dev && (
         <span
