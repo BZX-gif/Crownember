@@ -241,7 +241,7 @@ export async function getDmThreads(viewerId: number): Promise<DmThreadSummary[]>
   return (rows.rows as unknown as Array<Record<string, unknown>>).map((r) => ({
     otherId: Number(r.other_id),
     lastContent: String(r.last_content),
-    lastAt: r.last_at as Date,
+    lastAt: new Date(r.last_at as string | Date),
     lastFromMe: Boolean(r.last_from_me),
   }));
 }
