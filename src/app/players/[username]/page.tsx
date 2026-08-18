@@ -34,9 +34,22 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  // Case-insensitive lookup — /players/professor finds PROFESSOR.
+  // Explicitly select public/profile fields. Do NOT load avatar_data here:
+  // the binary blob is served only by /api/profile/avatar.
   const rows = await db
-    .select()
+    .select({
+      id: users.id,
+      username: users.username,
+      uid: users.uid,
+      bio: users.bio,
+      avatarColor: users.avatarColor,
+      avatarVersion: users.avatarVersion,
+      xp: users.xp,
+      likes: users.likes,
+      createdAt: users.createdAt,
+      founder: users.founder,
+      isDev: users.isDev,
+    })
     .from(users)
     .where(ilike(users.username, username))
     .limit(1);
