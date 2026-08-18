@@ -16,19 +16,38 @@ export function timeAgo(date: Date | string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : new Date(date);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-const AVATAR_COLORS = ["#ff6a00", "#f43f5e", "#8b5cf6", "#0ea5e9", "#10b981", "#eab308", "#ec4899", "#14b8a6"];
+const AVATAR_COLORS = [
+  "#ff6a00",
+  "#f43f5e",
+  "#8b5cf6",
+  "#0ea5e9",
+  "#10b981",
+  "#eab308",
+  "#ec4899",
+  "#14b8a6",
+];
 
 export function colorForName(name: string): string {
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < name.length; i++) {
+    h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  }
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
@@ -84,8 +103,16 @@ export interface ChatMessageDTO {
   user: PublicUser;
 }
 
-export function serializeMessage(m: typeof messages.$inferSelect, author: typeof users.$inferSelect): ChatMessageDTO {
-  return { id: m.id, content: m.content, createdAt: m.createdAt, user: serializeUser(author) };
+export function serializeMessage(
+  m: typeof messages.$inferSelect,
+  author: typeof users.$inferSelect,
+): ChatMessageDTO {
+  return {
+    id: m.id,
+    content: m.content,
+    createdAt: m.createdAt,
+    user: serializeUser(author),
+  };
 }
 
 export interface TopicDTO {
@@ -101,14 +128,41 @@ export interface TopicDTO {
   author: PublicUser;
 }
 
-export function serializeTopic(t: typeof topics.$inferSelect, author: typeof users.$inferSelect): TopicDTO {
-  return { id: t.id, title: t.title, content: t.content, category: t.category, likes: t.likes, replyCount: t.replyCount, pinned: t.pinned, createdAt: t.createdAt, lastActivityAt: t.lastActivityAt, author: serializeUser(author) };
+export function serializeTopic(
+  t: typeof topics.$inferSelect,
+  author: typeof users.$inferSelect,
+): TopicDTO {
+  return {
+    id: t.id,
+    title: t.title,
+    content: t.content,
+    category: t.category,
+    likes: t.likes,
+    replyCount: t.replyCount,
+    pinned: t.pinned,
+    createdAt: t.createdAt,
+    lastActivityAt: t.lastActivityAt,
+    author: serializeUser(author),
+  };
 }
 
-export interface ReplyDTO { id: number; content: string; createdAt: Date; author: PublicUser; }
+export interface ReplyDTO {
+  id: number;
+  content: string;
+  createdAt: Date;
+  author: PublicUser;
+}
 
-export function serializeReply(r: typeof replies.$inferSelect, author: typeof users.$inferSelect): ReplyDTO {
-  return { id: r.id, content: r.content, createdAt: r.createdAt, author: serializeUser(author) };
+export function serializeReply(
+  r: typeof replies.$inferSelect,
+  author: typeof users.$inferSelect,
+): ReplyDTO {
+  return {
+    id: r.id,
+    content: r.content,
+    createdAt: r.createdAt,
+    author: serializeUser(author),
+  };
 }
 
 export const CATEGORIES = [
