@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 
 const MAX_BYTES = 1024 * 1024;
@@ -13,7 +12,7 @@ export async function GET(request: Request) {
   const rows = await db.execute(sql`select avatar_data as "avatarData", avatar_mime as "avatarMime" from users where username = ${username} limit 1`);
   const avatar = rows.rows[0] as { avatarData?: Buffer; avatarMime?: string } | undefined;
   if (!avatar?.avatarData || !avatar.avatarMime) return new NextResponse(null, { status: 404 });
-  return new NextResponse(new Uint8Array(avatar.avatarData), { headers: { "Content-Type": avatar.avatarMime, "Cache-Control": "public, max-age=31536000, immutable" } });
+  return new NextResponse(new Uint8Array(avatar.avatarData), { headers: { "Content-Type": avatar.avatarMime, "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
