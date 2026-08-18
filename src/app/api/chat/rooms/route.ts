@@ -38,6 +38,9 @@ export async function GET() {
       icon: r.icon,
       color: r.color,
       online: onlineByRoom.get(r.id) ?? 0,
+      // Explicitly expose the classification so notification clients can
+      // permanently exclude the Vault even while the Vault is unlocked.
+      isVault: r.isVault,
       locked: r.isVault && !vaultUser,
     })),
   });
