@@ -19,7 +19,6 @@ export function SecurityGuard() {
   const consecutive = useRef(0);
 
   useEffect(() => {
-    // Console warning for the curious
     console.log(
       "%c⛔ EMBERCROWN PROTECTED ZONE",
       "color:#ff6a00;font-size:22px;font-weight:900;font-style:italic;",
@@ -39,6 +38,12 @@ export function SecurityGuard() {
     }
 
     function onContextMenu(e: MouseEvent) {
+      // DM bubbles own their long-press/right-click gesture. Do not let the
+      // global anti-inspection guard turn a normal messaging interaction
+      // into an inspection warning or text-copy flow.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest(".dm-message-action-zone")) return;
+
       e.preventDefault();
       warn("🛡️ Nice try! Right-click inspect is locked down.");
     }
@@ -57,12 +62,9 @@ export function SecurityGuard() {
 
     function onDragStart(e: DragEvent) {
       const target = e.target as HTMLElement | null;
-      if (target?.tagName === "IMG") {
-        e.preventDefault();
-      }
+      if (target?.tagName === "IMG") e.preventDefault();
     }
 
-    // Dev tools detection (window-size heuristic)
     const detector = setInterval(() => {
       const opened =
         window.outerWidth - window.innerWidth > 170 ||
