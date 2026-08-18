@@ -22,7 +22,6 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
   const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
   const [reactionPickerId, setReactionPickerId] = useState<number | null>(null);
   const [reactions, setReactions] = useState<Record<number, string>>({});
-  const lastTapRef = useRef<{ id: number; time: number }>({ id: -1, time: 0 });
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastIdRef = useRef(0);
@@ -45,12 +44,6 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
   useEffect(() => { const el = scrollerRef.current; if (el && stickRef.current) el.scrollTop = el.scrollHeight; }, [messages]);
 
   function openActions(m: DmMessage) { setActiveMessageId(id => id === m.id ? null : m.id); setReactionPickerId(null); }
-  function handleMessageTap(m: DmMessage) {
-    const now = Date.now();
-    const isDoubleTap = lastTapRef.current.id === m.id && now - lastTapRef.current.time < 450;
-    lastTapRef.current = { id: m.id, time: now };
-    if (isDoubleTap) { lastTapRef.current = { id: -1, time: 0 }; openActions(m); }
-  }
   function startReply(m: DmMessage) { setActiveMessageId(null); setReactionPickerId(null); setEditingId(null); setReplyingTo(m); inputRef.current?.focus(); }
   function startEdit(m: DmMessage) { if (!m.mine || Date.now() - new Date(m.createdAt).getTime() >= EDIT_WINDOW_MS) return; setActiveMessageId(null); setReactionPickerId(null); setReplyingTo(null); setEditingId(m.id); setInput(m.content.slice(0, MAX_LEN)); inputRef.current?.focus(); }
   function cancelAction() { setEditingId(null); setReplyingTo(null); setInput(""); inputRef.current?.focus(); }
@@ -76,9 +69,10 @@ export function DmThread({ me, other, sealed }: { me: PublicUser; other: PublicU
     <div className="flex items-center gap-2.5 border-b border-white/10 bg-slate-900/90 px-3 py-2.5"><Link href="/messages" className="text-xl text-slate-400">←</Link><Link href={`/players/${encodeURIComponent(other.username)}`} className="flex min-w-0 items-center gap-2.5"><Avatar name={other.username} color={other.avatarColor} size={38} dev={other.dev}/><span className="truncate font-display text-base uppercase text-white">{other.username}</span>{other.dev&&<DevChip size="xs"/>}{other.founder&&<FounderChip size="xs"/>}<RankBadge rank={other.rank} size="xs"/></Link></div>
     <div ref={scrollerRef} className="nice-scroll flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-6">
       {messages.map(m => { const canEdit = m.mine && Date.now() - new Date(m.createdAt).getTime() < EDIT_WINDOW_MS; const active = activeMessageId === m.id; return <div key={m.id} className={cn("group flex", m.mine ? "justify-end" : "justify-start")}><div className="relative max-w-[80%] sm:max-w-[65%]">
+        <button type="button" aria-label={`Message actions for ${m.mine ? "your" : "their"} message`} onClick={() => openActions(m)} className={cn("absolute top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/90 px-2 py-1 text-xs text-slate-300 opacity-100 shadow-lg", m.mine ? "-left-10" : "-right-10")}>⋯</button>
         {active && <div className={cn("absolute bottom-full z-30 mb-2 flex items-center gap-1 rounded-xl border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl", m.mine ? "right-0" : "left-0")}><button type="button" onClick={() => setReactionPickerId(m.id)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white">❤️ React</button><button type="button" onClick={() => startReply(m)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white">↩ Reply</button>{canEdit&&<button type="button" onClick={() => startEdit(m)} className="rounded-lg px-2.5 py-2 text-xs font-bold text-white">✏️ Edit</button>}</div>}
         {reactionPickerId===m.id&&<div className="absolute bottom-full z-40 mb-12 flex gap-1 rounded-full border border-white/10 bg-slate-950/95 p-1.5 shadow-2xl">{REACTIONS.map(r=><button key={r} type="button" onClick={()=>{setReactions(p=>({...p,[m.id]:r}));setReactionPickerId(null);setActiveMessageId(null)}} className="px-2 py-1 text-lg">{r}</button>)}</div>}
-        <div className="dm-message-action-zone clip-tag cursor-pointer select-none touch-manipulation px-3.5 py-2.5" onClick={()=>handleMessageTap(m)} onContextMenu={e=>{e.preventDefault();openActions(m)}} style={{WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none",touchAction:"manipulation"}}><p className={cn("whitespace-pre-wrap break-words text-[15px] leading-relaxed",m.mine?"text-slate-950":"text-slate-100")}>{m.content}</p><div className="mt-1 flex justify-end">{reactions[m.id]&&<span className="text-sm">{reactions[m.id]}</span>}<ExpiryCountdown createdAt={m.createdAt} vault={false}/></div></div>
+        <div className="dm-message-action-zone clip-tag cursor-default select-none px-3.5 py-2.5" style={{WebkitUserSelect:"none",userSelect:"none",WebkitTouchCallout:"none"}}><p className={cn("whitespace-pre-wrap break-words text-[15px] leading-relaxed",m.mine?"text-slate-950":"text-slate-100")}>{m.content}</p><div className="mt-1 flex justify-end">{reactions[m.id]&&<span className="text-sm">{reactions[m.id]}</span>}<ExpiryCountdown createdAt={m.createdAt} vault={false}/></div></div>
       </div></div> })}
     </div>
     {connLost&&<div className="border-t border-amber-500/40 bg-amber-950/40 px-4 py-2 text-xs text-amber-300">📡 the line wobbled — retrying…</div>}
