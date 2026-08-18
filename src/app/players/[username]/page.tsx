@@ -3,6 +3,7 @@ import { desc, eq, ilike, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
+import { AvatarEditor } from "@/components/avatar-editor";
 import { db } from "@/db";
 import { replies, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
@@ -22,26 +23,30 @@ export async function generateMetadata({
   return { title: `${username} — Player Profile` };
 }
 
-/**
- * Privacy rule: a profile shows rank, stats and PUBLIC forum topics only.
- * Chat messages are never exposed on profiles — chat is ephemeral and
- * private, and skipping that query keeps storage and load lean.
- */
 export default async function ProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  // Case-insensitive lookup — /players/professor finds PROFESSOR.
   const rows = await db
-    .select()
+    .select({
+      id: users.id,
+      username: users.username,
+      uid: users.uid,
+      bio: users.bio,
+      avatarColor: users.avatarColor,
+      xp: users.xp,
+      likes: users.likes,
+      createdAt: users.createdAt,
+      founder: users.founder,
+      isDev: users.isDev,
+    })
     .from(users)
     .where(ilike(users.username, username))
     .limit(1);
   const profile = rows[0];
   if (!profile) notFound();
-  // Canonicalize the URL to the exact username.
   if (profile.username !== username) {
     redirect(`/players/${encodeURIComponent(profile.username)}`);
   }
@@ -54,7 +59,6 @@ export default async function ProfilePage({
       ])
     : (["none", { iBlockedThem: false, theyBlockedMe: false, any: false }] as const);
 
-  // Sealed by them: this player has vanished from your world — minimal card.
   if (blockState.theyBlockedMe && !blockState.iBlockedThem) {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
@@ -91,10 +95,12 @@ export default async function ProfilePage({
     topics: number;
     replies: number;
   };
+  // The avatar endpoint is deliberately no-store, so the profile page does
+  // not need to read or format avatarVersion at all.
+  const avatarUrl = `/api/profile/avatar?username=${encodeURIComponent(profile.username)}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-      {/* Profile header */}
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70">
         <div
           className="h-24 sm:h-28"
@@ -104,13 +110,19 @@ export default async function ProfilePage({
         />
         <div className="px-5 pb-6 sm:px-8">
           <div className="-mt-11 flex flex-wrap items-end gap-4">
-            <Avatar
-              name={profile.username}
-              color={profile.avatarColor}
-              size={88}
-              dev={profile.isDev}
-              className="border-4 border-slate-950"
-            />
+            <div>
+              <Avatar
+                name={profile.username}
+                color={profile.avatarColor}
+                avatarUrl={avatarUrl}
+                size={88}
+                dev={profile.isDev}
+                className="border-4 border-slate-950"
+              />
+              {viewer?.id === profile.id && (
+                <AvatarEditor username={profile.username} avatarUrl={avatarUrl} />
+              )}
+            </div>
             <div className="flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-black">{profile.username}</h1>
@@ -147,7 +159,6 @@ export default async function ProfilePage({
             </p>
           )}
 
-          {/* Rank progress */}
           <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
             <div className="flex items-center justify-between text-sm">
               <span className="font-bold" style={{ color: rank.color }}>
@@ -202,7 +213,6 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      {/* Public topics only — hidden entirely across a block seal */}
       <section className={blockState.any ? "mt-8 hidden" : "mt-8"}>
         <h2 className="text-lg font-black">✍️ Topics Started</h2>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
