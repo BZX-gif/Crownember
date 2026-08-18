@@ -27,15 +27,16 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "EMBERCROWN — Free Fire Chat, Squads & Community",
-    template: "%s | EMBERCROWN",
+    default: "CLUTCHZONE — Free Fire Gaming Community",
+    template: "%s | CLUTCHZONE",
   },
   description:
-    "The home base of Free Fire players. Live chat that self-destructs, a sealed vault, squad finder, XP ranks and leaderboards. 10 founding seats only. Talk. Squad. BOOYAH!",
+    "CLUTCHZONE — where Free Fire players connect. Chat, find squads, build your player profile, discuss the game and compete with the community.",
   keywords: [
     "Free Fire",
-    "FF chat",
     "Free Fire community",
+    "Free Fire gaming community",
+    "FF chat",
     "FF squads",
     "Booyah",
     "gaming forum",
