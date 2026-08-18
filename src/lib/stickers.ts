@@ -1,12 +1,41 @@
 /**
- * The sticker wall — famous ones only. A message made purely of 1–3 emoji
- * renders as a giant sticker instead of a text line.
+ * The sticker wall — the famous ones, Instagram style.
+ * A message made purely of 1–3 emoji renders as a giant animated sticker.
  */
-export const STICKER_PACK = [
-  "🔥", "💀", "😂", "👑", "🐐", "😎", "🏆", "💯",
-  "🍗", "⚡", "🎯", "🤝", "😤", "🙏", "💪", "🫡",
-  "😭", "🤡", "💣", "🎮", "🛡️", "⚔️", "🚀", "💎",
-  "🍀", "😈", "🧊", "❌", "🤯", "😴", "🥶", "👀",
+export interface StickerSection {
+  label: string;
+  stickers: readonly string[];
+}
+
+export const STICKER_SECTIONS: readonly StickerSection[] = [
+  {
+    label: "the famous ones",
+    stickers: [
+      "😹", "😭", "💀", "🗿", "😂", "🤣", "🐐", "🥺",
+      "😤", "🫡", "🤡", "👀", "💅", "🫠", "🤪", "🫣",
+    ],
+  },
+  {
+    label: "cats & dogs",
+    stickers: [
+      "😹", "😺", "😸", "😿", "🙀", "😼", "🐱", "🐈",
+      "🐶", "🐕", "🦮", "🐩", "🐕‍🦺", "🐾", "🦴", "🐭",
+    ],
+  },
+  {
+    label: "hype & booyah",
+    stickers: [
+      "🔥", "👑", "🏆", "💯", "⚡", "🎯", "🍗", "🎮",
+      "💣", "🚀", "💎", "🛡️", "⚔️", "💪", "🤝", "🙏",
+    ],
+  },
+  {
+    label: "moods",
+    stickers: [
+      "😎", "🥶", "😈", "🤌", "🧊", "☠️", "🦁", "❤️",
+      "💔", "😴", "🤯", "🥳", "😇", "🤓", "🫢", "😮‍💨",
+    ],
+  },
 ] as const;
 
 const PICTO = /\p{Extended_Pictographic}/gu;

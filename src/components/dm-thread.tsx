@@ -31,6 +31,7 @@ export function DmThread({
   const [abuse, setAbuse] = useState<{ code: string; message: string } | null>(
     null,
   );
+  const [connLost, setConnLost] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastIdRef = useRef(0);
@@ -42,8 +43,12 @@ export function DmThread({
         `/api/dm/messages?with=${encodeURIComponent(other.username)}&after=${lastIdRef.current}`,
         { cache: "no-store" },
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        setConnLost(true);
+        return;
+      }
       const data = await res.json();
+      setConnLost(false);
       if (data.sealed) return;
       const incoming = (data.messages ?? []) as DmMessage[];
       if (incoming.length > 0) {
@@ -59,7 +64,7 @@ export function DmThread({
         );
       }
     } catch {
-      /* next poll retries */
+      setConnLost(true); // visible state; the 3s interval keeps retrying
     }
   }, [other.username]);
 
@@ -228,6 +233,22 @@ export function DmThread({
           </div>
         ))}
       </div>
+
+      {/* connection strip — never silently "stuck" */}
+      {connLost && (
+        <div className="flex items-center gap-2 border-t border-amber-500/40 bg-amber-950/40 px-4 py-2">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+          <p className="flex-1 font-hud text-[10px] font-bold uppercase tracking-wider text-amber-300">
+            📡 the line wobbled — retrying…
+          </p>
+          <button
+            onClick={() => void poll()}
+            className="border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-hud text-[10px] font-bold uppercase text-amber-300 transition hover:bg-amber-500/20"
+          >
+            retry now
+          </button>
+        </div>
+      )}
 
       {/* judgement strip */}
       {abuse && (

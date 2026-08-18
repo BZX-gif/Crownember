@@ -6,7 +6,7 @@ import { Avatar, FounderChip, RankBadge } from "@/components/ui";
 import { DevMessage } from "@/components/dev-message";
 import { ExpiryCountdown } from "@/components/expiry-countdown";
 import { VoicePanel } from "@/components/voice-panel";
-import { isSticker, STICKER_PACK } from "@/lib/stickers";
+import { isSticker, STICKER_SECTIONS } from "@/lib/stickers";
 import { cn } from "@/lib/utils";
 import type { ChatMessageDTO, PublicUser } from "@/lib/utils";
 
@@ -510,19 +510,28 @@ export function ChatRoom({
             </div>
           )}
           {stickerOpen && (
-            <div className="mb-2 grid grid-cols-8 gap-0.5 rounded-xl border border-white/10 bg-slate-950/80 p-2 sm:gap-1">
-              {STICKER_PACK.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setStickerOpen(false);
-                    void sendContent(s);
-                  }}
-                  className="rounded-lg p-1 text-2xl transition duration-150 hover:scale-125 hover:bg-white/10 sm:text-3xl"
-                >
-                  {s}
-                </button>
+            <div className="nice-scroll mb-2 max-h-56 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/80 p-2">
+              {STICKER_SECTIONS.map((section) => (
+                <div key={section.label} className="mb-1.5 last:mb-0">
+                  <p className="px-1 pb-1 font-hud text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                    {section.label}
+                  </p>
+                  <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
+                    {section.stickers.map((s, i) => (
+                      <button
+                        key={`${s}-${i}`}
+                        type="button"
+                        onClick={() => {
+                          setStickerOpen(false);
+                          void sendContent(s);
+                        }}
+                        className="rounded-lg p-1 text-2xl transition duration-150 hover:scale-125 hover:bg-white/10 sm:text-3xl"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
