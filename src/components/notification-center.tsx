@@ -44,7 +44,11 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
       setPermission("unsupported");
       return;
     }
-    setPermission(Notification.permission);
+    const current = Notification.permission;
+    setPermission(current);
+    // Permission is persistent at the browser level. If the user has already
+    // approved Crown Ember, don't make them re-enable it after a refresh.
+    if (current === "granted") setEnabled(true);
   }, []);
 
   const notify = useCallback(
@@ -83,6 +87,10 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
       const roomsRes = await fetch("/api/chat/rooms", { cache: "no-store" });
       if (!roomsRes.ok) return;
       const roomsData = (await roomsRes.json()) as { rooms?: RoomSummary[] };
+
+      // SECURITY RULE: Vault rooms are excluded by the server-provided
+      // isVault flag, even when the Vault is currently unlocked. Never rely
+      // on a room name/slug because those can be changed.
       const rooms = (roomsData.rooms ?? []).filter((r) => !r.isVault && !r.locked);
 
       for (const room of rooms) {
