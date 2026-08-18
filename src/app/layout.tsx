@@ -3,6 +3,7 @@ import { JetBrains_Mono, Russo_One, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Chrome } from "@/components/chrome";
+import { NotificationCenter } from "@/components/notification-center";
 import { SecurityGuard } from "@/components/security-guard";
 import { getSessionUser } from "@/lib/auth";
 import { serializeUser } from "@/lib/utils";
@@ -47,6 +48,7 @@ export default async function RootLayout({
   children: ReactNode;
 }) {
   const user = await getSessionUser();
+  const publicUser = user ? serializeUser(user) : null;
   return (
     <html
       lang="en"
@@ -54,7 +56,10 @@ export default async function RootLayout({
     >
       <body className="min-h-screen bg-slate-950 font-body text-slate-100 antialiased">
         <SecurityGuard />
-        <Chrome user={user ? serializeUser(user) : null}>{children}</Chrome>
+        <Chrome user={publicUser}>
+          {children}
+          <NotificationCenter user={publicUser} />
+        </Chrome>
       </body>
     </html>
   );
