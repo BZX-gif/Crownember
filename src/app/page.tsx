@@ -70,7 +70,7 @@ const STEPS = [
   {
     n: "03",
     title: "Rank up & flex",
-    desc: "Climb to Grandmaster, own the leaderboard, and go down in EMBERCROWN history.",
+    desc: "Climb to Grandmaster, own the leaderboard, and go down in CLUTCHZONE history.",
   },
 ];
 
