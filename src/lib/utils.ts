@@ -64,19 +64,12 @@ export interface PublicUser {
   uid: string;
   bio: string;
   avatarColor: string;
-  avatarVersion: Date;
   xp: number;
   likes: number;
   createdAt: Date;
   founder: boolean;
   dev: boolean;
   rank: RankInfo;
-}
-
-export function avatarUrl(username: string, version?: Date | string | null): string | undefined {
-  if (!version) return undefined;
-  const v = version instanceof Date ? version.getTime() : new Date(version).getTime();
-  return `/api/profile/avatar?username=${encodeURIComponent(username)}&v=${v}`;
 }
 
 export function serializeUser(u: typeof users.$inferSelect): PublicUser {
@@ -86,7 +79,6 @@ export function serializeUser(u: typeof users.$inferSelect): PublicUser {
     uid: u.uid,
     bio: u.bio,
     avatarColor: u.avatarColor,
-    avatarVersion: u.avatarVersion,
     xp: u.xp,
     likes: u.likes,
     createdAt: u.createdAt,
