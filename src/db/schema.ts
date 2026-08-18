@@ -22,8 +22,9 @@ export const users = pgTable("users", {
   uid: text("uid").notNull().default(""),
   bio: text("bio").notNull().default(""),
   avatarColor: text("avatar_color").notNull().default("#ff6a00"),
-  avatarData: bytea("avatar_data"),
-  avatarMime: text("avatar_mime"),
+  // Avatar bytes/mime stay outside the normal users queries and are served
+  // through /api/profile/avatar. This prevents binary data from being pulled
+  // into auth/profile Server Components.
   avatarVersion: timestamp("avatar_version", { withTimezone: true }).notNull().defaultNow(),
   xp: integer("xp").notNull().default(0),
   likes: integer("likes").notNull().default(0),
@@ -162,7 +163,7 @@ export const friendships = pgTable(
     addresseeId: integer("addressee_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    status: text("status").notNull().default("pending"), // pending | accepted
+    status: text("status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -226,10 +227,6 @@ export const vaultAccess = pgTable("vault_access", {
     .defaultNow(),
 });
 
-/**
- * Voice notes from The Vault. Deliberately short-lived: rows are wiped the
- * moment anyone leaves the room and auto-purged after 10 minutes regardless.
- */
 export const voiceNotes = pgTable(
   "voice_notes",
   {
@@ -243,9 +240,7 @@ export const voiceNotes = pgTable(
     data: bytea("data").notNull(),
     mime: text("mime").notNull().default("audio/webm"),
     durationMs: integer("duration_ms").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("voice_notes_room_created_idx").on(t.roomId, t.createdAt)],
 );
@@ -260,9 +255,7 @@ export const topicLikes = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("topic_likes_unique_idx").on(t.topicId, t.userId)],
 );
