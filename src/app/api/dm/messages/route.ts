@@ -20,6 +20,7 @@ import {
 } from "@/lib/social";
 
 const MAX_DM_LENGTH = 400;
+const EDIT_WINDOW_MS = 2 * 60 * 1000;
 
 export async function GET(req: Request) {
   const user = await getSessionUser();
@@ -39,7 +40,6 @@ export async function GET(req: Request) {
 
   const block = await getBlockState(user.id, other.id);
   if (block.any) {
-    // Sealed channels reveal nothing — not even their existence.
     return NextResponse.json({ sealed: true, messages: [] });
   }
 
@@ -75,6 +75,7 @@ export async function GET(req: Request) {
       content: m.content,
       createdAt: m.createdAt,
       mine: m.senderId === user.id,
+      editable: m.senderId === user.id && Date.now() - m.createdAt.getTime() < EDIT_WINDOW_MS,
     })),
   });
 }
@@ -85,7 +86,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Log in first." }, { status: 401 });
   }
 
-  // The Judgement System governs DMs too — muted or exiled players are silent.
   const gate = gateVerdict(user);
   if (gate) {
     return NextResponse.json(
@@ -154,6 +154,67 @@ export async function POST(req: Request) {
       content: created.content,
       createdAt: created.createdAt,
       mine: true,
+      editable: true,
+    },
+  });
+}
+
+export async function PUT(req: Request) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const id = Number(body.id);
+  const content = String(body.content ?? "").trim();
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "Invalid message." }, { status: 400 });
+  }
+  if (!content || content.length > MAX_DM_LENGTH) {
+    return NextResponse.json(
+      { error: `Message must be 1-${MAX_DM_LENGTH} characters.` },
+      { status: 400 },
+    );
+  }
+  if (containsInjection(content)) {
+    return NextResponse.json(
+      { error: "Messages can't contain code or script tags. 🛡️" },
+      { status: 400 },
+    );
+  }
+
+  const cutoff = new Date(Date.now() - EDIT_WINDOW_MS);
+  const [updated] = await db
+    .update(directMessages)
+    .set({ content })
+    .where(
+      and(
+        eq(directMessages.id, id),
+        eq(directMessages.senderId, user.id),
+        gt(directMessages.createdAt, cutoff),
+      ),
+    )
+    .returning();
+
+  if (!updated) {
+    return NextResponse.json(
+      { error: "You can only edit your own messages within 2 minutes." },
+      { status: 403 },
+    );
+  }
+
+  return NextResponse.json({
+    message: {
+      id: updated.id,
+      content: updated.content,
+      createdAt: updated.createdAt,
+      mine: true,
+      editable: true,
     },
   });
 }
