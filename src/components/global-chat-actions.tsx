@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 interface ActionState {
   top: number;
   left: number;
-  id: number;
   room: string;
   username: string;
   content: string;
@@ -13,6 +12,12 @@ interface ActionState {
 }
 
 const DOUBLE_TAP_MS = 320;
+
+type MessageDTO = {
+  id: number;
+  content: string;
+  user: { username: string; id: number };
+};
 
 export function GlobalChatActions() {
   const [action, setAction] = useState<ActionState | null>(null);
@@ -24,44 +29,48 @@ export function GlobalChatActions() {
 
     const getMessage = (target: EventTarget | null) => {
       const el = target instanceof HTMLElement ? target : null;
-      const row = el?.closest("[data-chat-message-id]") as HTMLElement | null;
+      const row = el?.closest(".group.flex.gap-3") as HTMLElement | null;
       if (!row) return null;
-
-      const id = Number(row.dataset.chatMessageId);
-      const room = row.dataset.chatMessageRoom ?? "";
-      const username = row.dataset.chatMessageUsername ?? "";
-      const content = row.dataset.chatMessageContent ?? "";
-      const mine = row.dataset.chatMessageMine === "true";
-
-      if (!Number.isInteger(id) || id <= 0 || !room || !username) return null;
-      return { row, id, room, username, content, mine };
+      const username = row.querySelector<HTMLAnchorElement>(
+        'a[href^="/players/"]',
+      )?.textContent?.trim();
+      const content = row.querySelector("p")?.textContent?.trim();
+      if (!username || !content) return null;
+      const mine =
+        document.body.dataset.currentUsername === username ||
+        Boolean(row.querySelector(".text-orange-400"));
+      return { row, username, content, mine };
     };
 
-    const open = (target: EventTarget | null) => {
+    const open = async (target: EventTarget | null) => {
       const found = getMessage(target);
       if (!found) return;
+
+      const room = decodeURIComponent(
+        window.location.pathname.split("/").pop() ?? "",
+      );
       const rect = found.row.getBoundingClientRect();
       const width = 220;
+
       setAction({
         top: Math.min(rect.bottom + 8, window.innerHeight - 170),
         left: Math.min(
           Math.max(8, rect.left),
           Math.max(8, window.innerWidth - width - 8),
         ),
-        id: found.id,
-        room: found.room,
+        room,
         username: found.username,
         content: found.content,
         mine: found.mine,
       });
     };
 
-    const onDoubleClick = (event: MouseEvent) => open(event.target);
+    const onDoubleClick = (event: MouseEvent) => void open(event.target);
     const onTouchEnd = (event: TouchEvent) => {
       const now = Date.now();
       if (now - lastTap.current <= DOUBLE_TAP_MS) {
         event.preventDefault();
-        open(event.target);
+        void open(event.target);
       }
       lastTap.current = now;
     };
@@ -83,15 +92,38 @@ export function GlobalChatActions() {
   if (!action) return null;
   const currentAction = action;
 
+  async function resolveMessageId() {
+    const res = await fetch(
+      `/api/chat/messages?room=${encodeURIComponent(currentAction.room)}&after=0`,
+      { cache: "no-store" },
+    );
+    if (!res.ok) throw new Error("Unable to load messages.");
+    const data = await res.json();
+    const messages = Array.isArray(data.messages)
+      ? (data.messages as MessageDTO[])
+      : [];
+    const matches = messages.filter(
+      (m) =>
+        m.user?.username === currentAction.username &&
+        m.content === currentAction.content,
+    );
+    const match = matches[matches.length - 1];
+    if (!match || !Number.isInteger(match.id) || match.id <= 0) {
+      throw new Error("Message no longer exists.");
+    }
+    return match.id;
+  }
+
   async function request(type: "react" | "reply" | "edit", content?: string) {
     setBusy(true);
     try {
+      const id = await resolveMessageId();
       const res = await fetch("/api/chat/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type,
-          id: currentAction.id,
+          id,
           room: currentAction.room,
           content,
         }),
@@ -102,8 +134,8 @@ export function GlobalChatActions() {
         return;
       }
       window.location.reload();
-    } catch {
-      window.alert("Network error — try again.");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Action failed.");
     } finally {
       setBusy(false);
       setAction(null);
