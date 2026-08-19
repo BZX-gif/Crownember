@@ -73,8 +73,9 @@ export function GlobalChatActions() {
 
   if (!action) return null;
 
+  const currentAction = action;
   const me = document.body.dataset.currentUsername ?? "";
-  const isMine = me === action.username;
+  const isMine = me === currentAction.username;
 
   async function request(type: "react" | "reply" | "edit", content?: string) {
     setBusy(true);
@@ -84,9 +85,9 @@ export function GlobalChatActions() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type,
-          room: action.room,
-          username: action.username,
-          message: action.content,
+          room: currentAction.room,
+          username: currentAction.username,
+          message: currentAction.content,
           content,
         }),
       });
@@ -103,13 +104,13 @@ export function GlobalChatActions() {
   }
 
   async function edit() {
-    const next = window.prompt("Edit your message", action.content);
-    if (next === null || !next.trim() || next.trim() === action.content) return;
+    const next = window.prompt("Edit your message", currentAction.content);
+    if (next === null || !next.trim() || next.trim() === currentAction.content) return;
     await request("edit", next.trim());
   }
 
   async function reply() {
-    const replyText = window.prompt(`Reply to @${action.username}`);
+    const replyText = window.prompt(`Reply to @${currentAction.username}`);
     if (!replyText?.trim()) return;
     await request("reply", replyText.trim());
   }
@@ -118,11 +119,11 @@ export function GlobalChatActions() {
     <div
       data-global-chat-actions
       className="fixed z-[9999] w-[220px] rounded-xl border border-white/15 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur"
-      style={{ top: action.top, left: action.left }}
+      style={{ top: currentAction.top, left: currentAction.left }}
       onClick={(event) => event.stopPropagation()}
     >
       <p className="truncate px-2 py-1 font-hud text-[9px] uppercase tracking-widest text-slate-500">
-        @{action.username}
+        @{currentAction.username}
       </p>
       <button disabled={busy} onClick={() => void request("react")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
         ❤️ React
