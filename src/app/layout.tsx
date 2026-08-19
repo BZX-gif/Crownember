@@ -3,6 +3,7 @@ import { JetBrains_Mono, Russo_One, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Chrome } from "@/components/chrome";
+import { GlobalChatActions } from "@/components/global-chat-actions";
 import { NotificationCenter } from "@/components/notification-center";
 import { SecurityGuard } from "@/components/security-guard";
 import { getSessionUser } from "@/lib/auth";
@@ -55,12 +56,16 @@ export default async function RootLayout({
       lang="en"
       className={`${russo.variable} ${grotesk.variable} ${jetbrains.variable}`}
     >
-      <body className="min-h-screen bg-slate-950 font-body text-slate-100 antialiased">
+      <body
+        data-current-username={publicUser?.username ?? ""}
+        className="min-h-screen bg-slate-950 font-body text-slate-100 antialiased"
+      >
         <SecurityGuard />
         <Chrome user={publicUser}>
           {children}
           <NotificationCenter user={publicUser} />
         </Chrome>
+        <GlobalChatActions />
       </body>
     </html>
   );
