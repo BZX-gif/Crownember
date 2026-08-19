@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChatRoom } from "@/components/chat-room";
+import { GlobalChatActions } from "@/components/global-chat-actions";
 import { VaultGate } from "@/components/vault-gate";
 import { db } from "@/db";
 import { rooms } from "@/db/schema";
@@ -71,17 +72,20 @@ export default async function RoomPage({
   }
 
   return (
-    <ChatRoom
-      room={{
-        slug: current.slug,
-        name: current.name,
-        description: current.description,
-        icon: current.icon,
-        color: current.color,
-      }}
-      user={user ? serializeUser(user) : null}
-      vault={isVault}
-      vaultIsFounder={Boolean(user?.founder)}
-    />
+    <>
+      <ChatRoom
+        room={{
+          slug: current.slug,
+          name: current.name,
+          description: current.description,
+          icon: current.icon,
+          color: current.color,
+        }}
+        user={user ? serializeUser(user) : null}
+        vault={isVault}
+        vaultIsFounder={Boolean(user?.founder)}
+      />
+      {!isVault && <GlobalChatActions />}
+    </>
   );
 }
