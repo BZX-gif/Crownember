@@ -3,7 +3,6 @@ import { JetBrains_Mono, Russo_One, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Chrome } from "@/components/chrome";
-import { GlobalChatActions } from "@/components/global-chat-actions";
 import { NotificationCenter } from "@/components/notification-center";
 import { SecurityGuard } from "@/components/security-guard";
 import { getSessionUser } from "@/lib/auth";
@@ -65,7 +64,6 @@ export default async function RootLayout({
           {children}
           <NotificationCenter user={publicUser} />
         </Chrome>
-        <GlobalChatActions />
       </body>
     </html>
   );
