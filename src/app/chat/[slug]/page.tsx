@@ -47,7 +47,7 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
   }
 
   return (
-    <>
+    <div className="relative h-[100dvh]">
       <ChatRoom
         room={{ slug: current.slug, name: current.name, description: current.description, icon: current.icon, color: current.color }}
         user={user ? serializeUser(user) : null}
@@ -55,6 +55,6 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
         vaultIsFounder={Boolean(user?.founder)}
       />
       <GlobalChatActions />
-    </>
+    </div>
   );
 }
