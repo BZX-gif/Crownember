@@ -11,16 +11,18 @@ import { serializeMessage } from "@/lib/utils";
 const EDIT_WINDOW_MS = 3 * 60 * 1000;
 const REACTION_KEY = "chat_reactions_v1";
 
-async function findMessage(id: number, roomSlug: string) {
-  const room = await db.select().from(rooms).where(eq(rooms.slug, roomSlug)).limit(1);
-  if (!room[0]) return null;
+// Message IDs are globally unique in the database. The client may have a
+// stale/missing room slug after navigation, so actions resolve by message ID
+// first and use the stored room as the authoritative room.
+async function findMessage(id: number) {
   const row = await db
-    .select({ message: messages, author: users })
+    .select({ message: messages, author: users, room: rooms })
     .from(messages)
     .innerJoin(users, eq(messages.userId, users.id))
-    .where(and(eq(messages.id, id), eq(messages.roomId, room[0].id)))
+    .innerJoin(rooms, eq(messages.roomId, rooms.id))
+    .where(eq(messages.id, id))
     .limit(1);
-  return row[0] ? { ...row[0], room: room[0] } : null;
+  return row[0] ?? null;
 }
 
 async function readReactions(): Promise<Record<string, number>> {
@@ -53,11 +55,10 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
 
   const type = String(body.type ?? "");
-  const roomSlug = String(body.room ?? "").trim();
   const id = Number(body.id);
-  if (!roomSlug || !Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Invalid message." }, { status: 400 });
+  if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Invalid message." }, { status: 400 });
 
-  const found = await findMessage(id, roomSlug);
+  const found = await findMessage(id);
   if (!found) return NextResponse.json({ error: "Message no longer exists." }, { status: 404 });
 
   if (type === "react") {
