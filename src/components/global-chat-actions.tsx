@@ -76,7 +76,7 @@ export function GlobalChatActions() {
   const me = document.body.dataset.currentUsername ?? "";
   const isMine = me === action.username;
 
-  async function call(type: "react" | "reply" | "edit", content?: string) {
+  async function request(type: "react" | "reply" | "edit", content?: string) {
     setBusy(true);
     try {
       const res = await fetch("/api/chat/actions", {
@@ -95,22 +95,23 @@ export function GlobalChatActions() {
         window.alert(data.error ?? "Action failed.");
         return;
       }
-      if (type === "edit") {
-        const next = window.prompt("Edit your message", action.content);
-        if (next !== null && next.trim() && next.trim() !== action.content) {
-          await call("edit", next.trim());
-        }
-      } else if (type === "reply") {
-        const reply = window.prompt(`Reply to @${action.username}`);
-        if (reply?.trim()) await call("reply", reply.trim());
-      } else {
-        window.alert(data.message ?? "❤️ Reaction added.");
-      }
-      if (type !== "edit") setAction(null);
-      else if (!content) setAction(null);
+      window.location.reload();
     } finally {
       setBusy(false);
+      setAction(null);
     }
+  }
+
+  async function edit() {
+    const next = window.prompt("Edit your message", action.content);
+    if (next === null || !next.trim() || next.trim() === action.content) return;
+    await request("edit", next.trim());
+  }
+
+  async function reply() {
+    const replyText = window.prompt(`Reply to @${action.username}`);
+    if (!replyText?.trim()) return;
+    await request("reply", replyText.trim());
   }
 
   return (
@@ -123,14 +124,14 @@ export function GlobalChatActions() {
       <p className="truncate px-2 py-1 font-hud text-[9px] uppercase tracking-widest text-slate-500">
         @{action.username}
       </p>
-      <button disabled={busy} onClick={() => void call("react")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
+      <button disabled={busy} onClick={() => void request("react")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
         ❤️ React
       </button>
-      <button disabled={busy} onClick={() => void call("reply")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
+      <button disabled={busy} onClick={() => void reply()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
         ↩ Reply
       </button>
       {isMine && (
-        <button disabled={busy} onClick={() => void call("edit")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
+        <button disabled={busy} onClick={() => void edit()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
           ✏️ Edit · 3 min
         </button>
       )}
