@@ -9,14 +9,20 @@ interface ActionState {
   username: string;
   content: string;
   mine: boolean;
+  reactionCount: number;
+  reacted: boolean;
 }
 
 const DOUBLE_TAP_MS = 320;
 
 function getReactKey(el: HTMLElement): string | null {
-  const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"));
+  const key = Object.keys(el).find(
+    (k) => k.startsWith("__reactFiber$") || k.startsWith("__reactInternalInstance$"),
+  );
   if (!key) return null;
-  let fiber = (el as unknown as Record<string, unknown>)[key] as { key?: unknown; return?: unknown } | undefined;
+  let fiber = (el as unknown as Record<string, unknown>)[key] as
+    | { key?: unknown; return?: unknown }
+    | undefined;
   for (let i = 0; fiber && i < 12; i += 1) {
     if (fiber.key !== null && fiber.key !== undefined) return String(fiber.key);
     fiber = fiber.return as typeof fiber;
@@ -34,16 +40,21 @@ export function GlobalChatActions() {
 
     const getMessage = (target: EventTarget | null) => {
       const el = target instanceof HTMLElement ? target : null;
-      const row = (el?.closest("[data-chat-message-id]") || el?.closest(".group.flex.gap-3")) as HTMLElement | null;
+      const row = (el?.closest("[data-chat-message-id]") ||
+        el?.closest(".group.flex.gap-3")) as HTMLElement | null;
       if (!row) return null;
 
       const rawId = row.dataset.chatMessageId || getReactKey(row);
       const id = Number(rawId);
-      const username = row.querySelector<HTMLAnchorElement>('a[href^="/players/"]')?.textContent?.trim();
+      const username = row
+        .querySelector<HTMLAnchorElement>('a[href^="/players/"]')
+        ?.textContent?.trim();
       const content = row.querySelector("p")?.textContent?.trim();
       if (!Number.isInteger(id) || id <= 0 || !username || !content) return null;
 
-      const mine = document.body.dataset.currentUsername === username || Boolean(row.querySelector(".text-orange-400"));
+      const mine =
+        document.body.dataset.currentUsername === username ||
+        Boolean(row.querySelector(".text-orange-400"));
       return { row, id, username, content, mine };
     };
 
@@ -53,12 +64,17 @@ export function GlobalChatActions() {
       const rect = found.row.getBoundingClientRect();
       const width = 220;
       setAction({
-        top: Math.min(rect.bottom + 8, window.innerHeight - 170),
-        left: Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8)),
+        top: Math.min(rect.bottom + 8, window.innerHeight - 190),
+        left: Math.min(
+          Math.max(8, rect.left),
+          Math.max(8, window.innerWidth - width - 8),
+        ),
         id: found.id,
         username: found.username,
         content: found.content,
         mine: found.mine,
+        reactionCount: 0,
+        reacted: false,
       });
     };
 
@@ -89,7 +105,10 @@ export function GlobalChatActions() {
   if (!action) return null;
   const currentAction = action;
 
-  async function request(type: "react" | "reply" | "edit", content?: string) {
+  async function request(
+    type: "react" | "reply" | "edit",
+    content?: string,
+  ) {
     setBusy(true);
     try {
       const res = await fetch("/api/chat/actions", {
@@ -102,12 +121,26 @@ export function GlobalChatActions() {
         window.alert(data.error ?? "Action failed.");
         return;
       }
+
+      if (type === "react") {
+        setAction((prev) =>
+          prev
+            ? {
+                ...prev,
+                reactionCount: Number(data.count ?? prev.reactionCount),
+                reacted: !prev.reacted,
+              }
+            : prev,
+        );
+        return;
+      }
+
       window.location.reload();
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Action failed.");
     } finally {
       setBusy(false);
-      setAction(null);
+      if (type !== "react") setAction(null);
     }
   }
 
@@ -124,11 +157,38 @@ export function GlobalChatActions() {
   }
 
   return (
-    <div data-global-chat-actions className="fixed z-[9999] w-[220px] rounded-xl border border-white/15 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur" style={{ top: currentAction.top, left: currentAction.left }} onClick={(event) => event.stopPropagation()}>
-      <p className="truncate px-2 py-1 font-hud text-[9px] uppercase tracking-widest text-slate-500">@{currentAction.username}</p>
-      <button disabled={busy} onClick={() => void request("react")} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">❤️ React</button>
-      <button disabled={busy} onClick={() => void reply()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">↩ Reply</button>
-      {currentAction.mine && <button disabled={busy} onClick={() => void edit()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">✏️ Edit · 3 min</button>}
+    <div
+      data-global-chat-actions
+      className="fixed z-[9999] w-[220px] rounded-xl border border-white/15 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur"
+      style={{ top: currentAction.top, left: currentAction.left }}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <p className="truncate px-2 py-1 font-hud text-[9px] uppercase tracking-widest text-slate-500">
+        @{currentAction.username}
+      </p>
+      <button
+        disabled={busy}
+        onClick={() => void request("react")}
+        className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50 ${currentAction.reacted ? "bg-orange-500/15 text-orange-300" : ""}`}
+      >
+        ❤️ React{currentAction.reactionCount > 0 ? ` · ${currentAction.reactionCount}` : ""}
+      </button>
+      <button
+        disabled={busy}
+        onClick={() => void reply()}
+        className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50"
+      >
+        ↩ Reply
+      </button>
+      {currentAction.mine && (
+        <button
+          disabled={busy}
+          onClick={() => void edit()}
+          className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50"
+        >
+          ✏️ Edit · 3 min
+        </button>
+      )}
     </div>
   );
 }
