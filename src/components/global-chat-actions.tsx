@@ -8,6 +8,7 @@ interface ActionState {
   room: string;
   username: string;
   content: string;
+  mine: boolean;
 }
 
 const DOUBLE_TAP_MS = 320;
@@ -29,7 +30,8 @@ export function GlobalChatActions() {
       )?.textContent?.trim();
       const content = row.querySelector("p")?.textContent?.trim();
       if (!username || !content) return null;
-      return { row, username, content };
+      const mine = Boolean(row.querySelector(".bg-orange-400"));
+      return { row, username, content, mine };
     };
 
     const open = (target: EventTarget | null) => {
@@ -44,6 +46,7 @@ export function GlobalChatActions() {
         room,
         username: found.username,
         content: found.content,
+        mine: found.mine,
       });
     };
 
@@ -72,10 +75,7 @@ export function GlobalChatActions() {
   }, []);
 
   if (!action) return null;
-
   const currentAction = action;
-  const me = document.body.dataset.currentUsername ?? "";
-  const isMine = me === currentAction.username;
 
   async function request(type: "react" | "reply" | "edit", content?: string) {
     setBusy(true);
@@ -131,7 +131,7 @@ export function GlobalChatActions() {
       <button disabled={busy} onClick={() => void reply()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
         ↩ Reply
       </button>
-      {isMine && (
+      {currentAction.mine && (
         <button disabled={busy} onClick={() => void edit()} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10 disabled:opacity-50">
           ✏️ Edit · 3 min
         </button>
