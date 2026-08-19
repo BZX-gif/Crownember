@@ -1,8 +1,9 @@
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { messages, rooms, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
+import { gateVerdict } from "@/lib/moderation";
 import { messageCutoff } from "@/lib/retention";
 
 const ALLOWED = ["❤️", "😂", "🔥", "😮", "😢", "😡", "👍", "💀"] as const;
@@ -32,9 +33,9 @@ export async function GET(req: Request) {
     .select({ id: messages.id })
     .from(messages)
     .where(and(eq(messages.roomId, room.id), gte(messages.createdAt, messageCutoff(room.isVault))))
-    .orderBy(asc(messages.id))
+    .orderBy(desc(messages.id))
     .limit(60);
-  if (!live.length) return NextResponse.json({ messages: [] });
+  if (!live.length) return NextResponse.json({ messages: {} });
 
   const ids = sql.join(live.map((m) => sql`${m.id}`), sql`, `);
   const rows = await db.execute(sql`
@@ -62,6 +63,9 @@ export async function POST(req: Request) {
   await ensureTable();
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+  const gate = gateVerdict(user);
+  if (gate) return NextResponse.json({ error: gate.error, code: gate.code, mutedUntil: gate.mutedUntil }, { status: 403 });
+
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const messageId = Number(body.messageId);
@@ -69,8 +73,18 @@ export async function POST(req: Request) {
   if (!Number.isInteger(messageId) || messageId <= 0 || !ALLOWED.includes(emoji as (typeof ALLOWED)[number])) {
     return NextResponse.json({ error: "Invalid reaction." }, { status: 400 });
   }
-  const target = (await db.select({ id: messages.id }).from(messages).where(eq(messages.id, messageId)).limit(1))[0];
+
+  const target = (await db
+    .select({ id: messages.id, createdAt: messages.createdAt, roomId: messages.roomId })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1))[0];
   if (!target) return NextResponse.json({ error: "Message no longer exists." }, { status: 404 });
+
+  const room = (await db.select().from(rooms).where(eq(rooms.id, target.roomId)).limit(1))[0];
+  if (!room || target.createdAt < messageCutoff(room.isVault)) {
+    return NextResponse.json({ error: "Message no longer exists." }, { status: 404 });
+  }
 
   const existing = await db.execute(sql`
     SELECT id FROM message_reactions
