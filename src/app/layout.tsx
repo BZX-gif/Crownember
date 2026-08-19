@@ -55,7 +55,10 @@ export default async function RootLayout({
       lang="en"
       className={`${russo.variable} ${grotesk.variable} ${jetbrains.variable}`}
     >
-      <body className="min-h-screen bg-slate-950 font-body text-slate-100 antialiased">
+      <body
+        data-current-username={publicUser?.username ?? ""}
+        className="min-h-screen bg-slate-950 font-body text-slate-100 antialiased"
+      >
         <SecurityGuard />
         <Chrome user={publicUser}>
           {children}
