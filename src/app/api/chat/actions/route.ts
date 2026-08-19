@@ -11,17 +11,14 @@ import { serializeMessage } from "@/lib/utils";
 const EDIT_WINDOW_MS = 3 * 60 * 1000;
 const REACTION_KEY = "chat_reactions_v1";
 
-async function findMessage(roomSlug: string, username: string, content: string) {
+async function findMessage(id: number, roomSlug: string) {
   const room = await db.select().from(rooms).where(eq(rooms.slug, roomSlug)).limit(1);
   if (!room[0]) return null;
-  const author = await db.select().from(users).where(eq(users.username, username)).limit(1);
-  if (!author[0]) return null;
   const row = await db
     .select({ message: messages, author: users })
     .from(messages)
     .innerJoin(users, eq(messages.userId, users.id))
-    .where(and(eq(messages.roomId, room[0].id), eq(messages.userId, author[0].id), eq(messages.content, content)))
-    .orderBy(desc(messages.id))
+    .where(and(eq(messages.id, id), eq(messages.roomId, room[0].id)))
     .limit(1);
   return row[0] ? { ...row[0], room: room[0] } : null;
 }
@@ -50,25 +47,17 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
 
   const gate = gateVerdict(user);
-  if (gate) {
-    return NextResponse.json({ error: gate.error, code: gate.code, mutedUntil: gate.mutedUntil }, { status: 403 });
-  }
+  if (gate) return NextResponse.json({ error: gate.error, code: gate.code, mutedUntil: gate.mutedUntil }, { status: 403 });
 
   let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  }
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
 
   const type = String(body.type ?? "");
   const roomSlug = String(body.room ?? "").trim();
-  const username = String(body.username ?? "").trim();
-  const message = String(body.message ?? "").trim();
-  const content = String(body.content ?? "").trim();
-  if (!roomSlug || !username || !message) return NextResponse.json({ error: "Missing message information." }, { status: 400 });
+  const id = Number(body.id);
+  if (!roomSlug || !Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Invalid message." }, { status: 400 });
 
-  const found = await findMessage(roomSlug, username, message);
+  const found = await findMessage(id, roomSlug);
   if (!found) return NextResponse.json({ error: "Message no longer exists." }, { status: 404 });
 
   if (type === "react") {
@@ -77,24 +66,24 @@ export async function POST(req: Request) {
     reactions[key] = reactions[key] ? 0 : 1;
     await writeReactions(reactions);
     const count = Object.entries(reactions).filter(([k, value]) => k.startsWith(`${found.message.id}:`) && value === 1).length;
-    return NextResponse.json({ ok: true, count, message: "❤️ Reaction saved." });
+    return NextResponse.json({ ok: true, count });
   }
+
+  const content = String(body.content ?? "").trim();
 
   if (type === "edit") {
     if (found.message.userId !== user.id) return NextResponse.json({ error: "You can only edit your own message." }, { status: 403 });
-    if (Date.now() - found.message.createdAt.getTime() > EDIT_WINDOW_MS) {
-      return NextResponse.json({ error: "Edit window expired. Messages can only be edited for 3 minutes." }, { status: 403 });
-    }
+    if (Date.now() - found.message.createdAt.getTime() > EDIT_WINDOW_MS) return NextResponse.json({ error: "Edit window expired. Messages can only be edited for 3 minutes." }, { status: 403 });
     if (!content || content.length > MAX_MESSAGE_LENGTH) return NextResponse.json({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters.` }, { status: 400 });
     if (containsInjection(content)) return NextResponse.json({ error: "Messages can't contain code or script tags. 🛡️" }, { status: 400 });
-    const [updated] = await db.update(messages).set({ content }).where(eq(messages.id, found.message.id)).returning();
+    const [updated] = await db.update(messages).set({ content }).where(and(eq(messages.id, found.message.id), eq(messages.userId, user.id))).returning();
     return NextResponse.json({ ok: true, message: serializeMessage(updated, found.author) });
   }
 
   if (type === "reply") {
-    if (!content || content.length > MAX_MESSAGE_LENGTH - username.length - 4) return NextResponse.json({ error: "Reply is too long." }, { status: 400 });
+    if (!content || content.length > MAX_MESSAGE_LENGTH - found.author.username.length - 4) return NextResponse.json({ error: "Reply is too long." }, { status: 400 });
     if (containsInjection(content)) return NextResponse.json({ error: "Replies can't contain code or script tags. 🛡️" }, { status: 400 });
-    const [created] = await db.insert(messages).values({ roomId: found.room.id, userId: user.id, content: `↩ @${username}: ${content}` }).returning();
+    const [created] = await db.insert(messages).values({ roomId: found.room.id, userId: user.id, content: `↩ @${found.author.username}: ${content}` }).returning();
     const [updated] = await db.update(users).set({ xp: user.xp + XP_AWARDS.MESSAGE, lastSeenAt: new Date() }).where(eq(users.id, user.id)).returning();
     return NextResponse.json({ ok: true, message: serializeMessage(created, updated) });
   }
