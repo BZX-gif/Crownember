@@ -93,7 +93,7 @@ export function WaitlistGate({
           </p>
           <p className="mt-1 text-sm text-slate-300">
             Ticket <span className="font-black text-white">#{position}</span> —
-            keep an eye on EMBERCROWN. Founders who go inactive lose their seat,
+            keep an eye on Crownember. Founders who go inactive lose their seat,
             and the waitlist gets the call.
           </p>
         </div>

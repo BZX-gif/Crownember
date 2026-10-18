@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 /**
- * FFZONE security headers — applied to every response.
+ * Crownember security headers — applied to every response.
  * - CSP stops injected scripts / foreign content from running.
  * - frame-ancestors DENY prevents the site from being embedded in a
  *   phishing iframe (clickjacking).

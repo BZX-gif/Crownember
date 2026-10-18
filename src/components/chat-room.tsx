@@ -212,7 +212,7 @@ export function ChatRoom({
       // Restore judgement state after a refresh
       if (data.me?.dev) setIAmDev(true);
       if (data.me?.banned) {
-        setAbuse({ code: "BANNED_PERM", message: "Exiled from EMBERCROWN." });
+        setAbuse({ code: "BANNED_PERM", message: "Exiled from Crownember." });
       } else if (
         data.me?.mutedUntil &&
         new Date(data.me.mutedUntil).getTime() > Date.now()
@@ -365,12 +365,12 @@ export function ChatRoom({
             <>
               Messages self-destruct 3h after sending — forever-worthy talk
               goes in the{" "}
-              <a
+              <Link
                 href="/forum"
                 className="underline decoration-dotted underline-offset-2 hover:text-amber-300"
               >
                 forum
-              </a>
+              </Link>
             </>
           )}
         </p>

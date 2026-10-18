@@ -17,23 +17,33 @@ export const metadata = { title: "Messages" };
  * live room list with previews, no site chrome. Tap a room → full-screen
  * thread.
  */
+/** Active speakers per room in the last 3 minutes (fresh per request). */
+async function recentRoomActivity() {
+  return db
+    .select({
+      roomId: messages.roomId,
+      n: sql<number>`count(distinct ${messages.userId})::int`,
+    })
+    .from(messages)
+    .where(gte(messages.createdAt, new Date(Date.now() - 3 * 60_000)))
+    .groupBy(messages.roomId);
+}
+
+/** Players seen in the last minute (fresh per request). */
+async function recentOnlineCount() {
+  return db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(users)
+    .where(gte(users.lastSeenAt, new Date(Date.now() - 60_000)));
+}
+
 export default async function ChatHomePage() {
   const [user, allRooms, roomActivity, globalOnline, latestRaw, vaultUser] =
     await Promise.all([
       getSessionUser(),
       db.select().from(rooms).orderBy(asc(rooms.id)),
-      db
-        .select({
-          roomId: messages.roomId,
-          n: sql<number>`count(distinct ${messages.userId})::int`,
-        })
-        .from(messages)
-        .where(gte(messages.createdAt, new Date(Date.now() - 3 * 60_000)))
-        .groupBy(messages.roomId),
-      db
-        .select({ n: sql<number>`count(*)::int` })
-        .from(users)
-        .where(gte(users.lastSeenAt, new Date(Date.now() - 60_000))),
+      recentRoomActivity(),
+      recentOnlineCount(),
       db
         .select({ message: messages, author: users })
         .from(messages)
@@ -90,7 +100,7 @@ export default async function ChatHomePage() {
               👑
             </span>
             <span className="font-display text-base uppercase tracking-wide text-white">
-              Ember<span className="text-fire">Crown</span>
+              CROWN<span className="text-fire">EMBER</span>
             </span>
           </Link>
           <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400">
@@ -102,7 +112,7 @@ export default async function ChatHomePage() {
         {/* title */}
         <div className="mt-4">
           <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400">
-            // inbox
+            {"// inbox"}
           </p>
           <h1 className="display-glow mt-1 font-display text-4xl uppercase tracking-wide text-white">
             Messages

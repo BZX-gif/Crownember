@@ -1,4 +1,4 @@
-# 🚀 Take EMBERCROWN Live — 100% Free (₹0 / $0)
+# 🚀 Take Crownember Live — 100% Free (₹0 / $0)
 
 Your site already works. To let **real players** chat with each other from
 their phones, you just need to put it on the internet. Everything below is a
@@ -18,7 +18,7 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 1 — Put your code on GitHub (free)
 
 1. Create a free account on https://github.com
-2. Click **New repository** → name it `ffzone` → keep it **Private** if you want
+2. Click **New repository** → name it `crownember` → keep it **Private** if you want
 3. Upload this project's files (or `git init`, `git add .`, `git commit`, `git push`)
 
 ## Step 2 — Create the free database (5 minutes)
@@ -33,7 +33,7 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 3 — Deploy on Vercel (5 minutes)
 
 1. Go to https://vercel.com → sign up **with your GitHub account**
-2. Click **Add New → Project** → import your `ffzone` repo
+2. Click **Add New → Project** → import your `crownember` repo
 3. Before clicking Deploy, open **Environment Variables** and add:
    - Key: `DATABASE_URL`
    - Value: the Neon **pooled** connection string from Step 2
@@ -49,7 +49,7 @@ their phones, you just need to put it on the internet. Everything below is a
    - **Use this command even if you previously used `drizzle-kit push`** —
      it fixes any schema drift automatically.
 5. Click **Deploy**. In ~2 minutes you get a live link like
-   `https://ffzone.vercel.app` — **that's your real website. Free forever.**
+   `https://crownember.vercel.app` — **that's your real website. Free forever.**
 
 ## Step 4 — Test it like a real player
 
@@ -61,7 +61,7 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 5 — Free custom touches (optional)
 
 - **Custom name:** On Vercel, Settings → Domains → claim
-  `ffzone.vercel.app` style subdomain (free). A real `.com` costs ~$10/year
+  `crownember.vercel.app` style subdomain (free). A real `.com` costs ~$10/year
   *only when you want it* — skip it until you're earning.
 - **Analytics:** Vercel → Analytics tab → enable (free) to watch visitor
   counts go up. 📈
@@ -74,11 +74,17 @@ their phones, you just need to put it on the internet. Everything below is a
 
 ### 🔐 The Vault key
 
-After deploying, open `/chat/vault` as your founder account. If the Vault has
-no key yet, you'll see **"Forge the key"** — set the passcode there. Founders
-can rotate the key anytime from inside the Vault (🗝️ vault key button). The
-passcode is stored only as a salted scrypt hash — it never touches any
-browser, and unlock attempts are rate-limited (5 per 15 minutes).
+Open `/chat/vault` as your founder account. If the Vault has no key yet,
+you'll see **"Forge the key"** — set the passcode there. Founders can rotate
+the key anytime from inside the Vault (🗝️ vault key button). The passcode is
+stored only as a salted scrypt hash — it never touches any browser, and
+unlock attempts are rate-limited (5 per 15 minutes).
+
+> ⚠️ **Rotate immediately if your database is old.** Earlier builds shipped a
+> default Vault key that is now public in the repo's history. If your Vault
+> still opens with it, rotate the key from inside the Vault — rotation
+> instantly revokes every unlocked session, so only people with the NEW key
+> get back in.
 
 Run these in the **Neon SQL editor** (Console → SQL) any time:
 
@@ -95,19 +101,40 @@ select id, username, uid, xp from users where founder = true order by id;
 -- Promote a waitlist player: raise the cap, then tell them to register.
 ```
 
+### 🔑 Account recovery (password forgotten)
+
+There is deliberately **no self-serve "forgot password"** — with no email
+service budget, that would be an insecure guess. As the owner, you can reset
+any player's password from your machine:
+
+```
+NEW_PASSWORD='a-strong-new-password' npx tsx scripts/reset-password.ts <username>
+```
+
+It writes only a scrypt hash, never prints the password, and logs that
+account out of every device. (Future upgrade when there's budget: a real
+email-based reset.)
+
 ## 🛡️ What's already protected
 
 - **Server-side truth:** XP, ranks, seats and messages are only ever changed
   by the server. Editing the page in a browser changes nothing for anyone.
-- **EMBERCROWN Guard:** right-click/F12/dev-tools tampering triggers a lockdown
-  screen + strike counter.
+- **Server-side truth first:** every action is authorized on the server; the
+  client is never trusted. (The old right-click/F12 "lockdown" was removed — it
+  only annoyed real players and blocked phone keyboards.)
 - **Rate limits:** chat (8 msg/10s + 1.5s cooldown), signups (5/hour),
-  login (10/15min), likes (30/min), replies (10/min), topics (5/hour).
+  login (10/15min per IP **and** per account), Vault unlock (5/15min),
+  likes (30/min), replies (10/min), topics (5/hour).
 - **Bot traps:** hidden honeypot fields on every form + script-injection
   filters on all content.
 - **Security headers:** CSP, clickjacking protection (frame-ancestors DENY),
   nosniff, permissions locked down.
-- **Passwords:** hashed with scrypt — never stored in plain text.
+- **Passwords:** hashed with scrypt — never stored in plain text. New
+  accounts need 8+ characters; login costs the same time for unknown
+  accounts (no username probing through timing).
+- **Sessions & Vault tokens:** httpOnly cookies (Secure in production),
+  server-side expiry, and Vault tokens die instantly when the key rotates.
+- **Bot accounts** (demo chat population) can never log in.
 
 ## 🚑 Troubleshooting
 

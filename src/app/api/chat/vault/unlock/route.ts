@@ -8,9 +8,10 @@ import {
 import {
   getVaultPasscodeHash,
   mintVaultToken,
+  purgeExpiredVaultTokens,
   setVaultPasscode,
-  VAULT_ACCESS_DAYS,
   VAULT_COOKIE,
+  vaultCookieOptions,
   verifyVaultPasscode,
 } from "@/lib/vault";
 
@@ -59,19 +60,15 @@ export async function POST(req: Request) {
     const ok = await verifyVaultPasscode(passcode);
     if (!ok) {
       return NextResponse.json(
-        { error: "Wrong passcode. This attempt has been logged 🚨" },
+        { error: "Wrong passcode 🚨 Attempts are strictly rate-limited." },
         { status: 401 },
       );
     }
   }
 
+  void purgeExpiredVaultTokens().catch(() => undefined);
   const token = await mintVaultToken(user.id);
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(VAULT_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: VAULT_ACCESS_DAYS * 86400,
-  });
+  res.cookies.set(VAULT_COOKIE, token, vaultCookieOptions());
   return res;
 }

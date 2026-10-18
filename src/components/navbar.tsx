@@ -52,9 +52,9 @@ export function Navbar({ user }: { user: PublicUser | null }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
         <Link href="/" className="group flex items-center gap-2">
           <span className="text-2xl transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12">🎮</span>
-          <span className="font-display text-xl uppercase tracking-wide">CLUTCH<span className="text-fire">ZONE</span></span>
+          <span className="font-display text-xl uppercase tracking-wide">CROWN<span className="text-fire">EMBER</span></span>
         </Link>
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={cn("relative rounded-lg px-4 py-2 text-sm font-semibold transition", pathname.startsWith(l.href) ? "bg-orange-500/15 text-orange-400" : "text-slate-300 hover:bg-white/5 hover:text-white")}>
               {l.label}
@@ -66,14 +66,26 @@ export function Navbar({ user }: { user: PublicUser | null }) {
         </nav>
         <div className="flex items-center gap-2">
           {user ? <div className="relative">
-            <button onClick={() => setMenuOpen((o) => !o)} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 transition hover:bg-white/10">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="Account menu"
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1 pl-1 pr-3 transition hover:bg-white/10"
+            >
               <Avatar name={user.username} color={user.avatarColor} size={30} dev={user.dev} />
               <span className="hidden max-w-[110px] truncate text-sm font-semibold sm:block">{user.username}</span>
             </button>
-            {menuOpen && <div className="absolute right-0 top-12 w-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl" onMouseLeave={() => setMenuOpen(false)}>
+            {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-12 w-64 overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl"
+              onMouseLeave={() => setMenuOpen(false)}
+            >
               <div className="border-b border-white/10 bg-white/5 p-4"><div className="flex items-center gap-3"><Avatar name={user.username} color={user.avatarColor} size={44} dev={user.dev} /><div className="min-w-0"><p className="truncate font-bold">{user.username}</p><div className="flex flex-wrap items-center gap-1"><RankBadge rank={user.rank} size="xs" />{user.dev && <DevChip size="xs" />}</div></div></div><p className="mt-2 text-xs text-slate-400">⭐ {user.xp.toLocaleString()} XP · Level {user.rank.level}</p></div>
               <div className="p-1.5"><Link href={`/players/${encodeURIComponent(user.username)}`} onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">👤 My Profile</Link><Link href="/forum/new" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white">✍️ New Topic</Link><button onClick={logout} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-400 transition hover:bg-rose-500/10">🚪 Log out</button></div>
-            </div>}
+            </div>
+          )}
           </div> : <><Link href="/login" className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/5">Log in</Link><Link href="/register" className="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110">Join Free</Link></>}
         </div>
       </div>

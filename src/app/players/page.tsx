@@ -17,7 +17,7 @@ export default async function PlayersPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <p className="text-center font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-        // rank ladder · live
+        {"// rank ladder · live"}
       </p>
       <h1 className="mt-2 text-center font-display text-4xl uppercase sm:text-5xl">
         🏆 The <span className="text-fire">Leaderboard</span>

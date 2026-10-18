@@ -1,5 +1,5 @@
 /**
- * EMBERCROWN bulletproof build-time migration.
+ * Crownember bulletproof build-time migration.
  *
  * Runs BEFORE every deploy (see DEPLOYMENT.md build command). It is fully
  * idempotent — safe to run a hundred times — and uses plain SQL instead of
@@ -190,6 +190,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS banned boolean NOT NULL DEFAULT false
 ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_vault boolean NOT NULL DEFAULT false;
 
 -- ============ indexes ============
+-- Case-insensitive exact lookups (login, profile URLs, duplicates) use
+-- lower(username) = lower($1); keep them fast as the squad grows.
+CREATE INDEX IF NOT EXISTS users_lower_username_idx ON users (lower(username));
+CREATE INDEX IF NOT EXISTS waitlist_lower_nickname_idx ON waitlist (lower(nickname));
 CREATE INDEX IF NOT EXISTS messages_room_id_idx ON messages (room_id, id);
 CREATE INDEX IF NOT EXISTS messages_user_created_idx ON messages (user_id, created_at);
 CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages (created_at);

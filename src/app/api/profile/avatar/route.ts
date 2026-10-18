@@ -12,7 +12,14 @@ export async function GET(request: Request) {
   const rows = await db.execute(sql`select avatar_data as "avatarData", avatar_mime as "avatarMime" from users where username = ${username} limit 1`);
   const avatar = rows.rows[0] as { avatarData?: Buffer; avatarMime?: string } | undefined;
   if (!avatar?.avatarData || !avatar.avatarMime) return new NextResponse(null, { status: 404 });
-  return new NextResponse(new Uint8Array(avatar.avatarData), { headers: { "Content-Type": avatar.avatarMime, "Cache-Control": "no-store" } });
+  // Public profile pictures — a short shared cache stops every chat poll
+  // from re-downloading the same avatars (uploads stay fresh within 2 min).
+  return new NextResponse(new Uint8Array(avatar.avatarData), {
+    headers: {
+      "Content-Type": avatar.avatarMime,
+      "Cache-Control": "public, max-age=120",
+    },
+  });
 }
 
 export async function POST(request: Request) {

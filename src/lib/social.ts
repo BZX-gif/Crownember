@@ -1,6 +1,7 @@
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { blocks, directMessages, friendships, users } from "@/db/schema";
+import { eqLower } from "@/lib/lookup";
 
 /**
  * The social layer — friends, blocks and their consequences.
@@ -24,7 +25,7 @@ export async function findUserByUsername(username: string) {
   const rows = await db
     .select()
     .from(users)
-    .where(ilike(users.username, username))
+    .where(eqLower(users.username, username))
     .limit(1);
   return rows[0] ?? null;
 }

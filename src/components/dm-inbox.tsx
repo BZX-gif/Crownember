@@ -84,7 +84,7 @@ export function DmInbox({
         >
           <div>
             <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400">
-              // private lines
+              {"// private lines"}
             </p>
             <h1 className="display-glow mt-1 font-display text-3xl uppercase tracking-wide text-white">
               Messages

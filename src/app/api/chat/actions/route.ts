@@ -5,6 +5,7 @@ import { messages, rooms } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { MAX_MESSAGE_LENGTH } from "@/lib/ranks";
 import { containsInjection } from "@/lib/antibot";
+import { enforceAbuseRule, gateVerdict } from "@/lib/moderation";
 import { getVaultUser } from "@/lib/vault";
 
 const REACTIONS = new Set(["❤️", "😂", "🔥", "😮", "😢", "😡", "👍", "💀"]);
@@ -34,6 +35,16 @@ async function getRoom(roomSlug: string) {
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "You must be logged in." }, { status: 401 });
+
+  // The Judgement System applies to every chat action, not just new posts —
+  // otherwise a muted player could keep talking through reply/edit.
+  const gate = gateVerdict(user);
+  if (gate) {
+    return NextResponse.json(
+      { error: gate.error, code: gate.code, mutedUntil: gate.mutedUntil },
+      { status: 403 },
+    );
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -78,6 +89,15 @@ export async function POST(req: Request) {
   const content = String(body.content ?? "").trim();
   if (!content || content.length > MAX_MESSAGE_LENGTH) return NextResponse.json({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters.` }, { status: 400 });
   if (containsInjection(content)) return NextResponse.json({ error: "Messages can't contain code or script tags. 🛡️" }, { status: 400 });
+
+  // Abuse check — the offending text is never posted, edit or reply alike.
+  const verdict = await enforceAbuseRule(user, content);
+  if (!verdict.ok) {
+    return NextResponse.json(
+      { error: verdict.error, code: verdict.code, mutedUntil: verdict.mutedUntil },
+      { status: 403 },
+    );
+  }
 
   if (type === "edit") {
     if (message.userId !== user.id) return NextResponse.json({ error: "You can only edit your own messages." }, { status: 403 });

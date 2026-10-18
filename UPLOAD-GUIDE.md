@@ -1,4 +1,4 @@
-# 📤 EMBERCROWN — Upload & Deploy Guide
+# 📤 Crownember — Upload & Deploy Guide
 
 ## The golden rule
 GitHub's web uploader **adds files but never deletes old ones**. Old leftovers

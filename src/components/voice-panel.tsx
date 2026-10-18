@@ -333,9 +333,16 @@ export function VoicePanel({
         setKeyMsg(`❌ ${data.error ?? "Could not rotate key."}`);
         return;
       }
-      setKeyMsg("✅ Key rotated.");
       setKeyCurrent("");
       setKeyNext("");
+      if (data.relocked) {
+        // Rotation revokes every vault token — including yours. That's the
+        // guarantee: nobody keeps access on the old key.
+        setKeyMsg("✅ Key rotated. Every member must unlock again with the new key — starting with you…");
+        setTimeout(() => window.location.reload(), 1800);
+        return;
+      }
+      setKeyMsg("✅ Key rotated.");
     } catch {
       setKeyMsg("❌ Network error.");
     }

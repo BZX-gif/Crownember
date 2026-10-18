@@ -70,7 +70,7 @@ const STEPS = [
   {
     n: "03",
     title: "Rank up & flex",
-    desc: "Climb to Grandmaster, own the leaderboard, and go down in CLUTCHZONE history.",
+    desc: "Climb to Grandmaster, own the leaderboard, and go down in Crownember history.",
   },
 ];
 
@@ -227,7 +227,7 @@ export default async function HomePage() {
             {/* Seat HUD */}
             <div className="hud-corners mt-10 max-w-md bg-slate-950/75 p-4 backdrop-blur">
               <div className="flex items-center justify-between font-hud text-[11px] uppercase tracking-[0.18em]">
-                <span className="text-slate-400">// founding_squad</span>
+                <span className="text-slate-400">{"// founding_squad"}</span>
                 <span className={seats.open ? "text-orange-400" : "text-rose-400"}>
                   {seats.open ? `${seats.left} seats open` : "locked"}
                 </span>
@@ -271,7 +271,7 @@ export default async function HomePage() {
             <div className="mt-4 space-y-4">
               {lobby.length === 0 && (
                 <p className="py-6 text-center font-hud text-xs text-slate-500">
-                  // quiet in the lobby… be the first to speak
+                  {"// quiet in the lobby… be the first to speak"}
                 </p>
               )}
               {lobby.map((r) => (
@@ -331,13 +331,13 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20">
           <Reveal>
             <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-amber-400">
-              // 10 seats · never reopened
+              {"// 10 seats · never reopened"}
             </p>
             <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
               The <span className="text-fire">Founding Squad</span>
             </h2>
             <p className="mt-4 max-w-2xl leading-relaxed text-slate-400">
-              The first 10 players through the doors shape EMBERCROWN forever — and
+              The first 10 players through the doors shape Crownember forever — and
               carry the 🛡️ <span className="font-bold text-amber-300">FOUNDER</span>{" "}
               badge in every chat, topic and leaderboard. When all 10 seats are
               claimed, the doors weld shut.
@@ -437,7 +437,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20">
           <Reveal>
             <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-              // pick your lobby
+              {"// pick your lobby"}
             </p>
             <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
               Jump Into a <span className="text-fire">Chat Room</span>
@@ -486,7 +486,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-20">
         <Reveal>
           <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-            // equipped by default
+            {"// equipped by default"}
           </p>
           <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
             Built For The <span className="text-fire">Grind</span>
@@ -523,7 +523,7 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-                  // hall of fame
+                  {"// hall of fame"}
                 </p>
                 <h2 className="mt-2 font-display text-3xl uppercase text-white sm:text-4xl">
                   This Week&apos;s <span className="text-fire">Legends</span>
@@ -610,7 +610,7 @@ export default async function HomePage() {
           </h2>
           <p className="mx-auto mt-5 max-w-xl leading-relaxed text-slate-300">
             {seats.open
-              ? `${seats.left} founding seats remain. After that, EMBERCROWN goes invite-only and everyone else waits in line. Your squad is already in the lobby.`
+              ? `${seats.left} founding seats remain. After that, Crownember goes invite-only and everyone else waits in line. Your squad is already in the lobby.`
               : `All ${seats.max} founding seats are claimed — but ${fmt(seats.waitlistCount)} players are holding their spot on the waitlist. Get in line before it grows.`}
           </p>
           <Link

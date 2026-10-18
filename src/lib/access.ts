@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { settings, users, waitlist } from "@/db/schema";
 
 /**
- * EMBERCROWN launches as an exclusive 10-player "Founding Squad".
+ * Crownember launches as an exclusive 10-player "Founding Squad".
  * - The first 10 REAL players (bots excluded) claim the founding seats.
  * - After that, registration closes and a waitlist opens.
  * - The cap lives in the `settings` table (key: max_players) so it can

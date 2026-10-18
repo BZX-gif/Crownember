@@ -88,7 +88,7 @@ export function VaultGate({
         <>
           <span className="inline-block text-6xl">🔐</span>
           <p className="mt-4 font-hud text-[11px] font-bold uppercase tracking-[0.3em] text-amber-400">
-            // restricted area
+            {"// restricted area"}
           </p>
           <h1 className="mt-2 font-display text-3xl uppercase tracking-wide text-white sm:text-4xl">
             The <span className="text-fire">Vault</span>
@@ -138,7 +138,7 @@ export function VaultGate({
           )}
 
           <div className="mt-6 space-y-1 font-hud text-[10px] uppercase tracking-wider text-slate-600">
-            <p>🚨 attempts are rate-limited &amp; logged</p>
+            <p>🚨 attempts are strictly rate-limited</p>
             <p>🔒 passcode never touches your browser</p>
             <p>🎙️ voice self-destructs on exit</p>
           </div>
