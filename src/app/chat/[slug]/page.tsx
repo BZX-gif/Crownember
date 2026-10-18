@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChatRoom } from "@/components/chat-room";
 import { GlobalChatActions } from "@/components/global-chat-actions";
@@ -38,9 +39,9 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
       <div className="bg-grid flex h-[100dvh] items-center justify-center overflow-y-auto p-4">
         <div className="w-full max-w-md">
           <VaultGate needsSetup={!vaultHash} isFounder={Boolean(user?.founder)} username={user?.username ?? null} />
-          <a href="/chat" className="mt-4 block text-center font-hud text-xs font-bold uppercase tracking-widest text-slate-500 transition hover:text-orange-400">
+          <Link href="/chat" className="mt-4 block text-center font-hud text-xs font-bold uppercase tracking-widest text-slate-500 transition hover:text-orange-400">
             ← back to inbox
-          </a>
+          </Link>
         </div>
       </div>
     );

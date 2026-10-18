@@ -1,4 +1,3 @@
-import { ilike } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -7,8 +6,9 @@ import { botTrap } from "@/lib/antibot";
 import {
   createSession,
   SESSION_COOKIE,
-  SESSION_DAYS,
+  sessionCookieOptions,
 } from "@/lib/auth";
+import { eqLower, USERNAME_RE } from "@/lib/lookup";
 import { hashPassword } from "@/lib/password";
 import {
   checkRateLimit,
@@ -16,6 +16,9 @@ import {
   tooManyRequests,
 } from "@/lib/rate-limit";
 import { serializeUser } from "@/lib/utils";
+
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -38,15 +41,21 @@ export async function POST(req: Request) {
   const uid = String(body.uid ?? "").trim().slice(0, 15);
   const bio = String(body.bio ?? "").trim().slice(0, 200);
 
-  if (!/^[a-zA-Z0-9_]{3,16}$/.test(username)) {
+  if (!USERNAME_RE.test(username)) {
     return NextResponse.json(
       { error: "Username must be 3-16 characters (letters, numbers, underscore)." },
       { status: 400 },
     );
   }
-  if (password.length < 6) {
+  if (password.length < MIN_PASSWORD_LENGTH) {
     return NextResponse.json(
-      { error: "Password must be at least 6 characters." },
+      { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` },
+      { status: 400 },
+    );
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return NextResponse.json(
+      { error: `Password must be at most ${MAX_PASSWORD_LENGTH} characters.` },
       { status: 400 },
     );
   }
@@ -60,7 +69,7 @@ export async function POST(req: Request) {
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(ilike(users.username, username))
+    .where(eqLower(users.username, username))
     .limit(1);
   if (existing.length > 0) {
     return NextResponse.json(
@@ -82,24 +91,29 @@ export async function POST(req: Request) {
   }
 
   const isFounder = stats.taken < FOUNDING_LIMIT;
-  const [created] = await db
-    .insert(users)
-    .values({
-      username,
-      passwordHash: hashPassword(password),
-      uid,
-      bio,
-      founder: isFounder,
-    })
-    .returning();
+  let created: typeof users.$inferSelect;
+  try {
+    [created] = await db
+      .insert(users)
+      .values({
+        username,
+        passwordHash: hashPassword(password),
+        uid,
+        bio,
+        founder: isFounder,
+      })
+      .returning();
+  } catch {
+    // Two people clicked "claim" with the same IGN at once — the DB unique
+    // constraint is the final referee.
+    return NextResponse.json(
+      { error: "That username is already taken. Pick another IGN!" },
+      { status: 409 },
+    );
+  }
 
   const token = await createSession(created.id);
   const res = NextResponse.json({ user: serializeUser(created) });
-  res.cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DAYS * 86400,
-  });
+  res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
   return res;
 }

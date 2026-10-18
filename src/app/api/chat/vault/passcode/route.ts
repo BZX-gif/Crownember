@@ -7,7 +7,10 @@ import {
 } from "@/lib/rate-limit";
 import {
   getVaultUser,
+  revokeAllVaultTokens,
   setVaultPasscode,
+  VAULT_COOKIE,
+  vaultCookieOptions,
   verifyVaultPasscode,
 } from "@/lib/vault";
 
@@ -56,5 +59,11 @@ export async function POST(req: Request) {
   }
 
   await setVaultPasscode(next);
-  return NextResponse.json({ ok: true });
+  // Rotation is a lockout: every live vault token dies (including yours),
+  // so nobody holding the OLD key — or an old stolen token — keeps access.
+  await revokeAllVaultTokens();
+
+  const res = NextResponse.json({ ok: true, relocked: true });
+  res.cookies.set(VAULT_COOKIE, "", vaultCookieOptions(0));
+  return res;
 }

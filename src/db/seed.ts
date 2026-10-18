@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { inArray, sql } from "drizzle-orm";
+import { randomBytes } from "crypto";
+import { asc, inArray, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   messages,
@@ -16,14 +17,19 @@ import { hashPassword } from "../lib/password";
 const minutesAgo = (n: number) => new Date(Date.now() - n * 60 * 1000);
 
 async function main() {
-  const existing = await db.execute(sql`select count(*)::int as n from rooms`);
+  // Guard on the Global room, not "any room": scripts/migrate.mjs can create
+  // the Vault room before this runs, and a half-created layout must still be
+  // seedable. Re-running on a live database always skips safely.
+  const existing = await db.execute(
+    sql`select count(*)::int as n from rooms where slug = 'global'`,
+  );
   const roomCount = Number(existing.rows[0]?.n ?? 0);
   if (roomCount > 0) {
     console.log("Database already seeded — skipping.");
     return;
   }
 
-  const roomRows = await db
+  await db
     .insert(rooms)
     .values([
       {
@@ -51,9 +57,16 @@ async function main() {
         color: "#f59e0b",
       },
     ])
-    .returning();
+    .onConflictDoNothing();
 
-  const botPass = hashPassword("bot-pass-123");
+  // Re-read after insert so a pre-existing room (e.g. the Vault created by
+  // migrate.mjs) is present in the map instead of breaking index access.
+  const roomRows = await db.select().from(rooms).orderBy(asc(rooms.id));
+  const roomBySlug = new Map(roomRows.map((r) => [r.slug, r.id]));
+
+  // Bots can never log in (the login route refuses is_bot accounts) and
+  // each gets a random throwaway hash — no shared secret anywhere in code.
+  const botPass = hashPassword(randomBytes(32).toString("hex"));
   const botRows = await db
     .insert(users)
     .values([
@@ -147,13 +160,13 @@ async function main() {
     .set({ isBot: true })
     .where(inArray(users.id, botRows.map((b) => b.id)));
 
-  // Founding Squad cap, the Vault's default key + a little waitlist social proof
+  // Founding Squad cap + a little waitlist social proof. The Vault gets NO
+  // default passcode: a founder forges the first key in-app, so no secret is
+  // ever committed to this repository. (If your DB predates this change and
+  // still unlocks with the old default key, rotate it from inside the Vault.)
   await db
     .insert(settings)
-    .values([
-      { key: "max_players", value: "10" },
-      { key: "vault_passcode_hash", value: hashPassword("BOOYAH2026") },
-    ])
+    .values([{ key: "max_players", value: "10" }])
     .onConflictDoNothing();
   await db
     .insert(waitlist)
@@ -169,7 +182,7 @@ async function main() {
 
   const chatSeed: Array<{ room: number; user: number; text: string; m: number }> = [
     // room 0 = Global Chat, room 1 = Community Guides (room 2 = The Vault stays silent)
-    { room: 0, user: 0, text: "Yo EMBERCROWN! Who's up for some ranked tonight? 🎮", m: 55 },
+    { room: 0, user: 0, text: "Yo Crownember! Who's up for some ranked tonight? 🎮", m: 55 },
     { room: 0, user: 2, text: "Just hit Heroic tier last night LETS GOO 🔥🔥", m: 50 },
     { room: 0, user: 1, text: "GG brother! Welcome to the club 😎", m: 47 },
     { room: 0, user: 3, text: "Bro the AK with a gyro scope is OP this season fr", m: 41 },
@@ -192,7 +205,7 @@ async function main() {
     { room: 1, user: 3, text: "Glue factory trick: set your loot order before hot drops 🎒", m: 100 },
     { room: 1, user: 7, text: "For low-end devices: lower graphics, keep high FPS. FPS > looks, always.", m: 70 },
     { room: 1, user: 6, text: "Practice headshot line in training mode 10 minutes a day. It works.", m: 40 },
-    { room: 0, user: 0, text: "🏆 WEEKLY SCRIM: Saturday 8PM IST. 20 squads, winner takes 1K EMBERCROWN XP. Comment to sign up!", m: 90 },
+    { room: 0, user: 0, text: "🏆 WEEKLY SCRIM: Saturday 8PM IST. 20 squads, winner takes 1K Crownember XP. Comment to sign up!", m: 90 },
     { room: 0, user: 3, text: "Squad BooyahBabes is IN. Watch out 😈", m: 85 },
     { room: 0, user: 2, text: "Sign me up as a free agent, any squad need a sniper?", m: 80 },
     { room: 0, user: 6, text: "Are customs region-locked? We have EU + SEA players", m: 60 },
@@ -209,9 +222,12 @@ async function main() {
     { room: 0, user: 5, text: "Reminder: report bugs through the official channel, don't spam them in-game 😅", m: 40 },
   ];
 
+  const chatRoomIds = [roomBySlug.get("global"), roomBySlug.get("guides")];
   for (const row of chatSeed) {
+    const roomId = chatRoomIds[row.room];
+    if (!roomId) continue;
     await db.insert(messages).values({
-      roomId: roomRows[row.room].id,
+      roomId,
       userId: botRows[row.user].id,
       content: row.text,
       // Chat self-destructs after 3h — seed messages must be younger than that
@@ -262,7 +278,7 @@ async function main() {
       category: "tournament",
       title: "🏆 Weekly Community Scrim — Saturday 8PM IST (sign up inside)",
       content:
-        "Back with the weekly scrim! Rules: 4-player squads, Battle Royale, Bermuda. Winner gets 1K EMBERCROWN XP and eternal bragging rights on the leaderboard. Drop your squad name below to register. Deadline: Friday 11PM IST. Last week we had 18 squads — let's break 20 this time!",
+        "Back with the weekly scrim! Rules: 4-player squads, Battle Royale, Bermuda. Winner gets 1K Crownember XP and eternal bragging rights on the leaderboard. Drop your squad name below to register. Deadline: Friday 11PM IST. Last week we had 18 squads — let's break 20 this time!",
       m: 500,
       likes: 45,
       replies: [
@@ -332,7 +348,7 @@ async function main() {
     {
       user: 6,
       category: "general",
-      title: "Welcome to EMBERCROWN! Introduce yourself 🎉",
+      title: "Welcome to Crownember! Introduce yourself 🎉",
       content:
         "New home base for Free Fire players! Drop a comment: your IGN, region, rank, and what you play (ranked, casual, customs). Let's build this community into the biggest FF hub on the internet. 🔥",
       m: 900,

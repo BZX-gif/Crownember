@@ -328,3 +328,48 @@ body {
 .nice-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 122, 26, 0.55);
 }
+
+/* ============ Accessibility ============ */
+
+/* Visible, consistent keyboard focus on every interactive element. */
+:focus-visible {
+  outline: 2px solid #fb923c;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip link — visible only when focused via keyboard. */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  transition: top 0.15s ease;
+}
+.skip-link:focus-visible {
+  top: 1rem;
+}
+
+/*
+ * Respect the OS "reduce motion" setting: kill decorative animation and
+ * smooth scrolling, keep everything instantly visible (the Reveal
+ * transitions collapse to ~0 via the global duration reset below).
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .mask-line > span {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

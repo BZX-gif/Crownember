@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 /**
@@ -16,7 +17,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     // surface the real cause in the browser console for debugging
-    console.error("EMBERCROWN page error:", error);
+    console.error("Crownember page error:", error);
   }, [error]);
 
   return (
@@ -40,12 +41,12 @@ export default function GlobalError({
           >
             ↻ Try again
           </button>
-          <a
+          <Link
             href="/"
             className="clip-btn border-0 bg-white/10 px-6 py-3 font-display text-xs uppercase tracking-widest text-white transition hover:bg-white/20"
           >
             Go home
-          </a>
+          </Link>
         </div>
         <p className="mt-5 font-hud text-[10px] uppercase tracking-wider text-slate-600">
           ref: {error.digest?.slice(0, 12) ?? "n/a"}

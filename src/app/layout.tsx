@@ -26,12 +26,13 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://crownember.vercel.app"),
   title: {
-    default: "CLUTCHZONE — Free Fire Gaming Community",
-    template: "%s | CLUTCHZONE",
+    default: "Crownember — Free Fire Gaming Community",
+    template: "%s | Crownember",
   },
   description:
-    "CLUTCHZONE — where Free Fire players connect. Chat, find squads, build your player profile, discuss the game and compete with the community.",
+    "Crownember — where Free Fire players connect. Chat, find squads, build your player profile, discuss the game and compete with the community.",
   keywords: [
     "Free Fire",
     "Free Fire community",
@@ -40,6 +41,7 @@ export const metadata: Metadata = {
     "FF squads",
     "Booyah",
     "gaming forum",
+    "Crownember",
   ],
 };
 

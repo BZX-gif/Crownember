@@ -22,9 +22,9 @@ export async function GET() {
     );
   }
 
-  let host = "unknown";
   try {
-    host = new URL(url).host;
+    // Valid connection string shape — the host itself stays out of responses.
+    new URL(url);
   } catch {
     return Response.json(
       {
@@ -57,7 +57,6 @@ export async function GET() {
     return Response.json({
       ok: true,
       db: "connected",
-      host,
       ms: Date.now() - startedAt,
       schema: schemaOk ? "up to date" : "OUTDATED — run the build command again",
       counts: c,
@@ -71,8 +70,10 @@ export async function GET() {
         : /fetch failed|ENOTFOUND|ETIMEDOUT|ECONNREFUSED/i.test(msg)
           ? "Cannot reach the database host — check that DATABASE_URL uses the Neon pooled (-pooler) connection string."
           : "Unknown database error — read the detail below.";
+    // `detail` is a short technical fragment for the owner only — never
+    // connection strings or credentials (the message can't contain those).
     return Response.json(
-      { ok: false, db: "unreachable", host, hint, detail: msg.slice(0, 300) },
+      { ok: false, db: "unreachable", hint, detail: msg.slice(0, 160) },
       { status: 500 },
     );
   }

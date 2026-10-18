@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 
 /**
- * EMBERCROWN JUDGEMENT SYSTEM — server-side abuse enforcement.
+ * Crownember JUDGEMENT SYSTEM — server-side abuse enforcement.
  *
  * Ladder of doom:
  *   strike 1 → 👁 "You are under surveillance" (message blocked)
@@ -109,7 +109,7 @@ export function gateVerdict(user: UserRow): AbuseVerdict | null {
       ok: false,
       code: "BANNED_PERM",
       error:
-        "☠️ You were warned. You have been exiled from EMBERCROWN — permanently. No appeals. No mercy.",
+        "☠️ You were warned. You have been exiled from Crownember — permanently. No appeals. No mercy.",
     };
   }
   if (user.mutedUntil && user.mutedUntil.getTime() > Date.now()) {
@@ -200,6 +200,6 @@ export async function enforceAbuseRule(
     ok: false,
     code: "BANNED_PERM",
     error:
-      "☠️ You were warned. You have been exiled from EMBERCROWN — permanently. No appeals. No mercy.",
+      "☠️ You were warned. You have been exiled from Crownember — permanently. No appeals. No mercy.",
   };
 }

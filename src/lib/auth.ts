@@ -4,8 +4,24 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, users } from "@/db/schema";
 
+/**
+ * Session cookie name is kept as `ff_session` on purpose: renaming it would
+ * silently sign out every existing player. The brand lives in the UI, not in
+ * cookie identifiers.
+ */
 export const SESSION_COOKIE = "ff_session";
 export const SESSION_DAYS = 30;
+
+/** httpOnly + lax + secure(in prod) — never readable or replayable from JS. */
+export function sessionCookieOptions(maxAgeSeconds = SESSION_DAYS * 86400) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: maxAgeSeconds,
+  };
+}
 
 export async function createSession(userId: number): Promise<string> {
   const token = randomBytes(32).toString("hex");

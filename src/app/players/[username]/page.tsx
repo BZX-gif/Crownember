@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { desc, eq, ilike, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
@@ -7,6 +7,7 @@ import { AvatarEditor } from "@/components/avatar-editor";
 import { db } from "@/db";
 import { replies, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
+import { eqLower } from "@/lib/lookup";
 import { getBlockState, getRelationship } from "@/lib/social";
 import { ProfileActions } from "@/components/profile-actions";
 import { categoryMeta, formatDate, timeAgo } from "@/lib/utils";
@@ -43,7 +44,7 @@ export default async function ProfilePage({
       isDev: users.isDev,
     })
     .from(users)
-    .where(ilike(users.username, username))
+    .where(eqLower(users.username, username))
     .limit(1);
   const profile = rows[0];
   if (!profile) notFound();

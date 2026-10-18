@@ -29,7 +29,7 @@ export function GlobalChatActions() {
       if (reactionsRes.ok) { const data = await reactionsRes.json(); if (data.messages && typeof data.messages === "object") setReactions(data.messages); }
     } catch {}
   }
-  useEffect(() => { void refresh(); const timer = window.setInterval(refresh, 2500); return () => window.clearInterval(timer); }, [room]);
+  useEffect(() => { queueMicrotask(() => { void refresh(); }); const timer = window.setInterval(refresh, 2500); return () => window.clearInterval(timer); }, [room]);
   function findMessage(el: HTMLElement): Msg | null {
     const value = el.textContent?.trim() ?? "";
     return messages.filter((m) => value.includes(m.user.username) && value.includes(m.content)).at(-1) ?? null;

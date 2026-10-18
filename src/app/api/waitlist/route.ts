@@ -1,8 +1,8 @@
-import { ilike } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { waitlist } from "@/db/schema";
 import { botTrap } from "@/lib/antibot";
+import { eqLower, NICKNAME_RE } from "@/lib/lookup";
 import {
   checkRateLimit,
   clientIp,
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   const nickname = String(body.nickname ?? "").trim();
   const note = String(body.note ?? "").trim().slice(0, 200);
 
-  if (!/^[a-zA-Z0-9_]{3,20}$/.test(nickname)) {
+  if (!NICKNAME_RE.test(nickname)) {
     return NextResponse.json(
       { error: "Nickname must be 3-20 characters (letters, numbers, underscore)." },
       { status: 400 },
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   const existing = await db
     .select({ id: waitlist.id })
     .from(waitlist)
-    .where(ilike(waitlist.nickname, nickname))
+    .where(eqLower(waitlist.nickname, nickname))
     .limit(1);
   if (existing.length > 0) {
     return NextResponse.json(
@@ -47,13 +47,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const [entry] = await db
-    .insert(waitlist)
-    .values({ nickname, note })
-    .returning();
+  try {
+    const [entry] = await db
+      .insert(waitlist)
+      .values({ nickname, note })
+      .returning();
 
-  return NextResponse.json({
-    position: entry.id,
-    nickname: entry.nickname,
-  });
+    return NextResponse.json({
+      position: entry.id,
+      nickname: entry.nickname,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "That nickname is already on the waitlist. You're in line! 🎟️" },
+      { status: 409 },
+    );
+  }
 }

@@ -17,7 +17,7 @@ function useScramble(text: string) {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setDone(true);
+      queueMicrotask(() => setDone(true));
       return;
     }
     const start = performance.now();

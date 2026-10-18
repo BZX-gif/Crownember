@@ -40,15 +40,19 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
   const notifying = useRef(false);
 
   useEffect(() => {
+    // Sync the browser's external permission state in after the effect —
+    // never during render (it would tear against hydration).
     if (!canNotify()) {
-      setPermission("unsupported");
+      queueMicrotask(() => setPermission("unsupported"));
       return;
     }
     const current = Notification.permission;
-    setPermission(current);
     // Permission is persistent at the browser level. If the user has already
-    // approved Crown Ember, don't make them re-enable it after a refresh.
-    if (current === "granted") setEnabled(true);
+    // approved Crownember, don't make them re-enable it after a refresh.
+    queueMicrotask(() => {
+      setPermission(current);
+      if (current === "granted") setEnabled(true);
+    });
   }, []);
 
   const notify = useCallback(

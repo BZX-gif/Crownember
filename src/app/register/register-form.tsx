@@ -80,6 +80,9 @@ export function RegisterForm({
           onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
           placeholder="BooyahKing"
           maxLength={16}
+          minLength={3}
+          autoComplete="username"
+          required
           className={inputCls}
         />
         <p className="mt-1 text-[11px] text-slate-500">
@@ -95,9 +98,16 @@ export function RegisterForm({
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="At least 6 characters"
+          placeholder="At least 8 characters"
+          minLength={8}
+          maxLength={128}
+          autoComplete="new-password"
+          required
           className={inputCls}
         />
+        <p className="mt-1 text-[11px] text-slate-500">
+          At least 8 characters. Make it something only you would pick.
+        </p>
       </div>
       <div>
         <label htmlFor="uid" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -124,7 +134,10 @@ export function RegisterForm({
         />
       </div>
       {error && (
-        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400">
+        <p
+          role="alert"
+          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400"
+        >
           {error}
         </p>
       )}

@@ -58,7 +58,7 @@ export default async function ForumPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-            // permanent archive
+            {"// permanent archive"}
           </p>
           <h1 className="mt-2 font-display text-4xl uppercase text-white">
             Community <span className="text-fire">Forum</span>
