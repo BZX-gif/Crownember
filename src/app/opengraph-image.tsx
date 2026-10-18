@@ -1,17 +1,13 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "nodejs";
-export const alt = "Crownember — Free Fire Gaming Community";
+export const alt = "VYRON — Global Social Platform";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /**
- * Branded social-share card.
- *
- * Deliberately emoji-free: satori (the renderer behind ImageResponse) pulls an
- * emoji font from a public CDN at request time whenever a glyph needs one —
- * that makes previews fragile and leaks a third-party dependency. Pure
- * typography renders with the bundled font, offline, every time.
+ * Branded social-share card for VYRON.
+ * Pure typography renders with the bundled font, offline, every time.
  */
 export default function Image() {
   return new ImageResponse(
@@ -23,9 +19,9 @@ export default function Image() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          alignItems: "center",
           padding: 70,
-          background:
-            "linear-gradient(135deg, #020617 0%, #0c1222 55%, #1c1005 100%)",
+          background: "linear-gradient(135deg, #000 0%, #111 55%, #000 100%)",
           color: "white",
           fontFamily: "sans-serif",
         }}
@@ -37,19 +33,16 @@ export default function Image() {
             gap: 16,
             fontSize: 28,
             fontWeight: 800,
-            letterSpacing: 8,
-            color: "#fb923c",
+            letterSpacing: 12,
+            color: "#fff",
           }}
         >
-          <div
-            style={{
-              width: 18,
-              height: 18,
-              background: "#fb923c",
-              display: "flex",
-            }}
-          />
-          CROWNEMBER
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="6" fill="#fff"/>
+            <path d="M8 12h16M8 16h12M8 20h8" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="26" cy="6" r="4" fill="#000" opacity="0.15"/>
+          </svg>
+          VYRON
         </div>
         <div
           style={{
@@ -58,30 +51,33 @@ export default function Image() {
             fontSize: 72,
             fontWeight: 900,
             lineHeight: 1.05,
+            letterSpacing: 4,
           }}
         >
-          FREE FIRE COMMUNITY
+          GLOBAL SOCIAL PLATFORM
         </div>
         <div
           style={{
             display: "flex",
             marginTop: 24,
             fontSize: 30,
-            color: "#cbd5e1",
+            color: "#a3a3a3",
+            textAlign: "center",
+            maxWidth: 800,
           }}
         >
-          Chat. Find squads. Build your profile. Compete with the community.
+          Share thoughts. Join conversations. Build your presence.
         </div>
         <div
           style={{
             display: "flex",
             marginTop: 44,
-            fontSize: 22,
-            color: "#64748b",
-            letterSpacing: 3,
+            fontSize: 20,
+            color: "#737373",
+            letterSpacing: 4,
           }}
         >
-          10 FOUNDING SEATS • FREE FOREVER • BUILT FOR PLAYERS
+          LUXURY DESIGN · ZERO COMPROMISE · FREE FOREVER
         </div>
       </div>
     ),

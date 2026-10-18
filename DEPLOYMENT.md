@@ -1,6 +1,6 @@
-# 🚀 Take Crownember Live — 100% Free (₹0 / $0)
+# 🚀 Take VYRON Live — 100% Free (₹0 / $0)
 
-Your site already works. To let **real players** chat with each other from
+Your site already works. To let **real people** connect with each other from
 their phones, you just need to put it on the internet. Everything below is a
 **free tier** — no credit card anywhere.
 
@@ -10,7 +10,7 @@ their phones, you just need to put it on the internet. Everything below is a
 
 > Why this works with zero money: chat uses smart polling (every 3 seconds),
 > so it runs perfectly on free serverless hosting — no paid WebSocket servers
-> needed. Messages are saved in the database, so **every player sees every
+> needed. Messages are saved in the database, so **every user sees every
 > message from everyone, on any device, forever.**
 
 ---
@@ -18,13 +18,13 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 1 — Put your code on GitHub (free)
 
 1. Create a free account on https://github.com
-2. Click **New repository** → name it `crownember` → keep it **Private** if you want
+2. Click **New repository** → name it `vyron` → keep it **Private** if you want
 3. Upload this project's files (or `git init`, `git add .`, `git commit`, `git push`)
 
 ## Step 2 — Create the free database (5 minutes)
 
 1. Go to https://neon.tech → sign up (free, no card)
-2. Click **Create project** → pick the region closest to your players
+2. Click **Create project** → pick the region closest to your users
 3. When it finishes, copy the **connection string**. It looks like:
    `postgresql://neondb_owner:XXXX@ep-xxxxx.region.aws.neon.tech/neondb?sslmode=require`
 4. ⚠️ Use the **pooled** connection string (it has `-pooler` in the hostname) —
@@ -33,7 +33,7 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 3 — Deploy on Vercel (5 minutes)
 
 1. Go to https://vercel.com → sign up **with your GitHub account**
-2. Click **Add New → Project** → import your `crownember` repo
+2. Click **Add New → Project** → import your `vyron` repo
 3. Before clicking Deploy, open **Environment Variables** and add:
    - Key: `DATABASE_URL`
    - Value: the Neon **pooled** connection string from Step 2
@@ -49,9 +49,9 @@ their phones, you just need to put it on the internet. Everything below is a
    - **Use this command even if you previously used `drizzle-kit push`** —
      it fixes any schema drift automatically.
 5. Click **Deploy**. In ~2 minutes you get a live link like
-   `https://crownember.vercel.app` — **that's your real website. Free forever.**
+   `https://vyron.vercel.app` — **that's your real website. Free forever.**
 
-## Step 4 — Test it like a real player
+## Step 4 — Test it like a real user
 
 1. Open your link on your phone **and** your laptop (or send it to a friend)
 2. Register on both devices → chat in **Global Chat**
@@ -61,12 +61,12 @@ their phones, you just need to put it on the internet. Everything below is a
 ## Step 5 — Free custom touches (optional)
 
 - **Custom name:** On Vercel, Settings → Domains → claim
-  `crownember.vercel.app` style subdomain (free). A real `.com` costs ~$10/year
+  `vyron.vercel.app` style subdomain (free). A real `.com` costs ~$10/year
   *only when you want it* — skip it until you're earning.
 - **Analytics:** Vercel → Analytics tab → enable (free) to watch visitor
   counts go up. 📈
 - **When you outgrow in-memory rate limits:** add Upstash Redis free tier
-  (10k requests/day free) — only when you have thousands of players.
+  (10k requests/day free) — only when you have thousands of users.
 
 ---
 
@@ -95,17 +95,17 @@ update settings set value = '50' where key = 'max_players';
 -- See everyone waiting in line
 select id, nickname, note, created_at from waitlist order by id;
 
--- See your founding squad
+-- See your founding members
 select id, username, uid, xp from users where founder = true order by id;
 
--- Promote a waitlist player: raise the cap, then tell them to register.
+-- Promote a waitlist user: raise the cap, then tell them to register.
 ```
 
 ### 🔑 Account recovery (password forgotten)
 
 There is deliberately **no self-serve "forgot password"** — with no email
 service budget, that would be an insecure guess. As the owner, you can reset
-any player's password from your machine:
+any user's password from your machine:
 
 ```
 NEW_PASSWORD='a-strong-new-password' npx tsx scripts/reset-password.ts <username>
@@ -121,7 +121,7 @@ email-based reset.)
   by the server. Editing the page in a browser changes nothing for anyone.
 - **Server-side truth first:** every action is authorized on the server; the
   client is never trusted. (The old right-click/F12 "lockdown" was removed — it
-  only annoyed real players and blocked phone keyboards.)
+  only annoyed real users and blocked phone keyboards.)
 - **Rate limits:** chat (8 msg/10s + 1.5s cooldown), signups (5/hour),
   login (10/15min per IP **and** per account), Vault unlock (5/15min),
   likes (30/min), replies (10/min), topics (5/hour).
@@ -160,11 +160,9 @@ Normal for ~3 hours — messages self-destruct. The migration automatically
 refreshes ancient seeded messages once, so the demo chat comes back to life
 on the first deploy after this update.
 
-## 📣 Getting your first 10 players (also free)
+## 📣 Getting your first users (also free)
 
-1. Share your link in Free Fire Facebook groups + WhatsApp status
-2. Post a YouTube Short: *"I built a website with only 10 seats for FF
-   players"* — scarcity gets clicks
-3. Drop the link in FF Discord servers with: *"First 10 players get the
-   FOUNDER badge forever"*
-4. Watch the waitlist number grow. That number IS your marketing. 🔥
+1. Share your link in relevant communities + social media
+2. Post a short video: *"I built a premium social platform with only 10 founding seats"* — scarcity gets clicks
+3. Drop the link in relevant Discord servers with: *"First 10 members get the FOUNDER badge forever"*
+4. Watch the waitlist number grow. That number IS your marketing. ✨

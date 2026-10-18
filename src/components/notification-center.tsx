@@ -48,7 +48,7 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
     }
     const current = Notification.permission;
     // Permission is persistent at the browser level. If the user has already
-    // approved Crownember, don't make them re-enable it after a refresh.
+    // approved VYRON, don't make them re-enable it after a refresh.
     queueMicrotask(() => {
       setPermission(current);
       if (current === "granted") setEnabled(true);
@@ -63,7 +63,7 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
       try {
         const n = new Notification(title, {
           body: body.slice(0, 180),
-          tag: `crownember-${href}`,
+          tag: `vyron-${href}`,
           icon: "/favicon.ico",
         });
         n.onclick = () => {
@@ -183,7 +183,7 @@ export function NotificationCenter({ user }: { user: PublicUser | null }) {
       onClick={() => void enableNotifications()}
       title={permission === "granted" ? "Chrome notifications enabled" : "Enable Chrome notifications"}
       aria-label={permission === "granted" ? "Chrome notifications enabled" : "Enable Chrome notifications"}
-      className="fixed bottom-4 right-4 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/90 text-base shadow-lg backdrop-blur transition hover:border-orange-500/40 hover:bg-slate-800"
+      className="fixed bottom-4 right-4 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/90 text-base shadow-lg backdrop-blur transition hover:border-white/20 hover:bg-white/5"
     >
       {permission === "granted" ? "🔔" : "🔕"}
     </button>

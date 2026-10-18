@@ -24,7 +24,7 @@ export function LoginForm() {
         setError(data.error ?? "Login failed. Try again.");
         return;
       }
-      window.location.href = "/chat";
+      window.location.href = "/";
     } catch {
       setError("Network error — try again.");
     } finally {
@@ -32,23 +32,26 @@ export function LoginForm() {
     }
   }
 
+  const inputCls =
+    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base sm:text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none";
+
   return (
     <form onSubmit={submit} className="mt-6 space-y-4">
       <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Username / IGN
+        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
+          Username
         </label>
         <input
           id="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="BooyahKing"
+          placeholder="alex"
           autoComplete="username"
-          className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          className={inputCls}
         />
       </div>
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
           Password
         </label>
         <input
@@ -58,7 +61,7 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           autoComplete="current-password"
-          className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          className={inputCls}
         />
       </div>
       {error && (
@@ -72,9 +75,9 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={busy || !username.trim() || !password}
-        className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+        className="vyron-btn bg-white text-black w-full px-4 py-3.5 text-sm font-black transition hover:brightness-110 disabled:opacity-40"
       >
-        {busy ? "Dropping in…" : "Log In & Booyah"}
+        {busy ? "Signing in…" : "Log In"}
       </button>
     </form>
   );

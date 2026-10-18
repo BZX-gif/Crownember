@@ -39,7 +39,7 @@ export function RegisterForm({
         if (res.status === 403) {
           // Seats filled up while the form was open
           setError(
-            data.error ?? "The Founding Squad just filled up. Join the waitlist!",
+            data.error ?? "The Founding Members just filled up. Join the waitlist!",
           );
           setTimeout(() => window.location.reload(), 2500);
           return;
@@ -47,7 +47,7 @@ export function RegisterForm({
         setError(data.error ?? "Registration failed. Try again.");
         return;
       }
-      window.location.href = "/chat";
+      window.location.href = "/";
     } catch {
       setError("Network error — try again.");
     } finally {
@@ -56,7 +56,7 @@ export function RegisterForm({
   }
 
   const inputCls =
-    "w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none";
+    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base sm:text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none";
 
   return (
     <form onSubmit={submit} className="mt-6 space-y-4">
@@ -71,26 +71,26 @@ export function RegisterForm({
         aria-hidden="true"
       />
       <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Username / IGN *
+        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
+          Username *
         </label>
         <input
           id="username"
           value={username}
           onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-          placeholder="BooyahKing"
+          placeholder="alex"
           maxLength={16}
           minLength={3}
           autoComplete="username"
           required
           className={inputCls}
         />
-        <p className="mt-1 text-[11px] text-slate-500">
+        <p className="mt-1 text-[11px] text-white/40">
           3-16 characters: letters, numbers, underscore.
         </p>
       </div>
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
           Password *
         </label>
         <input
@@ -105,31 +105,31 @@ export function RegisterForm({
           required
           className={inputCls}
         />
-        <p className="mt-1 text-[11px] text-slate-500">
+        <p className="mt-1 text-[11px] text-white/40">
           At least 8 characters. Make it something only you would pick.
         </p>
       </div>
       <div>
-        <label htmlFor="uid" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Free Fire UID <span className="text-slate-600">(optional)</span>
+        <label htmlFor="uid" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
+          External ID <span className="text-white/30">(optional)</span>
         </label>
         <input
           id="uid"
           value={uid}
           onChange={(e) => setUid(e.target.value.replace(/\D/g, "").slice(0, 15))}
-          placeholder="224587013"
+          placeholder="123456789"
           className={inputCls}
         />
       </div>
       <div>
-        <label htmlFor="bio" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Bio <span className="text-slate-600">(optional)</span>
+        <label htmlFor="bio" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
+          Bio <span className="text-white/30">(optional)</span>
         </label>
         <input
           id="bio"
           value={bio}
           onChange={(e) => setBio(e.target.value.slice(0, 200))}
-          placeholder="Rusher main. Clutch or die 🎯"
+          placeholder="Designer. Builder. Coffee enthusiast."
           className={inputCls}
         />
       </div>
@@ -144,7 +144,7 @@ export function RegisterForm({
       <button
         type="submit"
         disabled={busy || !username.trim() || !password}
-        className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+        className="vyron-btn bg-white text-black w-full px-4 py-3.5 text-sm font-black transition hover:brightness-110 disabled:opacity-40"
       >
         {busy
           ? "Creating…"
