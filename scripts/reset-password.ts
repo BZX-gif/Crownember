@@ -1,5 +1,5 @@
 /**
- * Crownember — owner-run account recovery (zero cost, no email provider).
+ * VYRON — owner-run account recovery (zero cost, no email provider).
  *
  * There is intentionally NO self-serve "forgot password" flow: with no email
  * service budget, any such flow would be insecure guesswork. Instead, the

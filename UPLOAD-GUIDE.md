@@ -1,4 +1,4 @@
-# 📤 Crownember — Upload & Deploy Guide
+# 📤 VYRON — Upload & Deploy Guide
 
 ## The golden rule
 GitHub's web uploader **adds files but never deletes old ones**. Old leftovers

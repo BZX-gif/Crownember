@@ -5,15 +5,19 @@ export interface Rank {
   color: string;
 }
 
-/** Free Fire-inspired rank ladder driven by community XP. */
+/**
+ * The VYRON reputation ladder — driven entirely by server-awarded XP.
+ * Thresholds are unchanged from the platform's first day; only the names
+ * grew up. Monochrome by design: rank is meaning, not decoration.
+ */
 export const RANKS: Rank[] = [
-  { name: "Bronze", icon: "🥉", minXp: 0, color: "#cd7f32" },
-  { name: "Silver", icon: "🥈", minXp: 250, color: "#c0c0c0" },
-  { name: "Gold", icon: "🥇", minXp: 500, color: "#ffd700" },
-  { name: "Platinum", icon: "💎", minXp: 1000, color: "#7dd3fc" },
-  { name: "Diamond", icon: "💠", minXp: 1800, color: "#a78bfa" },
-  { name: "Heroic", icon: "🛡️", minXp: 3000, color: "#f97316" },
-  { name: "Grandmaster", icon: "👑", minXp: 5000, color: "#ef4444" },
+  { name: "Newcomer", icon: "○", minXp: 0, color: "#71717a" },
+  { name: "Regular", icon: "◔", minXp: 250, color: "#a1a1aa" },
+  { name: "Known", icon: "◑", minXp: 500, color: "#d4d4d4" },
+  { name: "Established", icon: "◕", minXp: 1000, color: "#e4e4e7" },
+  { name: "Renowned", icon: "●", minXp: 1800, color: "#f4f4f5" },
+  { name: "Icon", icon: "✦", minXp: 3000, color: "#fafafa" },
+  { name: "Legend", icon: "✷", minXp: 5000, color: "#ffffff" },
 ];
 
 export interface RankInfo {

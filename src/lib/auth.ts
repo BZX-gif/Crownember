@@ -48,7 +48,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
     await db.delete(sessions).where(eq(sessions.token, token));
     return null;
   }
-  // Permanently exiled users cannot hold a session anywhere.
+  // Permanently suspended users cannot hold a session anywhere.
   if (row.user.banned) {
     await db.delete(sessions).where(eq(sessions.token, token));
     return null;

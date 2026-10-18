@@ -40,10 +40,10 @@ export function AvatarEditor({ username, avatarUrl }: { username: string; avatar
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => choose(e.target.files?.[0])} />
-      <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 hover:bg-orange-500/20 disabled:opacity-50">
+      <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-100 hover:bg-white/5 disabled:opacity-50">
         {busy ? "Saving…" : preview ? "Change picture" : "Add picture"}
       </button>
-      {preview && <button type="button" disabled={busy} onClick={remove} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-white disabled:opacity-50">Remove</button>}
+      {preview && <button type="button" disabled={busy} onClick={remove} className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-50">Remove</button>}
       {error && <span className="text-xs text-red-400">{error}</span>}
     </div>
   );

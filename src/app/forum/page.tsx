@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { TopicList } from "@/components/topic-list";
+import { NewTopicForm } from "@/app/forum/new/new-topic-form";
 import { db } from "@/db";
 import { topicLikes, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
@@ -15,7 +16,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Forum" };
+export const metadata = {
+  title: "The Feed",
+  description:
+    "The VYRON feed — permanent posts, real replies, effortless likes. Chronological, always.",
+};
+
+const PAGE_SIZE = 50;
 
 export default async function ForumPage({
   searchParams,
@@ -30,84 +37,98 @@ export default async function ForumPage({
       ? eq(topics.category, category)
       : undefined;
 
-  const [rows, likedRows] = await Promise.all([
-    db
-      .select({ topic: topics, author: users })
-      .from(topics)
-      .innerJoin(users, eq(topics.userId, users.id))
-      .where(where)
-      .orderBy(desc(topics.pinned), desc(topics.lastActivityAt))
-      .limit(50),
-    user
-      ? db
-          .select({ topicId: topicLikes.topicId })
-          .from(topicLikes)
-          .where(eq(topicLikes.userId, user.id))
-      : Promise.resolve([]),
-  ]);
+  const rows = await db
+    .select({ topic: topics, author: users })
+    .from(topics)
+    .innerJoin(users, eq(topics.userId, users.id))
+    .where(where)
+    .orderBy(desc(topics.pinned), desc(topics.lastActivityAt))
+    .limit(PAGE_SIZE);
 
-  const likedIds = likedRows.map((r) => r.topicId);
-  // The block veil: sealed players' topics disappear from the forum.
+  // Only fetch like-state for the posts actually on screen (bounded).
+  const pageIds = rows.map((r) => r.topic.id);
+  const likedIds = new Set<number>();
+  if (user && pageIds.length > 0) {
+    const likedRows = await db
+      .select({ topicId: topicLikes.topicId })
+      .from(topicLikes)
+      .where(
+        and(eq(topicLikes.userId, user.id), inArray(topicLikes.topicId, pageIds)),
+      );
+    for (const r of likedRows) likedIds.add(r.topicId);
+  }
+
+  // The block veil: sealed members' posts disappear from the feed.
   const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
   const topicDtos: TopicDTO[] = rows
     .filter((r) => !hidden.has(r.author.id))
     .map((r) => serializeTopic(r.topic, r.author));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-            {"// permanent archive"}
+          <p className="font-hud text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+            permanent · chronological
           </p>
-          <h1 className="mt-2 font-display text-4xl uppercase text-white">
-            Community <span className="text-fire">Forum</span>
+          <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-white">
+            The Feed
           </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Chat burns in 3 hours — the forum keeps it forever. Start a topic,
-            earn +10 XP.
+          <p className="mt-2 text-sm text-zinc-500">
+            Rooms fade after three hours. What matters lives here.
           </p>
         </div>
-        <Link
-          href="/forum/new"
-          className="clip-btn bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 font-display text-xs uppercase tracking-widest text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-        >
-          ✍️ New Topic
-        </Link>
+        {!user && (
+          <Link
+            href="/register"
+            className="rounded-full bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-white"
+          >
+            Join VYRON
+          </Link>
+        )}
       </div>
 
-      <div className="nice-scroll mt-6 flex gap-2 overflow-x-auto pb-2">
+      {user && (
+        <div className="mt-8">
+          <NewTopicForm user={serializeUser(user)} compact />
+        </div>
+      )}
+
+      <nav
+        aria-label="Feed categories"
+        className="nice-scroll -mx-4 mt-8 flex gap-1.5 overflow-x-auto px-4 pb-2"
+      >
         <Link
           href="/forum"
           className={cn(
-            "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
+            "shrink-0 rounded-full border px-4 py-2 font-hud text-[11px] font-bold uppercase tracking-[0.15em] transition",
             !category
-              ? "border-orange-500/50 bg-orange-500/15 text-orange-400"
-              : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25",
+              ? "border-white/50 bg-zinc-100 text-black"
+              : "border-white/12 text-zinc-400 hover:border-white/30 hover:text-zinc-200",
           )}
         >
-          🔥 All Topics
+          All
         </Link>
         {CATEGORIES.map((c) => (
           <Link
             key={c.slug}
             href={`/forum?category=${c.slug}`}
             className={cn(
-              "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
+              "shrink-0 rounded-full border px-4 py-2 font-hud text-[11px] font-bold uppercase tracking-[0.15em] transition",
               category === c.slug
-                ? "border-orange-500/50 bg-orange-500/15 text-orange-400"
-                : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25",
+                ? "border-white/50 bg-zinc-100 text-black"
+                : "border-white/12 text-zinc-400 hover:border-white/30 hover:text-zinc-200",
             )}
           >
-            {c.icon} {c.label}
+            {c.label}
           </Link>
         ))}
-      </div>
+      </nav>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <TopicList
           topics={topicDtos}
-          likedIds={likedIds}
+          likedIds={[...likedIds]}
           user={user ? serializeUser(user) : null}
         />
       </div>

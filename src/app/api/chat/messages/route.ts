@@ -144,7 +144,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // The Judgement System: exiled or muted users don't get to speak.
+  // Guard: suspended or muted users don't get to speak.
   const gate = gateVerdict(user);
   if (gate) {
     return NextResponse.json(

@@ -23,7 +23,7 @@ export const STICKER_SECTIONS: readonly StickerSection[] = [
     ],
   },
   {
-    label: "hype & booyah",
+    label: "hype",
     stickers: [
       "🔥", "👑", "🏆", "💯", "⚡", "🎯", "🍗", "🎮",
       "💣", "🚀", "💎", "🛡️", "⚔️", "💪", "🤝", "🙏",

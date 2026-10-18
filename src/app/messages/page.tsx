@@ -19,25 +19,25 @@ export default async function MessagesPage() {
   if (!user) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <div className="hud-corners clip-card w-full max-w-md bg-slate-900/80 p-8 text-center">
+        <div className="w-full max-w-md bg-zinc-900/80 p-8 text-center">
           <span className="text-5xl">✉️</span>
           <h1 className="mt-4 font-display text-2xl uppercase tracking-wide text-white">
-            Private <span className="text-fire">lines</span>
+            Private <span className="text-zinc-100 font-bold">lines</span>
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
-            Friend requests, squad management and person-to-person messages —
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            Requests, your circle and one-to-one messages —
             all sealed from the public rooms. Log in to open yours.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Link
               href="/login"
-              className="clip-btn bg-white/10 px-6 py-3 font-display text-xs uppercase tracking-widest text-white transition hover:bg-white/20"
+              className="bg-white/10 px-6 py-3 font-display text-xs uppercase tracking-widest text-white transition hover:bg-white/20"
             >
               Log in
             </Link>
             <Link
               href="/register"
-              className="clip-btn bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 font-display text-xs uppercase tracking-widest text-slate-950 transition hover:brightness-110"
+              className="bg-zinc-100 px-6 py-3 font-display text-xs uppercase tracking-widest text-zinc-950 transition hover:brightness-110"
             >
               Join free
             </Link>

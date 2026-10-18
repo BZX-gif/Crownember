@@ -157,13 +157,18 @@ export function serializeReply(
   };
 }
 
+/**
+ * Category SLUGS are permanent identifiers — old posts keep working and
+ * old URLs keep resolving — so they never change. Labels and glyphs are
+ * presentation and may evolve with the brand.
+ */
 export const CATEGORIES = [
-  { slug: "general", label: "General", icon: "💬" },
-  { slug: "tips", label: "Tips & Tricks", icon: "🎯" },
-  { slug: "squad", label: "Squad Up", icon: "🤝" },
-  { slug: "tournament", label: "Tournaments", icon: "🏆" },
-  { slug: "memes", label: "Memes & Fun", icon: "😂" },
-  { slug: "news", label: "Bugs & News", icon: "📣" },
+  { slug: "general", label: "General", icon: "●" },
+  { slug: "tips", label: "Ideas", icon: "✦" },
+  { slug: "squad", label: "Connect", icon: "○" },
+  { slug: "tournament", label: "Events", icon: "▲" },
+  { slug: "memes", label: "Off-Topic", icon: "◆" },
+  { slug: "news", label: "Announcements", icon: "■" },
 ] as const;
 
 export function categoryMeta(slug: string) {

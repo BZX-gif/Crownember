@@ -1,12 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES } from "@/lib/utils";
+import { Avatar } from "@/components/avatar";
+import { CATEGORIES, cn, type PublicUser } from "@/lib/utils";
 
 const MAX_TITLE = 120;
 const MAX_CONTENT = 4000;
 
-export function NewTopicForm() {
+/**
+ * The post composer.
+ *  - "compact" renders the inline feed variant: one calm box at the top of
+ *    the feed (title optional until you expand; body-first flow)
+ *  - full renders the standalone /forum/new page
+ * Same API, same validation — the server decides what is acceptable.
+ */
+export function NewTopicForm({
+  user,
+  compact = false,
+}: {
+  user?: PublicUser | null;
+  compact?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(!compact);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<string>("general");
@@ -30,93 +45,145 @@ export function NewTopicForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to create topic.");
+        setError(data.error ?? "Failed to create post.");
+        setBusy(false);
         return;
       }
       window.location.href = `/forum/${data.topic.id}`;
     } catch {
-      setError("Network error — try again.");
-    } finally {
+      setError("Network error — your draft is safe, try again.");
       setBusy(false);
     }
   }
 
+  if (compact && !expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-left transition hover:border-white/25"
+        aria-label="Start a new post"
+      >
+        {user && (
+          <Avatar name={user.username} color={user.avatarColor} size={32} dev={user.dev} />
+        )}
+        <span className="text-[15px] text-zinc-500">
+          Share something with everyone…
+        </span>
+        <span className="ml-auto rounded-full bg-zinc-100 px-3.5 py-1.5 text-xs font-semibold text-black">
+          Post
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <form onSubmit={submit} className="mt-6 space-y-5">
-      <div>
-        <label
-          htmlFor="title"
-          className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-        >
-          Title *
-        </label>
-        <input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value.slice(0, MAX_TITLE))}
-          placeholder="e.g. Best drop spots in Bermuda this season?"
-          className="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
-        />
-        <p className="mt-1 text-right text-[11px] text-slate-500">
-          {title.length}/{MAX_TITLE}
-        </p>
+    <form
+      onSubmit={submit}
+      className={cn(
+        compact &&
+          "animate-fade-in rounded-2xl border border-white/12 bg-white/[0.02] p-4 sm:p-5",
+      )}
+    >
+      <div className={cn(compact && "flex gap-3")}>
+        {compact && user && (
+          <Avatar
+            name={user.username}
+            color={user.avatarColor}
+            size={36}
+            dev={user.dev}
+            className="mt-1 hidden sm:block"
+          />
+        )}
+        <div className="min-w-0 flex-1 space-y-4">
+          <div>
+            <label htmlFor={compact ? "nt-title-inline" : "title"} className="sr-only">
+              Title
+            </label>
+            <input
+              id={compact ? "nt-title-inline" : "title"}
+              value={title}
+              onChange={(e) => setTitle(e.target.value.slice(0, MAX_TITLE))}
+              placeholder="Give it a title"
+              maxLength={MAX_TITLE}
+              autoFocus={compact}
+              className="w-full border-b border-white/10 bg-transparent pb-2 text-lg font-semibold text-white placeholder:text-zinc-600 focus:border-white/40 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label htmlFor={compact ? "nt-body-inline" : "content"} className="sr-only">
+              Body
+            </label>
+            <textarea
+              id={compact ? "nt-body-inline" : "content"}
+              value={content}
+              onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
+              rows={compact ? 4 : 9}
+              placeholder="Say it fully — the details are the good part."
+              className="nice-scroll w-full resize-y bg-transparent text-[15px] leading-relaxed text-white placeholder:text-zinc-600 focus:outline-none"
+            />
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Category
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <div className={cn("mt-4", compact && "sm:pl-12")}>
+        <div
+          role="radiogroup"
+          aria-label="Category"
+          className="flex flex-wrap gap-1.5"
+        >
           {CATEGORIES.map((c) => (
             <button
               key={c.slug}
               type="button"
+              role="radio"
+              aria-checked={category === c.slug}
               onClick={() => setCategory(c.slug)}
-              className={
+              className={cn(
+                "rounded-full border px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-[0.15em] transition",
                 category === c.slug
-                  ? "rounded-full border border-orange-500/50 bg-orange-500/15 px-4 py-2 text-sm font-bold text-orange-400"
-                  : "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-white/25"
-              }
+                  ? "border-white/50 bg-zinc-100 text-black"
+                  : "border-white/12 text-zinc-400 hover:border-white/30 hover:text-zinc-200",
+              )}
             >
-              {c.icon} {c.label}
+              {c.label}
             </button>
           ))}
         </div>
+
+        {error && (
+          <p role="alert" className="mt-3 text-sm font-medium text-rose-300">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-4 flex items-center gap-3">
+          <span className="font-hud text-[10px] uppercase tracking-widest text-zinc-600">
+            {title.length}/{MAX_TITLE} · {content.length}/{MAX_CONTENT}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            {compact && (
+              <button
+                type="button"
+                onClick={() => {
+                  setExpanded(false);
+                  setError("");
+                }}
+                className="rounded-full px-4 py-2 text-sm text-zinc-400 transition hover:text-white"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={busy || title.trim().length < 3 || !content.trim()}
+              className="rounded-full bg-zinc-100 px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white active:scale-95 disabled:opacity-30"
+            >
+              {busy ? "Posting…" : "Post"}
+            </button>
+          </div>
+        </div>
       </div>
-
-      <div>
-        <label
-          htmlFor="content"
-          className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-        >
-          Body *
-        </label>
-        <textarea
-          id="content"
-          value={content}
-          onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
-          rows={10}
-          placeholder="Give the community the details: loadout, UID, rules, story…"
-          className="nice-scroll w-full resize-y rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
-        />
-        <p className="mt-1 text-right text-[11px] text-slate-500">
-          {content.length}/{MAX_CONTENT}
-        </p>
-      </div>
-
-      {error && (
-        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={busy || title.trim().length < 3 || !content.trim()}
-        className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
-      >
-        {busy ? "Posting…" : "Post Topic · +10 XP"}
-      </button>
     </form>
   );
 }

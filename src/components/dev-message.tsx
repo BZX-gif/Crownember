@@ -60,27 +60,27 @@ export function DevMessage({
   const { out, done } = useScramble(msg.content);
 
   return (
-    <div className="dev-frame clip-card relative">
-      <div className="bg-[#070b08]/95 px-3.5 py-3">
+    <div className="dev-frame relative">
+      <div className="bg-[#080808]/95 px-3.5 py-3">
         {/* terminal titlebar */}
-        <div className="flex items-center gap-1.5 border-b border-emerald-500/10 pb-2">
+        <div className="flex items-center gap-1.5 border-b border-white/10 pb-2">
           <span className="h-2 w-2 rounded-full bg-rose-500/70" />
-          <span className="h-2 w-2 rounded-full bg-amber-400/70" />
-          <span className="h-2 w-2 rounded-full bg-emerald-400/70" />
+          <span className="h-2 w-2 rounded-full bg-white/5" />
+          <span className="h-2 w-2 rounded-full bg-zinc-300/70" />
           <span className="ml-auto shrink-0">
             <ExpiryCountdown createdAt={msg.createdAt} vault={vault} />
           </span>
         </div>
 
         {/* decoded body */}
-        <p className="mt-2.5 whitespace-pre-wrap break-words font-hud text-[13px] leading-relaxed text-emerald-300">
-          <span className="select-none text-emerald-600">❯ </span>
+        <p className="mt-2.5 whitespace-pre-wrap break-words font-hud text-[13px] leading-relaxed text-zinc-200">
+          <span className="select-none text-zinc-500">❯ </span>
           {out}
-          {!done && <span className="dev-cursor text-emerald-400">▊</span>}
+          {!done && <span className="dev-cursor text-zinc-300">▊</span>}
         </p>
 
         {/* identity strip */}
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-emerald-500/10 pt-2.5">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-2.5">
           <Avatar
             name={msg.user.username}
             color={msg.user.avatarColor}
@@ -90,7 +90,7 @@ export function DevMessage({
           <span className="dev-name text-sm font-black tracking-wide">
             {msg.user.username}
           </span>
-          <span className="dev-chip clip-tag px-2 py-0.5 font-hud text-[9px] font-black uppercase tracking-[0.18em] text-slate-950">
+          <span className="dev-chip px-2 py-0.5 font-hud text-[9px] font-black uppercase tracking-[0.18em] text-zinc-950">
             ⚡ developer
           </span>
           <RankBadge rank={msg.user.rank} size="xs" />

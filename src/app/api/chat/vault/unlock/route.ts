@@ -41,11 +41,11 @@ export async function POST(req: Request) {
   const existingHash = await getVaultPasscodeHash();
 
   if (!existingHash) {
-    // Key-forging mode: the Vault has no key yet. Only a Founding Squad
+    // Key-forging mode: the Vault has no key yet. Only a founding
     // member may forge it.
     if (!user.founder) {
       return NextResponse.json(
-        { error: "Only a 🛡️ Founding Squad member can forge the Vault key." },
+        { error: "Only a founding member can forge the Vault key." },
         { status: 403 },
       );
     }

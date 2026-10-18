@@ -1,5 +1,5 @@
 {
-  "name": "crownember",
+  "name": "vyron",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -7,9 +7,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --import ./tests/db-stub.mjs --test tests/unit.test.ts"
+    "test": "node --import tsx --import ./tests/db-stub.mjs --test tests/unit.test.ts && node --test tests/migration.test.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
     "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",
@@ -19,6 +21,7 @@
     "tsx": "^4.23.12"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "22.19.15",
     "@types/pg": "8.18.0",

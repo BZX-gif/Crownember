@@ -1,64 +1,49 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getSeatStats } from "@/lib/access";
+import { VyMark } from "@/components/icons";
 import { RegisterForm } from "./register-form";
 import { WaitlistGate } from "./waitlist-gate";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Join Free" };
+export const metadata = { title: "Join VYRON" };
 
 export default async function RegisterPage() {
   const user = await getSessionUser();
-  if (user) redirect("/chat");
+  if (user) redirect("/forum");
 
+  // Open by default; the waitlist gate only ever appears when the owner
+  // has deliberately capped membership and the cap has filled.
   const seats = await getSeatStats();
 
   return (
     <div className="bg-grid flex min-h-[70vh] items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm">
         {seats.open ? (
           <>
-            {/* Live seat banner */}
-            <div className="mb-4 rounded-2xl border border-orange-500/40 bg-gradient-to-r from-orange-500/15 to-amber-500/5 p-4">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="uppercase tracking-wider text-orange-300">
-                  ⚡ Founding Drop · Seat #{seats.taken + 1} of {seats.max}
-                </span>
-                <span className="text-orange-400">
-                  {seats.left} LEFT
-                </span>
-              </div>
-              <div className="mt-2 grid grid-cols-10 gap-1">
-                {Array.from({ length: seats.max }, (_, i) => (
-                  <span
-                    key={i}
-                    className={
-                      i < seats.taken
-                        ? "h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500"
-                        : "h-2.5 animate-pulse rounded-full border border-dashed border-orange-500/50"
-                    }
-                  />
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] font-semibold text-slate-400">
-                Claim a seat now → earn the 🛡️ FOUNDER badge for life. When
-                it&apos;s full, it&apos;s full.
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-8 shadow-2xl">
+            <div className="rounded-3xl border border-white/10 bg-[#0a0a0a] p-8">
               <div className="text-center">
-                <span className="text-4xl">🍗</span>
-                <h1 className="mt-2 font-display text-2xl uppercase tracking-wide">
-                  Create Your <span className="text-fire">Player Account</span>
+                <VyMark className="mx-auto h-11 w-11" />
+                <h1 className="mt-5 font-display text-2xl font-bold tracking-tight text-white">
+                  Claim your name.
                 </h1>
-                <p className="mt-1.5 text-sm text-slate-400">
-                  10 seconds. Zero cost. Chat, squad up and rank up.
+                <p className="mt-2 text-sm text-zinc-500">
+                  Ten seconds. Zero cost. Forever yours.
                 </p>
               </div>
-              <RegisterForm seatNumber={seats.taken + 1} maxSeats={seats.max} />
+              <RegisterForm />
             </div>
+            <p className="mt-5 text-center text-sm text-zinc-500">
+              Already a member?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-zinc-100 underline underline-offset-4 transition hover:text-white"
+              >
+                Log in
+              </Link>
+            </p>
           </>
         ) : (
           <WaitlistGate

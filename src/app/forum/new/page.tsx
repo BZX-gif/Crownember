@@ -1,35 +1,38 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
+import { serializeUser } from "@/lib/utils";
 import { NewTopicForm } from "./new-topic-form";
 
-export const metadata = { title: "New Topic" };
+export const metadata = { title: "New Post" };
 
 export default async function NewTopicPage() {
   const user = await getSessionUser();
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <span className="text-5xl">🔒</span>
-        <h1 className="mt-4 text-2xl font-black italic">
-          Log In To <span className="text-fire">Start A Topic</span>
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Topics earn +10 XP. Great posts get likes — and likes make you
-          legendary.
+      <div className="mx-auto max-w-md px-4 py-24 text-center">
+        <p className="font-hud text-[11px] uppercase tracking-[0.3em] text-zinc-600">
+          new post
         </p>
-        <div className="mt-6 flex justify-center gap-3">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-white">
+          Log in to write.
+        </h1>
+        <p className="mt-3 text-sm text-zinc-500">
+          Posts earn +10 XP. Great writing earns likes — and likes build your
+          name.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
           <Link
             href="/login"
-            className="rounded-xl border border-white/15 px-6 py-3 text-sm font-bold transition hover:bg-white/10"
+            className="rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
           >
             Log in
           </Link>
           <Link
             href="/register"
-            className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 text-sm font-black text-slate-950 transition hover:brightness-110"
+            className="rounded-full bg-zinc-100 px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white"
           >
-            Join Free
+            Join VYRON
           </Link>
         </div>
       </div>
@@ -38,13 +41,16 @@ export default async function NewTopicPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-3xl font-black italic">
-        Start A <span className="text-fire">Topic</span>
-      </h1>
-      <p className="mt-1 text-sm text-slate-400">
-        Share your knowledge, find a squad, or start a war story thread.
+      <p className="font-hud text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+        new post
       </p>
-      <NewTopicForm />
+      <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+        Say something worth keeping.
+      </h1>
+      <p className="mb-6 mt-2 text-sm text-zinc-500">
+        Rooms forget; the feed remembers. +10 XP for every post.
+      </p>
+      <NewTopicForm user={serializeUser(user)} />
     </div>
   );
 }

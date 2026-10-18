@@ -7,6 +7,7 @@ import { messageCutoff } from "@/lib/retention";
 import { getHiddenUserIds } from "@/lib/social";
 import { getVaultUser } from "@/lib/vault";
 import { timeAgo } from "@/lib/utils";
+import { Wordmark } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -80,12 +81,12 @@ export default async function ChatHomePage() {
 
   return (
     <div className="bg-grid nice-scroll relative h-full overflow-y-auto">
-      {/* ambient ember glow */}
+      {/* ambient haze */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-64"
         style={{
           background:
-            "radial-gradient(60% 100% at 50% 0%, rgba(255,106,0,0.13), transparent 70%)",
+            "radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.06), transparent 70%)",
         }}
       />
 
@@ -95,13 +96,8 @@ export default async function ChatHomePage() {
           className="flex items-center justify-between py-3"
           style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
         >
-          <Link href="/" className="group flex items-center gap-2">
-            <span className="text-xl transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-125">
-              👑
-            </span>
-            <span className="font-display text-base uppercase tracking-wide text-white">
-              CROWN<span className="text-fire">EMBER</span>
-            </span>
+          <Link href="/" aria-label="VYRON — home" className="transition-opacity hover:opacity-80">
+            <Wordmark />
           </Link>
           <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
@@ -111,22 +107,22 @@ export default async function ChatHomePage() {
 
         {/* title */}
         <div className="mt-4">
-          <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400">
+          <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-100">
             {"// inbox"}
           </p>
-          <h1 className="display-glow mt-1 font-display text-4xl uppercase tracking-wide text-white">
+          <h1 className="mt-1 font-display text-4xl uppercase tracking-wide text-white">
             Messages
           </h1>
         </div>
 
         {!user && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-orange-500/25 bg-orange-500/5 px-4 py-3 text-sm text-slate-300">
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-zinc-300">
             <span>💬</span>
             <p className="flex-1">
               You can read the rooms —{" "}
               <Link
                 href="/login"
-                className="font-bold text-orange-400 hover:underline"
+                className="font-bold text-zinc-100 hover:underline"
               >
                 log in
               </Link>{" "}
@@ -145,33 +141,33 @@ export default async function ChatHomePage() {
               <Link
                 key={room.slug}
                 href={`/chat/${room.slug}`}
-                className="group flex items-center gap-3.5 rounded-2xl border border-white/10 bg-slate-900/70 p-4 backdrop-blur-sm transition duration-200 hover:translate-x-1 hover:border-orange-500/35 hover:bg-slate-900 sm:gap-4"
+                className="group flex items-center gap-3.5 rounded-2xl border border-white/10 bg-zinc-900/70 p-4 backdrop-blur-sm transition duration-200 hover:translate-x-1 hover:border-white/20 hover:bg-zinc-900 sm:gap-4"
               >
                 <span
-                  className="clip-tag flex h-12 w-12 shrink-0 items-center justify-center text-2xl transition-transform duration-200 group-hover:-rotate-6 sm:h-14 sm:w-14"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center text-2xl transition-transform duration-200 group-hover:-rotate-6 sm:h-14 sm:w-14"
                   style={{ backgroundColor: `${room.color}1f` }}
                 >
                   {room.icon}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="truncate font-display text-base uppercase tracking-wide text-white group-hover:text-orange-400">
+                    <span className="truncate font-display text-base uppercase tracking-wide text-white group-hover:text-zinc-100">
                       {room.name}
                     </span>
                     {locked && (
-                      <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-hud text-[9px] font-bold uppercase tracking-wider text-amber-300">
+                      <span className="shrink-0 rounded-full border border-white/20 bg-white/5 px-2 py-0.5 font-hud text-[9px] font-bold uppercase tracking-wider text-zinc-300">
                         🔒 sealed
                       </span>
                     )}
                   </span>
-                  <span className="mt-0.5 block truncate text-sm text-slate-400">
+                  <span className="mt-0.5 block truncate text-sm text-zinc-400">
                     {room.isVault ? (
                       "🔒 what happens in the vault stays in the vault"
                     ) : locked ? (
                       "Passcode required — members only"
                     ) : latest ? (
                       <>
-                        <span className="font-semibold text-slate-300">
+                        <span className="font-semibold text-zinc-300">
                           {latest.username}:
                         </span>{" "}
                         {latest.content}
@@ -188,16 +184,16 @@ export default async function ChatHomePage() {
                       {online} here
                     </span>
                   ) : (
-                    <span className="font-hud text-[10px] font-bold text-slate-600">
+                    <span className="font-hud text-[10px] font-bold text-zinc-600">
                       quiet
                     </span>
                   )}
                   {latest && (
-                    <span className="font-hud text-[10px] text-slate-600">
+                    <span className="font-hud text-[10px] text-zinc-600">
                       {timeAgo(latest.createdAt)}
                     </span>
                   )}
-                  <span className="text-lg text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-orange-400">
+                  <span className="text-lg text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-100">
                     ›
                   </span>
                 </span>
@@ -207,7 +203,7 @@ export default async function ChatHomePage() {
         </div>
 
         {/* footer note */}
-        <p className="mt-6 text-center font-hud text-[10px] uppercase tracking-wider text-slate-600">
+        <p className="mt-6 text-center font-hud text-[10px] uppercase tracking-wider text-zinc-600">
           ⏳ public rooms burn after 3h · 🔐 vault burns after 14 min
         </p>
       </div>

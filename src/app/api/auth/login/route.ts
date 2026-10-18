@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "☠️ This account has been permanently exiled from Crownember. The gates will not open for you.",
+          "This account has been permanently suspended from VYRON.",
         code: "BANNED_PERM",
       },
       { status: 403 },

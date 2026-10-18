@@ -25,8 +25,8 @@ export function Avatar({
     <div className={cn("relative shrink-0", className)}>
       <div
         className={cn(
-          "relative flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-2",
-          dev ? "ring-emerald-400/60" : "ring-white/10",
+          "relative flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-1",
+          dev ? "ring-white/60" : "ring-white/10",
         )}
         style={{
           width: size,

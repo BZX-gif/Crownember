@@ -1,4 +1,4 @@
-# 🚀 Take Crownember Live — 100% Free (₹0 / $0)
+# 🚀 Take VYRON Live — 100% Free (₹0 / $0)
 
 Your site already works. To let **real players** chat with each other from
 their phones, you just need to put it on the internet. Everything below is a
@@ -162,7 +162,7 @@ on the first deploy after this update.
 
 ## 📣 Getting your first 10 players (also free)
 
-1. Share your link in Free Fire Facebook groups + WhatsApp status
+1. Share your link where your people already are — group chats, Discords, WhatsApp status
 2. Post a YouTube Short: *"I built a website with only 10 seats for FF
    players"* — scarcity gets clicks
 3. Drop the link in FF Discord servers with: *"First 10 players get the

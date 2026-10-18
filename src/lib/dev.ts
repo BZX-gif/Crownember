@@ -4,11 +4,11 @@ import { users } from "@/db/schema";
 import type { AuthUser } from "@/lib/auth";
 
 /**
- * Developer perk — single source of truth: users.is_dev.
+ * Developer mark — single source of truth: users.is_dev.
  *
  * The owner grants it directly in the database:
  *   update users set is_dev = (username = 'PlayerName');
- * (one line: crowns that player, uncrowns everyone else)
+ * (one line: marks that member, unmarks everyone else)
  *
  * Founders can also claim it in-app; first claim wins until the owner
  * moves the crown via SQL.
@@ -19,7 +19,7 @@ export async function claimDevFlair(
   if (!user.founder) {
     return {
       ok: false,
-      error: "Only the 🛡️ Founding Squad can claim the Developer Crown.",
+      error: "Only founding members can claim the developer mark.",
     };
   }
 
@@ -33,12 +33,12 @@ export async function claimDevFlair(
       return {
         ok: false,
         error:
-          "⚡ The Developer Crown is already claimed. One builder, one signature.",
+          "The developer mark is already claimed. One builder, one signature.",
       };
     }
   }
 
-  // Crown the claimant, uncrown everyone else — one signature at a time.
+  // Mark the claimant, unmark everyone else — one signature at a time.
   await db
     .update(users)
     .set({ isDev: sql`${users.id} = ${user.id}` })

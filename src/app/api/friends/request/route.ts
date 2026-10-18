@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 import {
   checkRateLimit,
   tooManyRequests,
@@ -25,18 +26,25 @@ export async function POST(req: Request) {
   }
   const target = await findUserByUsername(String(body.username ?? ""));
   if (!target) {
-    return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    return NextResponse.json({ error: "Member not found." }, { status: 404 });
   }
 
   const result = await sendFriendRequest(user.id, target.id);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }
+  // Instant-accept path: BOTH sides get told — the original requester that
+  // their request was accepted, the acceptor that they connected.
+  await createNotification({
+    userId: target.id,
+    actorId: user.id,
+    type: result.autoAccepted ? "friend_accept" : "friend_request",
+  });
   return NextResponse.json({
     ok: true,
     autoAccepted: result.autoAccepted ?? false,
     message: result.autoAccepted
-      ? "🤝 They had already sent you a request — you're squad now!"
-      : "⚡ Friend request dispatched.",
+      ? "They had already sent you a request — you're connected now."
+      : "Friend request sent.",
   });
 }

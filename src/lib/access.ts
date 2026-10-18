@@ -3,13 +3,20 @@ import { db } from "@/db";
 import { settings, users, waitlist } from "@/db/schema";
 
 /**
- * Crownember launches as an exclusive 10-player "Founding Squad".
- * - The first 10 REAL players (bots excluded) claim the founding seats.
- * - After that, registration closes and a waitlist opens.
- * - The cap lives in the `settings` table (key: max_players) so it can
- *   be raised later without code changes.
+ * VYRON is open by default.
+ *
+ * - Registration is unlimited unless the owner deliberately sets a cap in
+ *   the `settings` table (key: max_players). The one-time build migration
+ *   lifts the legacy Crownember launch cap ('10' → effectively unlimited);
+ *   any other owner-chosen value is respected forever.
+ * - FOUNDING_LIMIT only decides who carries the 🛡 Founder mark: the first
+ *   10 real members ever (bots excluded). It is a badge boundary, not a
+ *   registration gate.
+ * - If a cap IS set and fills up, registration closes and /register shows
+ *   the waitlist gate — the mechanism still works, unchanged.
  */
 export const FOUNDING_LIMIT = 10;
+export const OPEN_REGISTRATION_LIMIT = 10_000_000;
 
 export interface SeatStats {
   max: number;
@@ -26,7 +33,9 @@ export async function getMaxPlayers(): Promise<number> {
     .where(eq(settings.key, "max_players"))
     .limit(1);
   const parsed = Number(rows[0]?.value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : FOUNDING_LIMIT;
+  return Number.isFinite(parsed) && parsed > 0
+    ? parsed
+    : OPEN_REGISTRATION_LIMIT;
 }
 
 export async function getSeatStats(): Promise<SeatStats> {
@@ -47,10 +56,4 @@ export async function getSeatStats(): Promise<SeatStats> {
     open: taken < max,
     waitlistCount: Number(row?.waitlist ?? 0),
   };
-}
-
-/** Seat number a new player would claim (1-based), or null when full. */
-export async function nextSeatNumber(): Promise<number | null> {
-  const stats = await getSeatStats();
-  return stats.open ? stats.taken + 1 : null;
 }

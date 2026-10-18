@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   }
   if (uid && !/^\d{6,15}$/.test(uid)) {
     return NextResponse.json(
-      { error: "Free Fire UID should be a number (6-15 digits)." },
+      { error: "Profile ID should be a number (6-15 digits)." },
       { status: 400 },
     );
   }
@@ -73,23 +73,24 @@ export async function POST(req: Request) {
     .limit(1);
   if (existing.length > 0) {
     return NextResponse.json(
-      { error: "That username is already taken. Pick another IGN!" },
+      { error: "That username is already taken. Try another one." },
       { status: 409 },
     );
   }
 
-  // Founding Squad gate: only 10 real players allowed at launch.
+  // VYRON is open by default; the gate only fires when the owner set a cap.
   const stats = await getSeatStats();
   if (!stats.open) {
     return NextResponse.json(
       {
-        error: `The Founding Squad is FULL (${stats.taken}/${stats.max} seats taken). Join the waitlist!`,
+        error: `Registration is currently full (${stats.taken}/${stats.max} members). Join the waitlist!`,
         seats: stats,
       },
       { status: 403 },
     );
   }
 
+  // The 🛡 Founder mark belongs to the first 10 real members, forever.
   const isFounder = stats.taken < FOUNDING_LIMIT;
   let created: typeof users.$inferSelect;
   try {

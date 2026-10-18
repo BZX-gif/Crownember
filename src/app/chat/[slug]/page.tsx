@@ -39,7 +39,7 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
       <div className="bg-grid flex h-[100dvh] items-center justify-center overflow-y-auto p-4">
         <div className="w-full max-w-md">
           <VaultGate needsSetup={!vaultHash} isFounder={Boolean(user?.founder)} username={user?.username ?? null} />
-          <Link href="/chat" className="mt-4 block text-center font-hud text-xs font-bold uppercase tracking-widest text-slate-500 transition hover:text-orange-400">
+          <Link href="/chat" className="mt-4 block text-center font-hud text-xs font-bold uppercase tracking-widest text-zinc-500 transition hover:text-zinc-100">
             ← back to inbox
           </Link>
         </div>

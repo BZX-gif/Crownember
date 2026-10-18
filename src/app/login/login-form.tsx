@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const INPUT_CLS =
+  "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 transition focus:border-white/40 focus:outline-none";
+
 export function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +27,7 @@ export function LoginForm() {
         setError(data.error ?? "Login failed. Try again.");
         return;
       }
-      window.location.href = "/chat";
+      window.location.href = "/forum";
     } catch {
       setError("Network error — try again.");
     } finally {
@@ -33,22 +36,28 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-4">
+    <form onSubmit={submit} className="mt-7 space-y-4">
       <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Username / IGN
+        <label
+          htmlFor="username"
+          className="mb-1.5 block font-hud text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500"
+        >
+          Username
         </label>
         <input
           id="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="BooyahKing"
+          placeholder="yourname"
           autoComplete="username"
-          className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          className={INPUT_CLS}
         />
       </div>
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+        <label
+          htmlFor="password"
+          className="mb-1.5 block font-hud text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500"
+        >
           Password
         </label>
         <input
@@ -58,13 +67,13 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           autoComplete="current-password"
-          className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          className={INPUT_CLS}
         />
       </div>
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400"
+          className="rounded-xl border border-rose-400/25 bg-rose-500/[0.07] px-4 py-2.5 text-sm text-rose-200"
         >
           {error}
         </p>
@@ -72,9 +81,9 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={busy || !username.trim() || !password}
-        className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+        className="w-full rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold text-black transition hover:bg-white active:scale-[0.99] disabled:opacity-30"
       >
-        {busy ? "Dropping in…" : "Log In & Booyah"}
+        {busy ? "Opening…" : "Log in"}
       </button>
     </form>
   );

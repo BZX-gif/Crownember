@@ -5,6 +5,7 @@ import { replies, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { containsInjection } from "@/lib/antibot";
 import { enforceAbuseRule, gateVerdict } from "@/lib/moderation";
+import { createNotification } from "@/lib/notifications";
 import { MAX_REPLY_CONTENT, XP_AWARDS } from "@/lib/ranks";
 import { checkRateLimit, tooManyRequests } from "@/lib/rate-limit";
 import { serializeReply } from "@/lib/utils";
@@ -67,11 +68,12 @@ export async function POST(
   }
 
   const topicRows = await db
-    .select({ id: topics.id })
+    .select({ id: topics.id, userId: topics.userId, title: topics.title })
     .from(topics)
     .where(eq(topics.id, topicId))
     .limit(1);
-  if (!topicRows[0]) {
+  const topic = topicRows[0];
+  if (!topic) {
     return NextResponse.json({ error: "Topic not found." }, { status: 404 });
   }
 
@@ -95,6 +97,14 @@ export async function POST(
         lastSeenAt: new Date(),
       })
       .where(eq(users.id, user.id)),
+    // Tell the author (silently skipped for self-replies and sealed pairs)
+    createNotification({
+      userId: topic.userId,
+      actorId: user.id,
+      type: "reply",
+      topicId,
+      body: content.slice(0, 140),
+    }),
   ]);
 
   return NextResponse.json({

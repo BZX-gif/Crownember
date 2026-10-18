@@ -65,11 +65,11 @@ function AbusePanel({
       <div className="border-y-2 border-rose-500 bg-black px-4 py-6 text-center">
         <p className="text-4xl">☠️</p>
         <p className="mt-2 font-display text-lg uppercase tracking-wide text-rose-500">
-          Permanently exiled
+          Permanently suspended
         </p>
-        <p className="mt-1 text-sm text-slate-400">{abuse.message}</p>
-        <p className="mt-2 font-hud text-[11px] uppercase tracking-widest text-slate-600">
-          disconnecting you from the arena…
+        <p className="mt-1 text-sm text-zinc-400">{abuse.message}</p>
+        <p className="mt-2 font-hud text-[11px] uppercase tracking-widest text-zinc-600">
+          this account is being signed out…
         </p>
       </div>
     );
@@ -79,10 +79,10 @@ function AbusePanel({
       <div className="border-y-2 border-rose-500/60 bg-rose-950/40 px-4 py-5 text-center">
         <p className="animate-pulse text-3xl">🔨</p>
         <p className="mt-1.5 font-display text-base uppercase tracking-wide text-rose-400">
-          The power of darkness holds you
+          You are muted
         </p>
-        <p className="mt-1 text-xs text-slate-400">
-          Banned from messaging. Your sentence ends in
+        <p className="mt-1 text-xs text-zinc-400">
+          Messaging is unavailable for
         </p>
         <div className="mt-2">
           {abuse.mutedUntil && (
@@ -98,8 +98,8 @@ function AbusePanel({
       className={cn(
         "flex items-center gap-3 border-y px-4 py-3",
         first
-          ? "border-amber-400/40 bg-amber-500/10"
-          : "border-orange-500/50 bg-orange-500/10",
+          ? "border-white/20 bg-white/5"
+          : "border-white/20 bg-white/5",
       )}
     >
       <span className={cn("text-2xl", !first && "animate-pulse")}>
@@ -108,14 +108,14 @@ function AbusePanel({
       <p
         className={cn(
           "flex-1 text-sm font-semibold",
-          first ? "text-amber-300" : "text-orange-300",
+          first ? "text-zinc-300" : "text-zinc-100",
         )}
       >
         {abuse.message}
       </p>
       <button
         onClick={onDismiss}
-        className="font-hud text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300"
+        className="font-hud text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
       >
         understood
       </button>
@@ -161,7 +161,7 @@ export function ChatRoom({
       if (res.ok && d.dev) {
         setIAmDev(true);
       } else {
-        setError(d.error ?? "The Developer Crown is already claimed.");
+        setError(d.error ?? "The developer mark is already claimed.");
       }
     } catch {
       setError("Network error — try again.");
@@ -212,7 +212,7 @@ export function ChatRoom({
       // Restore judgement state after a refresh
       if (data.me?.dev) setIAmDev(true);
       if (data.me?.banned) {
-        setAbuse({ code: "BANNED_PERM", message: "Exiled from Crownember." });
+        setAbuse({ code: "BANNED_PERM", message: "This account has been permanently suspended." });
       } else if (
         data.me?.mutedUntil &&
         new Date(data.me.mutedUntil).getTime() > Date.now()
@@ -222,7 +222,7 @@ export function ChatRoom({
             ? prev
             : {
                 code: "MUTED",
-                message: "Banned from messaging.",
+                message: "You are muted.",
                 mutedUntil: data.me.mutedUntil,
               },
         );
@@ -319,16 +319,16 @@ export function ChatRoom({
   }
 
   return (
-    <section className="flex h-[100dvh] flex-col overflow-hidden bg-slate-900/60">
+    <section className="flex h-[100dvh] flex-col overflow-hidden bg-zinc-900/60">
       {/* Room header */}
       <div
-        className="flex items-center gap-2.5 border-b border-white/10 bg-slate-900/90 px-3 sm:gap-3 sm:px-4"
+        className="flex items-center gap-2.5 border-b border-white/10 bg-zinc-900/90 px-3 sm:gap-3 sm:px-4"
         style={{ paddingTop: "calc(0.625rem + env(safe-area-inset-top, 0px))", paddingBottom: "0.625rem" }}
       >
         <Link
           href="/chat"
           title="Back to inbox"
-          className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-white/10 hover:text-white"
+          className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-zinc-400 transition hover:bg-white/10 hover:text-white"
         >
           ←
         </Link>
@@ -342,10 +342,10 @@ export function ChatRoom({
           <h1 className="truncate font-display text-lg uppercase tracking-wide">
             {room.name}
           </h1>
-          <p className="truncate text-xs text-slate-400">{room.description}</p>
+          <p className="truncate text-xs text-zinc-400">{room.description}</p>
         </div>
-        <span className="clip-tag hidden bg-orange-500/15 px-2.5 py-1 font-hud text-[10px] font-bold text-orange-400 sm:block">
-          TTL 3H
+        <span className="hidden bg-white/5 px-2.5 py-1 font-hud text-[10px] font-bold text-zinc-100 sm:block">
+          fades · 3h
         </span>
         <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
@@ -354,9 +354,9 @@ export function ChatRoom({
       </div>
 
       {/* Ephemeral notice */}
-      <div className="flex items-center gap-2 border-b border-white/10 bg-amber-500/5 px-4 py-1.5">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-4 py-1.5">
         <span className="text-xs">{vault ? "🔐" : "⏳"}</span>
-        <p className="font-hud text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400/80">
+        <p className="font-hud text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-300/80">
           {vault ? (
             <>
               sealed · messages burn 14 min after send · voice dies on exit
@@ -367,7 +367,7 @@ export function ChatRoom({
               goes in the{" "}
               <Link
                 href="/forum"
-                className="underline decoration-dotted underline-offset-2 hover:text-amber-300"
+                className="underline decoration-dotted underline-offset-2 hover:text-zinc-300"
               >
                 forum
               </Link>
@@ -375,10 +375,10 @@ export function ChatRoom({
           )}
         </p>
         <span
-          className="ml-auto hidden shrink-0 font-hud text-[10px] font-bold tracking-widest text-slate-600 sm:block"
-          title="Abuse policy: surveillance → final warning → 2h ban → permanent exile"
+          className="ml-auto hidden shrink-0 font-hud text-[10px] font-bold tracking-widest text-zinc-600 sm:block"
+          title="Abuse policy: warning → final warning → 2h mute → permanent suspension"
         >
-          👁 → ⚠️ → 🔨 → ☠️
+          civil or silent
         </span>
       </div>
 
@@ -389,15 +389,15 @@ export function ChatRoom({
         className="nice-scroll flex-1 space-y-4 overflow-y-auto px-4 py-4"
       >
         {!loaded && (
-          <p className="pt-8 text-center text-sm text-slate-500">
-            Connecting to the lobby… 🔥
+          <p className="pt-8 text-center text-sm text-zinc-500">
+            Connecting…
           </p>
         )}
         {loaded && messages.length === 0 && (
           <div className="pt-8 text-center">
-            <p className="text-4xl">🍗</p>
-            <p className="mt-2 text-sm text-slate-400">
-              No messages yet. Be the first to say hi!
+            <p className="font-hud text-xs uppercase tracking-[0.3em] text-zinc-700">quiet</p>
+            <p className="mt-2 text-sm text-zinc-400">
+              No messages yet. Say the first thing.
             </p>
           </div>
         )}
@@ -417,7 +417,7 @@ export function ChatRoom({
                     href={`/players/${encodeURIComponent(m.user.username)}`}
                     className={cn(
                       "text-[11px] font-bold hover:underline",
-                      mine ? "text-orange-400" : "text-slate-400",
+                      mine ? "text-zinc-100" : "text-zinc-400",
                     )}
                   >
                     {m.user.username}
@@ -446,7 +446,7 @@ export function ChatRoom({
                     href={`/players/${encodeURIComponent(m.user.username)}`}
                     className={cn(
                       "text-sm font-bold hover:underline",
-                      mine ? "text-orange-400" : "text-slate-200",
+                      mine ? "text-zinc-100" : "text-zinc-200",
                     )}
                   >
                     {m.user.username}
@@ -458,7 +458,7 @@ export function ChatRoom({
                 <p
                   className={cn(
                     "mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                    mine ? "text-orange-50" : "text-slate-100",
+                    mine ? "text-white" : "text-zinc-200",
                   )}
                 >
                   {m.content}
@@ -487,7 +487,7 @@ export function ChatRoom({
       {user ? (
         <form
           onSubmit={submit}
-          className="border-t border-white/10 bg-slate-900/90 p-2.5 sm:p-3"
+          className="border-t border-white/10 bg-zinc-900/90 p-2.5 sm:p-3"
           style={{
             paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom, 0px))",
           }}
@@ -495,25 +495,25 @@ export function ChatRoom({
           {user.founder && (
             <div className="mb-2 flex items-center gap-2">
               {iAmDev ? (
-                <span className="dev-chip clip-tag px-2.5 py-1 font-hud text-[9px] font-black uppercase tracking-[0.18em] text-slate-950">
-                  ⚡ dev flair active — your messages ship signed
+                <span className="dev-chip px-2.5 py-1 font-hud text-[9px] font-black uppercase tracking-[0.18em] text-zinc-950">
+                  ⚡ developer flair active — your messages arrive signed
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={claimDevFlairClick}
-                  className="border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-hud text-[9px] font-bold uppercase tracking-[0.15em] text-amber-300 transition hover:bg-amber-500/20"
+                  className="border border-white/20 bg-white/5 px-2.5 py-1 font-hud text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-300 transition hover:bg-white/5"
                 >
-                  ⚡ claim developer flair
+                  ⚡ developer flair
                 </button>
               )}
             </div>
           )}
           {stickerOpen && (
-            <div className="nice-scroll mb-2 max-h-56 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/80 p-2">
+            <div className="nice-scroll mb-2 max-h-56 overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/80 p-2">
               {STICKER_SECTIONS.map((section) => (
                 <div key={section.label} className="mb-1.5 last:mb-0">
-                  <p className="px-1 pb-1 font-hud text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                  <p className="px-1 pb-1 font-hud text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
                     {section.label}
                   </p>
                   <div className="grid grid-cols-8 gap-0.5 sm:gap-1">
@@ -543,7 +543,7 @@ export function ChatRoom({
               className={cn(
                 "rounded-lg border px-2 py-0.5 text-sm transition",
                 stickerOpen
-                  ? "border-orange-500/50 bg-orange-500/15"
+                  ? "border-white/20 bg-white/5"
                   : "border-white/5 bg-white/5 hover:bg-white/15",
               )}
             >
@@ -560,7 +560,7 @@ export function ChatRoom({
                   {e}
                 </button>
               ))}
-            <span className="ml-auto self-center font-hud text-[10px] text-slate-500">
+            <span className="ml-auto self-center font-hud text-[10px] text-zinc-500">
               {input.length}/{MAX_LEN}
             </span>
           </div>
@@ -572,20 +572,20 @@ export function ChatRoom({
               placeholder={
                 abuse && (abuse.code === "MUTED" || abuse.code === "BANNED_PERM")
                   ? "You are silenced…"
-                  : `Message #${room.name.toLowerCase()}…`
+                  : `Message ${room.name}…`
               }
               disabled={
                 abuse !== null &&
                 (abuse.code === "MUTED" || abuse.code === "BANNED_PERM")
               }
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-2.5 text-base text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-zinc-950/70 px-4 py-2.5 text-base text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
             />
             <button
               type="submit"
               disabled={busy || !input.trim()}
-              className="clip-btn bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-2.5 font-display text-xs uppercase tracking-widest text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+              className="bg-zinc-100 px-6 py-2.5 font-display text-xs uppercase tracking-widest text-zinc-950 transition hover:-translate-y-0.5 hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
             >
-              {busy ? "…" : "Fire →"}
+              {busy ? "…" : "Send →"}
             </button>
           </div>
           {error && (
@@ -593,12 +593,12 @@ export function ChatRoom({
           )}
         </form>
       ) : (
-        <div className="border-t border-white/10 bg-slate-900/90 p-4">
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 text-center sm:flex-row sm:text-left">
+        <div className="border-t border-white/10 bg-zinc-900/90 p-4">
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-white/20 bg-white/5 p-4 text-center sm:flex-row sm:text-left">
             <span className="text-2xl">🔒</span>
-            <p className="flex-1 text-sm text-slate-300">
+            <p className="flex-1 text-sm text-zinc-300">
               <span className="font-bold text-white">Log in to join the chat.</span>{" "}
-              Earn XP for every message and climb the ranks.
+              Every message earns XP. Rooms fade; reputation stays.
             </p>
             <div className="flex gap-2">
               <Link
@@ -609,9 +609,9 @@ export function ChatRoom({
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-sm font-black text-slate-950 transition hover:brightness-110"
+                className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-black text-zinc-950 transition hover:brightness-110"
               >
-                Join Free
+                Join VYRON
               </Link>
             </div>
           </div>

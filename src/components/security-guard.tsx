@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Crownember Guard — honest client-side hygiene, not a false promise.
+ * VYRON Guard — honest client-side hygiene, not a false promise.
  *
  * What it does:
  * - Signs the console for anyone poking around (fun, harmless).
@@ -17,18 +17,18 @@ import { useEffect } from "react";
  * - Claim incidents are logged. Nothing here is logged, and pretending
  *   otherwise would be a lie.
  *
- * The real shield is server-side: every message, XP point, seat and Vault
+ * The real shield is server-side: every post, reaction, XP point and Vault
  * unlock is verified on the server. Editing the page changes nothing.
  */
 export function SecurityGuard() {
   useEffect(() => {
     console.log(
-      "%c👑 CROWNEMBER",
-      "color:#ff6a00;font-size:22px;font-weight:900;font-style:italic;",
+      "%cVYRON",
+      "color:#f5f5f5;font-size:22px;font-weight:900;letter-spacing:0.3em;",
     );
     console.log(
-      "%cEvery message, XP point and seat is verified on the server.\nEditing code here changes nothing — have fun exploring.",
-      "color:#94a3b8;font-size:12px;",
+      "%cEvery post, reaction and XP point is verified on the server.\nEditing code here changes nothing — have fun exploring.",
+      "color:#8f8f8f;font-size:12px;",
     );
   }, []);
 

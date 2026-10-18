@@ -73,7 +73,7 @@ export function DmInbox({
           className="pointer-events-none absolute inset-x-0 top-0 h-56"
           style={{
             background:
-              "radial-gradient(60% 100% at 50% 0%, rgba(255,106,0,0.12), transparent 70%)",
+              "radial-gradient(60% 100% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)",
           }}
         />
 
@@ -83,32 +83,32 @@ export function DmInbox({
           style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top, 0px))" }}
         >
           <div>
-            <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400">
+            <p className="font-hud text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-100">
               {"// private lines"}
             </p>
-            <h1 className="display-glow mt-1 font-display text-3xl uppercase tracking-wide text-white">
+            <h1 className="mt-1 font-display text-3xl uppercase tracking-wide text-white">
               Messages
             </h1>
           </div>
           <Link
             href="/players"
-            className="clip-btn bg-white/10 px-4 py-2 font-hud text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-white/20"
+            className="bg-white/10 px-4 py-2 font-hud text-[10px] font-bold uppercase tracking-wider text-white transition hover:bg-white/20"
           >
-            + find players
+            find members
           </Link>
         </div>
 
         {/* friend requests */}
         {(incomingList.length > 0 || outgoingList.length > 0) && (
           <section className="relative mt-4">
-            <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+            <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
               ⚡ friend requests
             </h2>
             <div className="mt-2 space-y-2">
               {incomingList.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3.5"
+                  className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/5 p-3.5"
                 >
                   <Link href={`/players/${encodeURIComponent(u.username)}`}>
                     <Avatar name={u.username} color={u.avatarColor} size={42} dev={u.dev} />
@@ -121,21 +121,21 @@ export function DmInbox({
                       {u.dev && <DevChip size="xs" />}
                       {u.founder && <FounderChip size="xs" />}
                     </p>
-                    <p className="font-hud text-[10px] uppercase tracking-wider text-amber-400/80">
-                      wants to join your squad
+                    <p className="font-hud text-[10px] uppercase tracking-wider text-zinc-300/80">
+                      wants to connect
                     </p>
                   </div>
                   <button
                     onClick={() => respond(u.username, true)}
                     disabled={busyName === u.username}
-                    className="clip-btn bg-gradient-to-r from-emerald-500 to-teal-400 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-slate-950 transition hover:brightness-110 disabled:opacity-40"
+                    className="bg-zinc-100 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-zinc-950 transition hover:bg-white disabled:opacity-40"
                   >
                     accept
                   </button>
                   <button
                     onClick={() => respond(u.username, false)}
                     disabled={busyName === u.username}
-                    className="border border-white/10 bg-white/5 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-slate-400 transition hover:text-slate-200 disabled:opacity-40"
+                    className="border border-white/10 bg-white/5 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-zinc-400 transition hover:text-zinc-200 disabled:opacity-40"
                   >
                     pass
                   </button>
@@ -144,19 +144,19 @@ export function DmInbox({
               {outgoingList.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-3.5"
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-900/60 p-3.5"
                 >
                   <Avatar name={u.username} color={u.avatarColor} size={42} dev={u.dev} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold text-white">{u.username}</p>
-                    <p className="font-hud text-[10px] uppercase tracking-wider text-slate-500">
+                    <p className="font-hud text-[10px] uppercase tracking-wider text-zinc-500">
                       ⏳ request pending
                     </p>
                   </div>
                   <button
                     onClick={() => cancel(u.username)}
                     disabled={busyName === u.username}
-                    className="border border-white/10 bg-white/5 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-slate-400 transition hover:text-slate-200 disabled:opacity-40"
+                    className="border border-white/10 bg-white/5 px-3.5 py-2 font-hud text-[10px] font-bold uppercase text-zinc-400 transition hover:text-zinc-200 disabled:opacity-40"
                   >
                     cancel
                   </button>
@@ -168,22 +168,22 @@ export function DmInbox({
 
         {/* conversations */}
         <section className="relative mt-6">
-          <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+          <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
             ✉️ conversations{" "}
-            <span className="text-slate-600">· burn after 3h</span>
+            <span className="text-zinc-600">· burn after 3h</span>
           </h2>
           <div className="mt-2 space-y-2">
             {threads.length === 0 && (
-              <p className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-center text-sm text-slate-500">
+              <p className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 text-center text-sm text-zinc-500">
                 No private lines yet. Open a player&apos;s profile and hit{" "}
-                <span className="font-bold text-slate-300">✉️ message</span>.
+                <span className="font-bold text-zinc-300">✉️ message</span>.
               </p>
             )}
             {threads.map((t) => (
               <Link
                 key={t.other.id}
                 href={`/messages/${encodeURIComponent(t.other.username)}`}
-                className="group flex items-center gap-3.5 rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition duration-200 hover:translate-x-1 hover:border-orange-500/35 hover:bg-slate-900"
+                className="group flex items-center gap-3.5 rounded-2xl border border-white/10 bg-zinc-900/70 p-4 transition duration-200 hover:translate-x-1 hover:border-white/20 hover:bg-zinc-900"
               >
                 <Avatar
                   name={t.other.username}
@@ -193,21 +193,21 @@ export function DmInbox({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="truncate font-display text-sm uppercase tracking-wide text-white group-hover:text-orange-400">
+                    <span className="truncate font-display text-sm uppercase tracking-wide text-white group-hover:text-zinc-100">
                       {t.other.username}
                     </span>
                     <RankBadge rank={t.other.rank} size="xs" />
                   </span>
-                  <span className="mt-0.5 block truncate text-sm text-slate-400">
+                  <span className="mt-0.5 block truncate text-sm text-zinc-400">
                     {t.lastFromMe ? "you: " : ""}
                     {t.lastContent}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className="font-hud text-[10px] text-slate-600">
+                  <span className="font-hud text-[10px] text-zinc-600">
                     {timeAgo(t.lastAt)}
                   </span>
-                  <span className="text-lg text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-orange-400">
+                  <span className="text-lg text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-100">
                     ›
                   </span>
                 </span>
@@ -216,11 +216,11 @@ export function DmInbox({
           </div>
         </section>
 
-        {/* squad */}
+        {/* circle */}
         {friendList.length > 0 && (
           <section className="relative mt-6">
-            <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-              🤝 your squad · {friendList.length}
+            <h2 className="font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              your circle · {friendList.length}
             </h2>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {friendList.map((u) => (
@@ -228,7 +228,7 @@ export function DmInbox({
                   key={u.id}
                   href={`/messages/${encodeURIComponent(u.username)}`}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-2xl border border-white/10 bg-slate-900/70 p-3 transition hover:border-emerald-500/40"
+                    "flex items-center gap-2.5 rounded-2xl border border-white/10 bg-zinc-900/70 p-3 transition hover:border-emerald-500/40"
                   )}
                 >
                   <Avatar name={u.username} color={u.avatarColor} size={34} dev={u.dev} />
@@ -237,7 +237,7 @@ export function DmInbox({
                       {u.username}
                     </span>
                     <span className="font-hud text-[9px] uppercase tracking-wider text-emerald-400/80">
-                      squad
+                      circle
                     </span>
                   </span>
                 </Link>

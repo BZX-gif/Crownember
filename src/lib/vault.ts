@@ -7,7 +7,7 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import type { AuthUser } from "@/lib/auth";
 
 /**
- * THE VAULT — Crownember's password-sealed inner circle.
+ * THE VAULT — VYRON's passcode-sealed inner circle.
  *
  * Security model:
  * - The passcode exists ONLY as an scrypt hash in the database. No client

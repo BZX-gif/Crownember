@@ -2,16 +2,12 @@
 
 import { useState } from "react";
 
-export function RegisterForm({
-  seatNumber,
-  maxSeats,
-}: {
-  seatNumber?: number;
-  maxSeats?: number;
-}) {
+const INPUT_CLS =
+  "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[15px] text-white placeholder:text-zinc-600 transition focus:border-white/40 focus:outline-none";
+
+export function RegisterForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [uid, setUid] = useState("");
   const [bio, setBio] = useState("");
   const [honey, setHoney] = useState("");
   const [error, setError] = useState("");
@@ -29,7 +25,6 @@ export function RegisterForm({
         body: JSON.stringify({
           username: username.trim(),
           password,
-          uid: uid.trim(),
           bio: bio.trim(),
           website: honey, // honeypot — real users never fill this
         }),
@@ -37,9 +32,9 @@ export function RegisterForm({
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 403) {
-          // Seats filled up while the form was open
+          // A cap filled up while the form was open
           setError(
-            data.error ?? "The Founding Squad just filled up. Join the waitlist!",
+            data.error ?? "Registration just filled up. Join the waitlist!",
           );
           setTimeout(() => window.location.reload(), 2500);
           return;
@@ -47,7 +42,7 @@ export function RegisterForm({
         setError(data.error ?? "Registration failed. Try again.");
         return;
       }
-      window.location.href = "/chat";
+      window.location.href = "/forum";
     } catch {
       setError("Network error — try again.");
     } finally {
@@ -55,11 +50,8 @@ export function RegisterForm({
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none";
-
   return (
-    <form onSubmit={submit} className="mt-6 space-y-4">
+    <form onSubmit={submit} className="mt-7 space-y-4">
       {/* Honeypot: invisible to humans, irresistible to bots */}
       <input
         type="text"
@@ -71,27 +63,36 @@ export function RegisterForm({
         aria-hidden="true"
       />
       <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Username / IGN *
+        <label
+          htmlFor="username"
+          className="mb-1.5 block font-hud text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500"
+        >
+          Username
         </label>
         <input
           id="username"
           value={username}
-          onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-          placeholder="BooyahKing"
+          onChange={(e) =>
+            setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))
+          }
+          placeholder="yourname"
           maxLength={16}
           minLength={3}
           autoComplete="username"
           required
-          className={inputCls}
+          className={INPUT_CLS}
         />
-        <p className="mt-1 text-[11px] text-slate-500">
-          3-16 characters: letters, numbers, underscore.
+        <p className="mt-1.5 text-xs text-zinc-600">
+          3–16 characters: letters, numbers, underscore. This is your
+          permanent address.
         </p>
       </div>
       <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Password *
+        <label
+          htmlFor="password"
+          className="mb-1.5 block font-hud text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500"
+        >
+          Password
         </label>
         <input
           id="password"
@@ -103,54 +104,41 @@ export function RegisterForm({
           maxLength={128}
           autoComplete="new-password"
           required
-          className={inputCls}
+          className={INPUT_CLS}
         />
-        <p className="mt-1 text-[11px] text-slate-500">
-          At least 8 characters. Make it something only you would pick.
+        <p className="mt-1.5 text-xs text-zinc-600">
+          Stored only as a salted hash. Make it something only you would pick.
         </p>
       </div>
       <div>
-        <label htmlFor="uid" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Free Fire UID <span className="text-slate-600">(optional)</span>
-        </label>
-        <input
-          id="uid"
-          value={uid}
-          onChange={(e) => setUid(e.target.value.replace(/\D/g, "").slice(0, 15))}
-          placeholder="224587013"
-          className={inputCls}
-        />
-      </div>
-      <div>
-        <label htmlFor="bio" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Bio <span className="text-slate-600">(optional)</span>
+        <label
+          htmlFor="bio"
+          className="mb-1.5 block font-hud text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500"
+        >
+          Bio <span className="text-zinc-700">(optional)</span>
         </label>
         <input
           id="bio"
           value={bio}
           onChange={(e) => setBio(e.target.value.slice(0, 200))}
-          placeholder="Rusher main. Clutch or die 🎯"
-          className={inputCls}
+          placeholder="One line about you."
+          className={INPUT_CLS}
         />
       </div>
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400"
+          className="rounded-xl border border-rose-400/25 bg-rose-500/[0.07] px-4 py-2.5 text-sm text-rose-200"
         >
           {error}
         </p>
       )}
       <button
         type="submit"
-        disabled={busy || !username.trim() || !password}
-        className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+        disabled={busy || !username.trim() || password.length < 8}
+        className="w-full rounded-full bg-zinc-100 px-4 py-3 text-sm font-semibold text-black transition hover:bg-white active:scale-[0.99] disabled:opacity-30"
       >
-        {busy
-          ? "Creating…"
-          : seatNumber
-            ? `Claim Seat #${seatNumber} of ${maxSeats} — Free Forever`
-            : "Create Account — Free Forever"}
+        {busy ? "Creating…" : "Create account — free forever"}
       </button>
     </form>
   );

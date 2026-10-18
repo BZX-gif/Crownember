@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * The social control deck on every profile: friend requests, squad status,
+ * The social control deck on every profile: requests, circle status,
  * a direct line to DMs, and the block seal.
  */
 export function ProfileActions({
@@ -97,7 +97,7 @@ export function ProfileActions({
           </button>
         ) : theyBlockedMe ? (
           <span
-            className={cn(btn, "border border-white/10 bg-white/5 text-slate-500")}
+            className={cn(btn, "border border-white/10 bg-white/5 text-zinc-500")}
             title="This player sealed their presence from you"
           >
             🚫 sealed
@@ -110,7 +110,7 @@ export function ProfileActions({
                 disabled={busy}
                 className={cn(
                   btn,
-                  "clip-btn bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 hover:-translate-y-0.5 hover:brightness-110",
+                  "bg-zinc-100 text-zinc-950 hover:-translate-y-0.5 hover:brightness-110",
                 )}
               >
                 ⚡ add friend
@@ -121,7 +121,7 @@ export function ProfileActions({
                 <span
                   className={cn(
                     btn,
-                    "border border-amber-500/40 bg-amber-500/10 text-amber-300",
+                    "border border-white/20 bg-white/5 text-zinc-300",
                   )}
                 >
                   ⏳ request sent
@@ -131,7 +131,7 @@ export function ProfileActions({
                   disabled={busy}
                   className={cn(
                     btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
+                    "border border-white/10 bg-white/5 text-zinc-400 hover:text-zinc-200",
                   )}
                 >
                   cancel
@@ -145,7 +145,7 @@ export function ProfileActions({
                   disabled={busy}
                   className={cn(
                     btn,
-                    "clip-btn bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:-translate-y-0.5 hover:brightness-110",
+                    "bg-gradient-to-r from-emerald-500 to-teal-400 text-zinc-950 hover:-translate-y-0.5 hover:brightness-110",
                   )}
                 >
                   🤝 accept
@@ -155,7 +155,7 @@ export function ProfileActions({
                   disabled={busy}
                   className={cn(
                     btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
+                    "border border-white/10 bg-white/5 text-zinc-400 hover:text-zinc-200",
                   )}
                 >
                   decline
@@ -170,14 +170,14 @@ export function ProfileActions({
                     "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
                   )}
                 >
-                  🤝 squad
+                  connected
                 </span>
                 <button
                   onClick={onRemove}
                   disabled={busy}
                   className={cn(
                     btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
+                    "border border-white/10 bg-white/5 text-zinc-400 hover:text-zinc-200",
                   )}
                 >
                   unfriend
@@ -188,7 +188,7 @@ export function ProfileActions({
               href={`/messages/${encodeURIComponent(targetUsername)}`}
               className={cn(
                 btn,
-                "clip-btn border-0 bg-white/10 text-white hover:-translate-y-0.5 hover:bg-white/20",
+                "border-0 bg-white/10 text-white hover:-translate-y-0.5 hover:bg-white/20",
               )}
             >
               ✉️ message
@@ -208,7 +208,7 @@ export function ProfileActions({
         )}
       </div>
       {flash && (
-        <p className="mt-2 font-hud text-[11px] text-slate-400">{flash}</p>
+        <p className="mt-2 font-hud text-[11px] text-zinc-400">{flash}</p>
       )}
     </div>
   );

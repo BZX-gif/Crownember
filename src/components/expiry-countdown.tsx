@@ -21,8 +21,8 @@ export function ExpiryCountdown({
         danger
           ? "animate-pulse text-rose-400"
           : warn
-            ? "text-amber-400"
-            : "text-slate-500",
+            ? "text-zinc-300"
+            : "text-zinc-500",
       )}
       title={`This message self-destructs ${vault ? "14 minutes" : "3 hours"} after it was sent`}
     >

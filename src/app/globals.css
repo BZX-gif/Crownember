@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: var(--font-russo), "Arial Black", sans-serif;
-  --font-body: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-hud: var(--font-jetbrains), ui-monospace, monospace;
+  --font-display: "Space Grotesk Variable", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Space Grotesk Variable", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-hud: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
 }
 
 :root {
@@ -15,163 +15,44 @@ html {
 }
 
 body {
-  background-color: #020617;
+  background-color: #050505;
 }
 
 ::selection {
-  background-color: rgba(249, 115, 22, 0.45);
-  color: #fff;
+  background-color: #f5f5f5;
+  color: #0a0a0a;
 }
 
-/* ============ Fire accent ============ */
-.text-fire {
-  background: linear-gradient(92deg, #ff5e00 0%, #ffb347 45%, #ff5e00 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* ============ Longevity & restraint ============ */
+/* VYRON is deliberately monochrome. Colour appears only where it carries
+   meaning: danger (rose), presence/success (emerald), identity (avatars). */
 
-.display-glow {
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
-}
-
-/* ============ Esports angular cuts ============ */
-.clip-btn {
-  clip-path: polygon(
-    14px 0,
-    100% 0,
-    100% calc(100% - 14px),
-    calc(100% - 14px) 100%,
-    0 100%,
-    0 14px
-  );
-}
-.clip-tag {
-  clip-path: polygon(
-    8px 0,
-    100% 0,
-    100% calc(100% - 8px),
-    calc(100% - 8px) 100%,
-    0 100%,
-    0 8px
-  );
-}
-.clip-card {
-  clip-path: polygon(
-    22px 0,
-    100% 0,
-    100% calc(100% - 22px),
-    calc(100% - 22px) 100%,
-    0 100%,
-    0 22px
-  );
-}
-.btn-glow {
-  filter: drop-shadow(0 6px 18px rgba(255, 106, 0, 0.22));
-}
-
-/* HUD corner brackets (two opposing corners) */
-.hud-corners {
-  position: relative;
-}
-.hud-corners::before,
-.hud-corners::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-}
-.hud-corners::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid rgba(255, 130, 40, 0.38);
-  border-left: 2px solid rgba(255, 130, 40, 0.38);
-}
-.hud-corners::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid rgba(255, 130, 40, 0.38);
-  border-right: 2px solid rgba(255, 130, 40, 0.38);
-}
-
-/* ============ Ambient layers ============ */
 .bg-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 42px 42px;
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
-.bg-scan {
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.025) 0px,
-    rgba(255, 255, 255, 0.025) 1px,
-    transparent 1px,
-    transparent 4px
-  );
+/* A whisper of light at the top of marketing surfaces */
+.hero-haze {
+  background:
+    radial-gradient(ellipse 60% 45% at 50% -10%, rgba(255, 255, 255, 0.09), transparent 70%);
 }
 
-.bg-stripes {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 106, 0, 0.12) 0 10px,
-    transparent 10px 22px
-  );
+/* ============ Signature mark sheen (used sparingly) ============ */
+@keyframes sheen {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
 }
-
-/* Rising embers — quiet background life, not fireworks */
-.ember {
-  position: absolute;
-  bottom: -10px;
-  border-radius: 9999px;
-  background: #e8873f;
-  box-shadow: 0 0 6px 1px rgba(255, 122, 26, 0.3);
-  opacity: 0;
-  animation: ember-rise linear infinite;
-  pointer-events: none;
-}
-@keyframes ember-rise {
-  0% {
-    transform: translateY(0) translateX(0) scale(1);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.4;
-  }
-  60% {
-    opacity: 0.22;
-  }
-  100% {
-    transform: translateY(-72vh) translateX(22px) scale(0.3);
-    opacity: 0;
-  }
+.brand-sheen {
+  animation: sheen 2.6s ease-in-out infinite;
 }
 
 /* ============ Motion ============ */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.animate-marquee {
-  animation: marquee 75s linear infinite;
-}
-.marquee-pause:hover .animate-marquee {
-  animation-play-state: paused;
-}
-
 @keyframes line-up {
-  from {
-    transform: translateY(112%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(112%); }
+  to { transform: translateY(0); }
 }
 .mask-line {
   display: block;
@@ -184,135 +65,90 @@ body {
 }
 
 @keyframes floaty {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 .animate-floaty {
   animation: floaty 5s ease-in-out infinite;
 }
 
-@keyframes glow-pulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 18px rgba(255, 106, 0, 0.35));
-  }
-  50% {
-    filter: drop-shadow(0 0 38px rgba(255, 106, 0, 0.65));
-  }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.animate-glow {
-  animation: glow-pulse 3s ease-in-out infinite;
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
 }
 
-/* ============ Developer Signature ============ */
-@keyframes dev-border-flow {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 200% 50%;
-  }
+@keyframes pop-in {
+  0% { transform: scale(0.94); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
-.dev-frame {
-  background: linear-gradient(
-    100deg,
-    #ff6a00,
-    #ffd166,
-    #34d399,
-    #ffd166,
-    #ff6a00
-  );
-  background-size: 200% 100%;
-  animation: dev-border-flow 4s linear infinite;
-  padding: 1.5px;
-}
-
-@keyframes dev-shimmer {
-  to {
-    background-position: 200% center;
-  }
-}
-.dev-chip {
-  background: linear-gradient(
-    110deg,
-    #ff8c1a,
-    #ffd166 38%,
-    #fff7ed 50%,
-    #ffd166 62%,
-    #ff8c1a
-  );
-  background-size: 200% auto;
-  animation: dev-shimmer 2.5s linear infinite;
-}
-.dev-name {
-  background: linear-gradient(
-    110deg,
-    #ff7a1a,
-    #ffd166 38%,
-    #6ee7b7 50%,
-    #ffd166 62%,
-    #ff7a1a
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: dev-shimmer 3s linear infinite;
-}
-
-@keyframes dev-blink {
-  50% {
-    opacity: 0;
-  }
-}
-.dev-cursor {
-  animation: dev-blink 0.9s step-end infinite;
+.animate-pop-in {
+  animation: pop-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top right;
 }
 
 /* Sticker landing — big emoji hit the room with weight */
 @keyframes sticker-drop {
-  0% {
-    transform: scale(0.3) rotate(-14deg) translateY(-18px);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.12) rotate(4deg) translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
+  0% { transform: scale(0.3) rotate(-14deg) translateY(-18px); opacity: 0; }
+  60% { transform: scale(1.12) rotate(4deg) translateY(0); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 .sticker-drop {
   animation: sticker-drop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Dev signature — quiet monochrome shimmer */
+@keyframes dev-shimmer {
+  to { background-position: 200% center; }
+}
+.dev-chip {
+  background: linear-gradient(110deg, #d4d4d4, #ffffff 38%, #a3a3a3 50%, #ffffff 62%, #d4d4d4);
+  background-size: 200% auto;
+  animation: dev-shimmer 3s linear infinite;
+}
+.dev-name {
+  background: linear-gradient(110deg, #e5e5e5, #ffffff 38%, #8f8f8f 50%, #ffffff 62%, #e5e5e5);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: dev-shimmer 3.2s linear infinite;
+}
+.dev-frame {
+  background: linear-gradient(100deg, #737373, #f5f5f5, #525252, #f5f5f5, #737373);
+  background-size: 200% 100%;
+  animation: dev-border-flow 4s linear infinite;
+  padding: 1.5px;
+}
+@keyframes dev-border-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes dev-blink {
+  50% { opacity: 0; }
+}
+.dev-cursor {
+  animation: dev-blink 0.9s step-end infinite;
+}
+
 /* The ghost sign — haunts the developer's avatar */
 @keyframes ghost-bob {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-4deg);
-  }
-  50% {
-    transform: translateY(-2.5px) rotate(5deg);
-  }
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-2.5px) rotate(5deg); }
 }
 .ghost-badge {
   animation: ghost-bob 2.4s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px rgba(110, 231, 183, 0.65));
+  filter: drop-shadow(0 0 6px rgba(245, 245, 245, 0.35));
   pointer-events: none;
 }
 
 /* ============ Scrollbars ============ */
 .nice-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 .nice-scroll::-webkit-scrollbar {
   width: 8px;
@@ -322,18 +158,18 @@ body {
   background: transparent;
 }
 .nice-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
 }
 .nice-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 122, 26, 0.55);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* ============ Accessibility ============ */
 
 /* Visible, consistent keyboard focus on every interactive element. */
 :focus-visible {
-  outline: 2px solid #fb923c;
+  outline: 2px solid #f5f5f5;
   outline-offset: 2px;
   border-radius: 2px;
 }

@@ -349,7 +349,7 @@ export function VoicePanel({
   }
 
   return (
-    <div className="border-t border-white/10 bg-slate-950/70">
+    <div className="border-t border-white/10 bg-zinc-950/70">
       <div className="flex items-center gap-2 px-3 py-2">
         {recording ? (
           <button
@@ -365,7 +365,7 @@ export function VoicePanel({
             onClick={startRecording}
             disabled={sending || sentFlash}
             title="Record a voice note (max 25s — burns when anyone leaves)"
-            className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 font-hud text-[11px] font-bold text-slate-950 transition hover:brightness-110 disabled:opacity-40"
+            className="shrink-0 bg-zinc-100 px-3 py-1.5 font-hud text-[11px] font-bold text-zinc-950 transition hover:brightness-110 disabled:opacity-40"
           >
             {sending ? "…" : sentFlash ? "✓ sent" : "🎙️ talk"}
           </button>
@@ -373,7 +373,7 @@ export function VoicePanel({
 
         <div className="nice-scroll flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           {notes.length === 0 && !recording && (
-            <span className="whitespace-nowrap font-hud text-[10px] uppercase tracking-wider text-slate-600">
+            <span className="whitespace-nowrap font-hud text-[10px] uppercase tracking-wider text-zinc-600">
               voice burns on exit 🔥
             </span>
           )}
@@ -388,8 +388,8 @@ export function VoicePanel({
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border px-2 py-1 transition",
                   active
-                    ? "border-amber-400/70 bg-amber-500/15"
-                    : "border-white/10 bg-white/5 hover:border-amber-500/40",
+                    ? "border-white/20 bg-white/5"
+                    : "border-white/10 bg-white/5 hover:border-white/20",
                 )}
               >
                 <Avatar
@@ -401,12 +401,12 @@ export function VoicePanel({
                   {[0, 1, 2].map((b) => (
                     <span
                       key={b}
-                      className={cn("w-px bg-amber-400", active && "animate-pulse")}
+                      className={cn("w-px bg-white/[0.06]", active && "animate-pulse")}
                       style={{ height: `${4 + ((b * 4 + n.id * 3) % 8)}px` }}
                     />
                   ))}
                 </span>
-                <span className="font-hud text-[10px] font-bold text-slate-300">
+                <span className="font-hud text-[10px] font-bold text-zinc-300">
                   {Math.max(1, Math.round(n.durationMs / 1000))}s
                 </span>
               </button>
@@ -418,7 +418,7 @@ export function VoicePanel({
           <button
             onClick={() => setShowKeys((s) => !s)}
             title="Rotate the vault key"
-            className="shrink-0 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 font-hud text-[11px] text-amber-300 transition hover:bg-amber-500/20"
+            className="shrink-0 border border-white/20 bg-white/5 px-2.5 py-1.5 font-hud text-[11px] text-zinc-300 transition hover:bg-white/5"
           >
             🗝️
           </button>
@@ -433,7 +433,7 @@ export function VoicePanel({
               <p className="text-xs font-black uppercase tracking-wide text-rose-300">
                 {micError.title}
               </p>
-              <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-slate-300">
+              <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-zinc-300">
                 {micError.steps.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
@@ -441,7 +441,7 @@ export function VoicePanel({
             </div>
           </div>
           {micError.debug && (
-            <p className="mt-2 font-hud text-[9px] text-slate-600">
+            <p className="mt-2 font-hud text-[9px] text-zinc-600">
               debug: {micError.debug}
             </p>
           )}
@@ -454,7 +454,7 @@ export function VoicePanel({
             </button>
             <button
               onClick={() => setMicError(null)}
-              className="px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:text-slate-300"
+              className="px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition hover:text-zinc-300"
             >
               dismiss
             </button>
@@ -467,7 +467,7 @@ export function VoicePanel({
           onSubmit={rotateKey}
           className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-2"
         >
-          <span className="font-hud text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <span className="font-hud text-[10px] font-bold uppercase tracking-wider text-zinc-500">
             rotate key:
           </span>
           <input
@@ -475,24 +475,24 @@ export function VoicePanel({
             value={keyCurrent}
             onChange={(e) => setKeyCurrent(e.target.value)}
             placeholder="current"
-            className="w-32 border border-white/10 bg-slate-950/80 px-2.5 py-1.5 font-hud text-xs text-slate-200 placeholder:text-slate-600 focus:border-amber-400/60 focus:outline-none"
+            className="w-32 border border-white/10 bg-zinc-950/80 px-2.5 py-1.5 font-hud text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
           />
           <input
             type="password"
             value={keyNext}
             onChange={(e) => setKeyNext(e.target.value)}
             placeholder="new (6+ chars)"
-            className="w-32 border border-white/10 bg-slate-950/80 px-2.5 py-1.5 font-hud text-xs text-slate-200 placeholder:text-slate-600 focus:border-amber-400/60 focus:outline-none"
+            className="w-32 border border-white/10 bg-zinc-950/80 px-2.5 py-1.5 font-hud text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
           />
           <button
             type="submit"
             disabled={!keyCurrent || keyNext.length < 6}
-            className="bg-amber-500/20 px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-amber-300 transition hover:bg-amber-500/30 disabled:opacity-40"
+            className="bg-white/5 px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-zinc-300 transition hover:bg-white/5 disabled:opacity-40"
           >
             rotate
           </button>
           {keyMsg && (
-            <span className="font-hud text-[11px] text-slate-300">{keyMsg}</span>
+            <span className="font-hud text-[11px] text-zinc-300">{keyMsg}</span>
           )}
         </form>
       )}

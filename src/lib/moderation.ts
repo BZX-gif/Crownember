@@ -3,13 +3,13 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 
 /**
- * Crownember JUDGEMENT SYSTEM — server-side abuse enforcement.
+ * VYRON GUARD — server-side abuse enforcement.
  *
- * Ladder of doom:
- *   strike 1 → 👁 "You are under surveillance" (message blocked)
- *   strike 2 → ⚠️ "One more and you will see the power of darkness"
- *   strike 3 → 🔨 banned from messaging for 2 hours
- *   strike 4 → ☠️ permanently exiled — login refused, sessions destroyed
+ * The ladder:
+ *   strike 1 → warning 1 of 3 (message blocked)
+ *   strike 2 → warning 2 of 3 (message blocked)
+ *   strike 3 → muted from messaging for 2 hours
+ *   strike 4 → permanently suspended — login refused, sessions destroyed
  *
  * Strikes decay after 24h of clean behavior. All detection happens on the
  * server, so it cannot be bypassed from the browser.
@@ -109,7 +109,7 @@ export function gateVerdict(user: UserRow): AbuseVerdict | null {
       ok: false,
       code: "BANNED_PERM",
       error:
-        "☠️ You were warned. You have been exiled from Crownember — permanently. No appeals. No mercy.",
+        "This account has been permanently suspended from VYRON.",
     };
   }
   if (user.mutedUntil && user.mutedUntil.getTime() > Date.now()) {
@@ -117,7 +117,7 @@ export function gateVerdict(user: UserRow): AbuseVerdict | null {
       ok: false,
       code: "MUTED",
       error:
-        "🔨 The darkness still holds you. You are banned from messaging.",
+        "You are muted. Messaging unlocks when the timer ends.",
       mutedUntil: user.mutedUntil,
     };
   }
@@ -151,7 +151,7 @@ export async function enforceAbuseRule(
       ok: false,
       code: "STRIKE_1",
       error:
-        "👁 Abuse detected. You are under surveillance. This is your only friendly warning.",
+        "Message blocked for abusive language. Warning 1 of 3 — it stays civil here.",
     };
   }
 
@@ -164,7 +164,7 @@ export async function enforceAbuseRule(
       ok: false,
       code: "STRIKE_2",
       error:
-        "⚠️ Abuse detected AGAIN. One more and you will see the power of darkness…",
+        "Message blocked. Warning 2 of 3 — the next one mutes you for 2 hours.",
     };
   }
 
@@ -177,7 +177,7 @@ export async function enforceAbuseRule(
     return {
       ok: false,
       code: "MUTED",
-      error: `🔨 THE POWER OF DARKNESS UNLEASHED — you are banned from messaging for ${MUTE_HOURS} hours.`,
+      error: `Muted for ${MUTE_HOURS} hours (warning 3 of 3). One more and the account is suspended.`,
       mutedUntil,
     };
   }
@@ -200,6 +200,6 @@ export async function enforceAbuseRule(
     ok: false,
     code: "BANNED_PERM",
     error:
-      "☠️ You were warned. You have been exiled from Crownember — permanently. No appeals. No mercy.",
+      "This account has been permanently suspended from VYRON.",
   };
 }

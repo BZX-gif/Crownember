@@ -1,4 +1,4 @@
-# Crownember — Future Roadmap
+# VYRON — Future Roadmap
 
 Philosophy: **build smart now, invest big later.** Everything below is
 categorized by when it actually becomes worth doing. Nothing on this list is
@@ -31,7 +31,7 @@ implemented yet — this is deliberate, honest planning.
 - **Weekly digest of leaderboard movement** — fun retention content, generated
   server-side into the forum (no email needed).
 
-## Only worth paying for when Crownember has real traction
+## Only worth paying for when VYRON has real traction
 
 - **Custom domain** (~₹800–1200/year) — worth it once players arrive from
   outside the founder circle and brand recall matters.
