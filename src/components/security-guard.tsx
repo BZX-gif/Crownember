@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Crownember Guard — honest client-side hygiene, not a false promise.
+ * VYRON Guard — honest client-side hygiene, not a false promise.
  *
  * What it does:
  * - Signs the console for anyone poking around (fun, harmless).
@@ -23,12 +23,12 @@ import { useEffect } from "react";
 export function SecurityGuard() {
   useEffect(() => {
     console.log(
-      "%c👑 CROWNEMBER",
-      "color:#ff6a00;font-size:22px;font-weight:900;font-style:italic;",
+      "%c✨ VYRON",
+      "color:#fff;font-size:22px;font-weight:900;font-style:italic;",
     );
     console.log(
       "%cEvery message, XP point and seat is verified on the server.\nEditing code here changes nothing — have fun exploring.",
-      "color:#94a3b8;font-size:12px;",
+      "color:#737373;font-size:12px;",
     );
   }, []);
 

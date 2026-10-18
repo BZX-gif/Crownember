@@ -10,12 +10,12 @@ export function RankBadge({ rank, size = "sm", className }: { rank: RankInfo; si
 
 export function FounderChip({ size = "xs", className }: { size?: "xs" | "sm" | "md"; className?: string }) {
   const sizes = { xs: "px-1.5 py-0.5 text-[10px]", sm: "px-2 py-0.5 text-xs", md: "px-3 py-1 text-sm" } as const;
-  return <span className={cn("inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-400/20 to-orange-500/15 font-black uppercase tracking-wide text-amber-300", sizes[size], className)} title="Founding Squad — one of the first 10 players of Crownember">🛡️ Founder</span>;
+  return <span className={cn("inline-flex items-center gap-1 rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-400/20 to-orange-500/15 font-black uppercase tracking-wide text-amber-300", sizes[size], className)} title="Founding Members — one of the first 10 members of VYRON">🛡️ Founder</span>;
 }
 
 export function DevChip({ size = "xs", className }: { size?: "xs" | "sm"; className?: string }) {
   const sizes = { xs: "px-1.5 py-0.5 text-[9px]", sm: "px-2 py-0.5 text-[10px]" } as const;
-  return <span className={cn("dev-chip clip-tag inline-flex items-center gap-0.5 font-black uppercase tracking-[0.15em] text-slate-950", sizes[size], className)} title="Developer — the builder of Crownember">⚡ Dev</span>;
+  return <span className={cn("dev-chip clip-tag inline-flex items-center gap-0.5 font-black uppercase tracking-[0.15em] text-slate-950", sizes[size], className)} title="Developer — the builder of VYRON">⚡ Dev</span>;
 }
 
 export function OnlineDot({ className }: { className?: string }) {
