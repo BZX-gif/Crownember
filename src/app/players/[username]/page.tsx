@@ -24,7 +24,26 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  return { title: username };
+  const rows = await db
+    .select({ username: users.username, bio: users.bio, xp: users.xp })
+    .from(users)
+    .where(and(eq(users.isBot, false), eqLower(users.username, username)))
+    .limit(1);
+  const member = rows[0];
+  if (!member) return { title: "Member not found" };
+  const description =
+    member.bio?.trim() ||
+    `Profile and conversations from ${member.username} on VYRON.`;
+  return {
+    title: member.username,
+    description,
+    openGraph: {
+      title: `${member.username} · VYRON`,
+      description,
+      type: "profile",
+      url: `/players/${encodeURIComponent(member.username)}`,
+    },
+  };
 }
 
 export default async function ProfilePage({

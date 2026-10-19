@@ -32,12 +32,26 @@ export async function generateMetadata({
   const topicId = Number(id);
   if (!Number.isInteger(topicId)) return { title: "Conversation" };
   const topic = await db
-    .select({ title: topics.title })
+    .select({ title: topics.title, content: topics.content })
     .from(topics)
     .innerJoin(users, eq(topics.userId, users.id))
     .where(and(eq(topics.id, topicId), eq(users.isBot, false)))
     .limit(1);
-  return { title: topic[0]?.title ?? "Conversation" };
+  const title = topic[0]?.title ?? "Conversation";
+  const description = (topic[0]?.content ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+  return {
+    title,
+    description: description || undefined,
+    openGraph: {
+      title: `${title} · VYRON`,
+      description: description || undefined,
+      type: "article",
+      url: `/forum/${topicId}`,
+    },
+  };
 }
 
 export default async function TopicPage({
