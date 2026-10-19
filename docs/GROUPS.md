@@ -56,11 +56,14 @@ too, not just groups.
 
 A private group must answer a guessed id the way a missing group does, with a
 status a monitor, crawler or cache respects — so the global skeleton boundary
-was removed. Pages still render their own skeletons/empty states, and per-page
-loading UI can return inside a client component (where it does not affect the
-response status). If a `loading.tsx` is added back later, add it only to
-segments with no `notFound()` privacy requirement, and re-check the status
-code of that segment's detail routes.
+was removed. Index pages (such as `/groups`) render their header immediately and
+stream their list inside a local `<Suspense>` boundary, while detail routes
+(`/groups/[id]`, `/forum/[id]`, `/players/[username]`, `/chat/[slug]`,
+`/messages/[username]`) run their `notFound()` guard before any `<Suspense>`
+boundary so missing and forbidden ids always return a genuine HTTP **404**. If a
+`loading.tsx` is added back later, add it only to segments with no child detail
+route that calls `notFound()`, and re-check the status code of that segment's
+detail routes.
 
 ---
 

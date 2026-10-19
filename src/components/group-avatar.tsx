@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { cn, initials } from "@/lib/utils";
+import { cn, groupPictureUrl, initials } from "@/lib/utils";
 
 /**
  * Group picture. A group's identity is its name; the picture is progressive
@@ -78,7 +78,5 @@ export function GroupAvatar({
   );
 }
 
-/** Members-only picture URL. Only call this for a group the viewer belongs to. */
-export function groupPictureUrl(groupId: number, version?: string | number | null): string {
-  return version ? `/api/groups/${groupId}/picture?v=${version}` : `/api/groups/${groupId}/picture`;
-}
+/** Re-exported for client callers; Server Components import from `@/lib/utils`. */
+export { groupPictureUrl };

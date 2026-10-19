@@ -12,16 +12,17 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   if (groupId === null) {
     return NextResponse.json({ error: GROUP_NOT_FOUND_MESSAGE }, { status: 404 });
   }
+
+  const guarded = await requireGroup({ groupId, permission: "transferOwnership" });
+  if (!guarded.ok) {
+    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
+  }
+
   const body = await readJsonBody(req);
   if (!body) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   const targetUserId = Number(body.userId);
   if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
     return NextResponse.json({ error: "Choose a member to hand the group to." }, { status: 400 });
-  }
-
-  const guarded = await requireGroup({ groupId, permission: "transferOwnership" });
-  if (!guarded.ok) {
-    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
   }
 
   const result = await transferOwnership({ access: guarded.access, targetUserId });

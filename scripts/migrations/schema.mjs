@@ -413,12 +413,20 @@ DECLARE
   expected integer;
   owners integer;
   bad integer;
+  touched integer[];
 BEGIN
-  FOR gid IN
-    SELECT group_id FROM (
+  IF TG_OP = 'INSERT' THEN
+    SELECT coalesce(array_agg(DISTINCT group_id), '{}') INTO touched FROM group_members_new;
+  ELSIF TG_OP = 'UPDATE' THEN
+    SELECT coalesce(array_agg(DISTINCT group_id), '{}') INTO touched FROM (
       SELECT group_id FROM group_members_old
       UNION SELECT group_id FROM group_members_new
-    ) touched
+    ) u;
+  ELSE
+    SELECT coalesce(array_agg(DISTINCT group_id), '{}') INTO touched FROM group_members_old;
+  END IF;
+
+  FOREACH gid IN ARRAY touched
   LOOP
     SELECT owner_id INTO expected FROM groups WHERE id = gid;
     IF expected IS NULL THEN
@@ -449,8 +457,20 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS group_members_owner_guard ON group_members;
 CREATE TRIGGER group_members_owner_guard
-  AFTER INSERT OR UPDATE OR DELETE ON group_members
+  AFTER INSERT ON group_members
+  REFERENCING NEW TABLE AS group_members_new
+  FOR EACH STATEMENT EXECUTE FUNCTION group_members_enforce_owner();
+
+DROP TRIGGER IF EXISTS group_members_owner_update_guard ON group_members;
+CREATE TRIGGER group_members_owner_update_guard
+  AFTER UPDATE ON group_members
   REFERENCING OLD TABLE AS group_members_old NEW TABLE AS group_members_new
+  FOR EACH STATEMENT EXECUTE FUNCTION group_members_enforce_owner();
+
+DROP TRIGGER IF EXISTS group_members_owner_delete_guard ON group_members;
+CREATE TRIGGER group_members_owner_delete_guard
+  AFTER DELETE ON group_members
+  REFERENCING OLD TABLE AS group_members_old
   FOR EACH STATEMENT EXECUTE FUNCTION group_members_enforce_owner();
 
 -- 1b. Leaving is a DELETE in its own statement, so the owner's seat is

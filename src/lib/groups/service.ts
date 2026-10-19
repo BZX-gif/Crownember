@@ -16,6 +16,7 @@ import {
   decideInvitation,
   evaluateAcceptance,
   invitationExpiry,
+  isExpired,
   isOpenInvitation,
   MAX_INVITATION_MESSAGE,
   type InvitationDecision,
@@ -521,12 +522,7 @@ export async function removeMember(input: {
     return fail("state", "Use Leave group to remove yourself.");
   }
   if (!canManageMember(access, target)) {
-    return fail(
-      "forbidden",
-      target.role === "owner"
-        ? "The owner cannot be removed."
-        : "You can only remove members below your own role.",
-    );
+    return fail(...forbidden());
   }
 
   try {
@@ -668,16 +664,24 @@ export async function transferOwnership(input: {
         .update(groups)
         .set({ ownerId: targetUserId, updatedAt: new Date() })
         .where(eq(groups.id, access.group.id));
-      // Two statements, one transaction: the owner-guard trigger is statement
-      // level, so it validates the FINAL state and never sees a half-transfer.
+      // One UPDATE statement flips both roles at once: the owner-guard trigger
+      // is statement-level, so it validates the final state and never sees a
+      // half-transfer with zero or two owners.
+      const defaultAdminPermsSql = sql.raw(
+        `ARRAY[${DEFAULT_ADMIN_PERMISSIONS.map((p) => `'${p}'`).join(",")}]::text[]`,
+      );
       await tx
         .update(groupMembers)
-        .set({ role: "owner", adminPermissions: [] })
-        .where(and(eq(groupMembers.groupId, access.group.id), eq(groupMembers.userId, targetUserId)));
-      await tx
-        .update(groupMembers)
-        .set({ role: "admin", adminPermissions: [...DEFAULT_ADMIN_PERMISSIONS] })
-        .where(and(eq(groupMembers.groupId, access.group.id), eq(groupMembers.userId, access.user.id)));
+        .set({
+          role: sql`CASE WHEN ${groupMembers.userId} = ${targetUserId} THEN 'owner' ELSE 'admin' END`,
+          adminPermissions: sql`CASE WHEN ${groupMembers.userId} = ${targetUserId} THEN '{}'::text[] ELSE ${defaultAdminPermsSql} END`,
+        })
+        .where(
+          and(
+            eq(groupMembers.groupId, access.group.id),
+            sql`${groupMembers.userId} IN (${targetUserId}, ${access.user.id})`,
+          ),
+        );
     });
     return ok({ ok: true, username: target.username });
   } catch (error) {
@@ -844,7 +848,15 @@ export async function decideInvitationAsManager(input: {
         decision,
         expiresAt: invitation.expiresAt,
       });
-      if (!verdict.ok) return { error: [verdict.code === "not_found" ? "not_found" : "state", verdict.error] } as const;
+      if (!verdict.ok) {
+        if (verdict.code === "expired" && isOpenInvitation(invitation.status)) {
+          await tx
+            .update(groupInvitations)
+            .set({ status: "expired", decidedAt: new Date() })
+            .where(eq(groupInvitations.id, invitation.id));
+        }
+        return { error: [verdict.code === "not_found" ? "not_found" : "state", verdict.error] } as const;
+      }
       if (verdict.already) return { id: invitation.id, status: invitation.status } as const;
 
       const [updated] = await tx
@@ -886,6 +898,13 @@ export async function declineInvitation(input: {
         .limit(1)
         .for("update");
       if (!invitation) return { error: notFound() } as const;
+      if (isExpired(invitation.expiresAt) && isOpenInvitation(invitation.status)) {
+        await tx
+          .update(groupInvitations)
+          .set({ status: "expired", decidedAt: new Date() })
+          .where(eq(groupInvitations.id, invitation.id));
+        return { error: ["state", "That invitation has expired."] } as const;
+      }
       if (invitation.status !== "invited") {
         const verdict = decideInvitation({ status: invitation.status, decision: "revoke", expiresAt: invitation.expiresAt });
         return { error: ["state", verdict.ok ? "That invitation is no longer open." : verdict.error] } as const;
@@ -941,7 +960,7 @@ export async function acceptInvitation(input: {
     viewerId: input.viewer.id,
     alreadyMember: await isMember(preview.groupId, input.viewer.id),
   });
-  if (!preCheck.ok && preCheck.code !== "group_full") {
+  if (!preCheck.ok && preCheck.code !== "group_full" && preCheck.code !== "expired") {
     return fail(preCheck.code === "not_found" ? "not_found" : "state", preCheck.error);
   }
 
@@ -1128,9 +1147,14 @@ function describeWriteError(error: unknown): string {
 }
 
 function pgCode(error: unknown): string | undefined {
-  return typeof error === "object" && error !== null && "code" in error
-    ? String((error as { code?: unknown }).code ?? "")
-    : undefined;
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && typeof current === "object" && current !== null; depth++) {
+    if ("code" in current && typeof (current as { code?: unknown }).code === "string" && (current as { code: string }).code) {
+      return (current as { code: string }).code;
+    }
+    current = "cause" in current ? (current as { cause?: unknown }).cause : null;
+  }
+  return undefined;
 }
 
 /** 23505 unique_violation — the "one open invitation / one membership" guards. */

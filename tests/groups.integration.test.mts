@@ -67,15 +67,17 @@ if (!TEST_DB_URL) {
     expireStaleInvitations,
   } = service;
 
-  const RUN = Date.now().toString(36);
+  const RUN = Date.now().toString(36).slice(-4);
   const PASSWORD_HASH = hashPassword("integration-test-password");
+  let userSeq = 0;
 
   /* ---------------- helpers ---------------- */
 
   type UserRow = typeof users.$inferSelect;
 
   async function makeUser(suffix: string, extra: { banned?: boolean; isBot?: boolean } = {}) {
-    const username = `t_${RUN}_${suffix}`.slice(0, 16);
+    const seq = (++userSeq).toString(36);
+    const username = `t_${RUN}_${seq}_${suffix}`.slice(0, 16);
     const [inserted] = await db
       .insert(users)
       .values({
@@ -132,6 +134,25 @@ if (!TEST_DB_URL) {
   function failureOf<T>(result: GroupResult<T>) {
     assert.equal(result.ok, false, `expected a refusal, got ${JSON.stringify(result)}`);
     return result as { ok: false; code: GroupErrorCode; error: string; status?: number };
+  }
+
+  /** Drizzle 0.45+ wraps the pg DatabaseError on `err.cause`; match against both. */
+  function dbErrorMatches(pattern: RegExp) {
+    return (err: unknown) => {
+      const cause =
+        typeof err === "object" && err !== null && "cause" in err
+          ? (err as { cause?: unknown }).cause
+          : null;
+      const text = [
+        err instanceof Error ? err.message : String(err),
+        cause instanceof Error ? cause.message : "",
+        typeof cause === "object" && cause !== null && "code" in cause
+          ? String((cause as { code?: unknown }).code)
+          : "",
+      ].join(" ");
+      assert.match(text, pattern);
+      return true;
+    };
   }
 
   async function memberCountOf(groupId: number) {
@@ -515,7 +536,7 @@ if (!TEST_DB_URL) {
         role: "member",
         adminPermissions: [],
       }),
-      /full|check/i,
+      dbErrorMatches(/full|check/i),
       "the capacity trigger must reject an over-cap insert",
     );
     assert.equal(await memberCountOf(groupId), 2);
@@ -532,9 +553,9 @@ if (!TEST_DB_URL) {
     await admit(access, admin);
     await admit(access, member);
     await admit(access, secondAdmin);
-    const adminAccess = await accessFor(admin, groupId);
     await setMemberRole({ access: access, targetUserId: admin.id, role: "admin" });
     await setMemberRole({ access: access, targetUserId: secondAdmin.id, role: "admin" });
+    const adminAccess = await accessFor(admin, groupId);
     assert.equal(await memberCountOf(groupId), 4);
 
     // A plain member cannot remove anyone (the guard answers 404, not 403).
@@ -583,7 +604,7 @@ if (!TEST_DB_URL) {
     // The database refuses it too, even if the application layer is bypassed.
     await assert.rejects(
       db.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, owner.id))),
-      /owner|check/i,
+      dbErrorMatches(/owner|check/i),
     );
     assert.equal(await memberCountOf(groupId), 1);
 
@@ -687,7 +708,7 @@ if (!TEST_DB_URL) {
         .update(groupMembers)
         .set({ adminPermissions: ["invite"] })
         .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, member.id))),
-      /check/i,
+      dbErrorMatches(/check/i),
     );
     assert.equal(capabilitiesFor("admin", DEFAULT_ADMIN_PERMISSIONS).manageAdmins, false);
   });
@@ -735,7 +756,7 @@ if (!TEST_DB_URL) {
     await admit(newOwnerAccess, third);
     await assert.rejects(
       db.insert(groupMembers).values({ groupId, userId: third.id, role: "owner", adminPermissions: [] }),
-      /owner|check|unique/i,
+      dbErrorMatches(/owner|check|unique/i),
     );
   });
 

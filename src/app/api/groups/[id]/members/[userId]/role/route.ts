@@ -27,13 +27,13 @@ export async function PATCH(
     return NextResponse.json({ error: GROUP_NOT_FOUND_MESSAGE }, { status: 404 });
   }
 
-  const body = await readJsonBody(req);
-  if (!body) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-
   const guarded = await requireGroup({ groupId });
   if (!guarded.ok) {
     return NextResponse.json({ error: guarded.error }, { status: guarded.status });
   }
+
+  const body = await readJsonBody(req);
+  if (!body) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
   if (body.permissions !== undefined && body.role === undefined) {
     const result = await setAdminPermissions({
