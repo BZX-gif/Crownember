@@ -1,8 +1,9 @@
 # VYRON 2.0 — Product Rescue Report
 
-Status: **implemented and verified locally, not yet deployed.**
-The live site (`https://crownember.vercel.app`) is still serving the previous
-build; see §9 for the evidence and the exact deployment step.
+Status: **implemented, merged and deployed.**
+Production is running this build (`/api/health` → `version: "2.0"`,
+`schema: "up to date"`, `features.profilePictures: true`,
+`features.chatReactions: true`). See §9 for the live checks.
 
 Everything below is based on the repository at commit `be6b6db` plus the
 changes in this branch. Claims marked **verified** were reproduced with the
@@ -195,32 +196,39 @@ integration tests, and screenshots. This environment has no PostgreSQL and no
 Chromium/Playwright, and browser downloads are outside the allowed hosts. No
 claim is made that these passed.
 
-## 9. Live deployment status
+## 9. Live deployment status — verified
 
-Live site inspected on 2026-10-19: `/api/health` still reports the old schema
-check set without avatar columns, `/api/profile/avatar?username=…` still 500s,
-`/players` still lists public UIDs and old rank names, and `/chat` still shows
-emoji rooms. **The live site does not have this work.** This branch has not
-been pushed or merged at the time of writing.
-
-Deployment requires merging this branch to `main`/producing a Vercel build with
-the existing command:
-
-```
-node scripts/migrate.mjs && npx tsx src/db/seed.ts && next build
-```
-
-The migration is additive; the existing production data (15 users, 10 topics,
-rooms) is preserved. After deploy, `/api/health` should report `schema: up to
-date` only if the three new checks pass, and avatars should stop 500ing.
+- PR [#13](https://github.com/BZX-gif/Crownember/pull/13) and follow-up PR
+  [#14](https://github.com/BZX-gif/Crownember/pull/14) merged to `main`.
+  Merge commits `721a4a4` and `a825d5b`; Vercel production deployment
+  `7165072671` reported `success`.
+- `https://crownember.vercel.app/api/health` (fetched after deploy):
+  `{"ok":true,"version":"2.0","db":"connected","schema":"up to date",
+  "features":{"profilePictures":true,"chatReactions":true}}` — i.e. the build
+  migration added the avatar and chat-reaction schema, so the previous
+  `/api/profile/avatar` 500 is fixed at its root.
+- Live pages re-checked and confirmed new: `/` (editorial home with real
+  counts and founding seats), `/players` (new ranks, **no UID column**),
+  `/players/Annabella` (new profile, stats), `/chat` (new room list, honest
+  retention copy), `/chat/global` (server-rendered room with guest state),
+  `/login`, `/register` (no UID field), `/messages`, `/forum`, `/forum/10`.
+- `/api/notifications` returns `401 {"error":"Sign in to view notifications."}`
+  on the live site, confirming the new route is deployed and gated.
+- `/manifest.json` on the live site is the new VYRON manifest.
+- Binary assets (SVG/PNG) cannot be opened by the page-fetch tool used from
+  this sandbox, and shell TLS to the site is blocked. They were verified in a
+  local production server (§8) and the manifest references the new files, but
+  a browser screenshot of the icons/avatars is still a manual check.
 
 ## 10. Remaining issues and manual steps
 
-1. **Deploy/merge** this branch; rebuild without the Vercel build cache so
-   `migrate.mjs` runs.
-2. Verify `/api/health` shows the new checks, then upload one profile photo and
-   confirm it renders everywhere (the endpoint no longer 500s even before the
-   migration).
+1. **Browser pass**: open the live site signed in, upload one profile photo,
+   reply to a post and confirm the notification appears. Those flows passed
+   type/build checks and the schema is verified, but no browser was available
+   here for a visual/interaction pass.
+2. **Icons**: visually confirm the white V in a browser tab, on a phone home
+   screen and in the OG preview (assets and manifest are deployed; the fetch
+   tool here rejects binary files).
 3. **Seed data**: a *brand-new* database still seeds bot members and demo
    topics (hidden from every UI query by `is_bot = false`, and bots cannot log
    in). No production data was deleted. If you want a completely empty launch,
