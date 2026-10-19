@@ -44,10 +44,7 @@ export default async function LoginPage() {
       </div>
 
       <div className="mx-auto w-full max-w-sm">
-        <div className="lg:hidden">
-          <Brand size={28} />
-        </div>
-        <div className="mt-6 rounded-xl border border-line bg-panel p-6 sm:p-7 lg:mt-0">
+        <div className="rounded-xl border border-line bg-panel p-6 sm:p-7">
           <p className="eyebrow">Welcome back</p>
           <h1 className="display-title mt-2 text-2xl text-fg">Sign in</h1>
           <p className="mt-1.5 text-xs leading-relaxed text-muted">

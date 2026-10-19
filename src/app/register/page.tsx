@@ -68,12 +68,9 @@ export default async function RegisterPage() {
       </div>
 
       <div className="mx-auto w-full max-w-sm lg:mt-2">
-        <div className="lg:hidden">
-          <Brand size={28} />
-        </div>
 
         {seats.open ? (
-          <div className="mt-6 rounded-xl border border-line bg-panel p-6 sm:p-7 lg:mt-0">
+          <div className="rounded-xl border border-line bg-panel p-6 sm:p-7">
             <p className="eyebrow">Create account</p>
             <h1 className="display-title mt-2 text-2xl text-fg">Join VYRON</h1>
             <p className="mt-1.5 text-xs leading-relaxed text-muted">
