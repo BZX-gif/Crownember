@@ -85,6 +85,14 @@ dependencies, no route changes, no data changes.
   management, so it now has `role="dialog"` and an accessible name to match the
   notification panel.
 
+### Link previews
+
+Shared links previously fell back to the site-wide title and blurb everywhere.
+Conversations now preview their own title and the opening of the post
+(`og:type=article`), and profiles preview the member's name and bio — or a plain
+honest description when they have not written one. Nothing private is read: only
+public forum text and public profile fields.
+
 ### Before / after
 
 Captured from the same database, same account, same viewport, from the pre-polish

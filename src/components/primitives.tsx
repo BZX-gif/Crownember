@@ -1,5 +1,11 @@
 import Link from "next/link";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  Ref,
+  TextareaHTMLAttributes,
+} from "react";
 import { cn } from "@/lib/utils";
 import {
   BulbIcon,
@@ -63,6 +69,8 @@ export function Button({
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  /** React 19 forwards refs to function components as an ordinary prop. */
+  ref?: Ref<HTMLButtonElement>;
 }) {
   return (
     <button

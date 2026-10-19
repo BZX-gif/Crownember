@@ -117,6 +117,52 @@ It writes only a scrypt hash, never prints the password, and logs that
 account out of every device. (Future upgrade when there's budget: a real
 email-based reset.)
 
+### 👥 Private groups: premium capacity (Slice A)
+
+Groups are private, invitation-plus-approval, and capped at **25 active
+members including the owner**. Raising one group to the premium test tier
+(**100 members**) is an operator action — there is deliberately **no endpoint
+that can grant premium**, so nobody can buy, forge or self-assign it:
+
+```
+npx tsx scripts/group-entitlement.ts list
+npx tsx scripts/group-entitlement.ts grant  <groupId> [memberLimit]
+npx tsx scripts/group-entitlement.ts revoke <groupId>
+```
+
+A downgrade never removes existing members; the limit only applies to new
+joins. Full design, permission matrix and privacy contract:
+[`docs/GROUPS.md`](docs/GROUPS.md).
+
+The migration log line now reads
+`✅ migrate: schema reconciled · rooms=3 users=8 messages=0 topics=0 groups=0 group_members=0`.
+Review the SQL it would run without contacting any database:
+`node scripts/migrate.mjs --dry-run`.
+
+`src/app/loading.tsx` was removed on purpose: a root loading boundary makes
+Next stream the shell before the page runs, which turned every `notFound()` in
+the app (including private group ids) into an HTTP **200**. Details and the
+measured table: [`docs/GROUPS.md`](docs/GROUPS.md).
+
+If profile pictures were uploaded before the content-sniffing fix, reclassify
+the stored mime labels (report first, then apply):
+
+```
+npx tsx scripts/fix-avatar-mimes.ts
+npx tsx scripts/fix-avatar-mimes.ts --apply
+```
+
+### 🧪 Tests
+
+```
+npm test          # unit tests — no database, no credentials
+npm run test:db   # group integration tests — needs VYRON_TEST_DATABASE_URL
+```
+
+`VYRON_TEST_DATABASE_URL` must point at a **disposable** database; the suite
+creates its own tables and users and drops them afterwards. Without it the
+integration suite skips itself, so CI never needs production credentials.
+
 ## 🛡️ What's already protected
 
 - **Server-side truth:** XP, ranks, seats and messages are only ever changed
@@ -137,6 +183,19 @@ email-based reset.)
 - **Sessions & Vault tokens:** httpOnly cookies (Secure in production),
   server-side expiry, and Vault tokens die instantly when the key rotates.
 - **Bot accounts** (demo chat population) can never log in.
+- **Uploads are sniffed, not trusted:** profile and group pictures are
+  validated by file signature (PNG/JPEG/WebP), the stored and served
+  `Content-Type` comes from the bytes rather than the browser's claim, and the
+  size cap is checked before the bytes are read. A renamed HTML file is
+  rejected, and a legacy row that is not really an image is served as a 404
+  instead of as markup.
+- **Private groups are private:** one server-side guard
+  (`requireGroup()`) answers every group route and page; a non-member and a
+  guessed id get the same 404, group pages are `noindex` with a generic title,
+  and group mutations additionally require a same-origin request.
+- **Capacity is race-safe:** the member limit is enforced inside a transaction
+  holding a row lock (`SELECT … FOR UPDATE`), with a database trigger and a
+  partial unique index as the last line of defence.
 
 ## 🚑 Troubleshooting
 

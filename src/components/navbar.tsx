@@ -11,6 +11,7 @@ import {
   FeedIcon,
   ForumIcon,
   ChatIcon,
+  LockIcon,
   MailIcon,
   LogOutIcon,
   PencilIcon,
@@ -23,6 +24,7 @@ const LINKS = [
   { href: "/", label: "Feed", short: "Feed", Icon: FeedIcon },
   { href: "/forum", label: "Forum", short: "Forum", Icon: ForumIcon },
   { href: "/chat", label: "Rooms", short: "Rooms", Icon: ChatIcon },
+  { href: "/groups", label: "Groups", short: "Groups", Icon: LockIcon },
   { href: "/messages", label: "Messages", short: "Inbox", Icon: MailIcon },
   { href: "/players", label: "People", short: "People", Icon: UsersIcon },
 ] as const;
@@ -171,6 +173,13 @@ export function Navbar({
                         <PencilIcon size={15} /> New post
                       </Link>
                       <Link
+                        href="/groups"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+                      >
+                        <LockIcon size={15} /> Groups
+                      </Link>
+                      <Link
                         href="/messages"
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
@@ -226,7 +235,9 @@ export function Navbar({
         data-mobile-tabbar
         className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       >
-        <div className="grid grid-cols-5">
+        {/* Six destinations: the tab bar stays a grid so each target keeps a
+            comfortable width on a 360px phone. */}
+        <div className="grid grid-cols-6">
           {LINKS.map(({ href, short, Icon }) => {
             const active = isActive(pathname, href);
             return (
