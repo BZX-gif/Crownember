@@ -161,7 +161,7 @@ export function RegisterForm({
       </Button>
 
       {seatNumber && maxSeats && (
-        <p className="text-center text-[10px] text-subtle">
+        <p className="text-center text-[11px] text-subtle">
           Claiming founding seat {seatNumber} of {maxSeats}.
         </p>
       )}

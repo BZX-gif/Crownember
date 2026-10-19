@@ -74,6 +74,8 @@ export interface PublicUser {
   username: string;
   bio: string;
   avatarColor: string;
+  /** True only when the member has actually uploaded a profile picture. */
+  hasAvatar: boolean;
   xp: number;
   likes: number;
   createdAt: Date;
@@ -94,6 +96,7 @@ export function serializeUser(u: typeof users.$inferSelect): PublicUser {
     username: u.username,
     bio: u.bio,
     avatarColor: u.avatarColor,
+    hasAvatar: Boolean(u.avatarMime),
     xp: u.xp,
     likes: u.likes,
     createdAt: u.createdAt,
@@ -101,6 +104,22 @@ export function serializeUser(u: typeof users.$inferSelect): PublicUser {
     dev: u.isDev,
     rank: getRank(u.xp),
   };
+}
+
+/**
+ * Return a profile-picture URL only when the member actually has one. The
+ * avatar API answers 404 for everyone else, so rendering an <img> for every
+ * name used to cost a failed request per avatar on every page.
+ */
+export function avatarUrlFor(
+  user:
+    | { username: string; hasAvatar?: boolean; avatarMime?: string | null }
+    | null
+    | undefined,
+): string | undefined {
+  const hasAvatar = user?.hasAvatar ?? Boolean(user?.avatarMime);
+  if (!user || !hasAvatar) return undefined;
+  return `/api/profile/avatar?username=${encodeURIComponent(user.username)}`;
 }
 
 export interface ChatMessageDTO {

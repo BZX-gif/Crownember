@@ -15,25 +15,33 @@ import {
 } from "@/components/icons";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-export type ButtonSize = "sm" | "md" | "lg" | "icon";
+export type ButtonSize = "xs" | "sm" | "md" | "lg" | "icon" | "icon-sm";
 
 const BUTTON_BASE =
   "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-40";
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-fg text-ink hover:bg-white",
+  primary:
+    "bg-fg text-ink shadow-[0_1px_0_rgba(255,255,255,0.18)_inset] hover:bg-white active:bg-[#e7e7e9]",
   secondary:
-    "border border-line bg-white/[0.035] text-fg hover:border-line-strong hover:bg-white/[0.065]",
-  ghost: "text-muted hover:bg-white/[0.05] hover:text-fg",
+    "border border-line bg-white/[0.035] text-fg hover:border-line-strong hover:bg-white/[0.065] active:bg-white/[0.045]",
+  ghost: "text-muted hover:bg-white/[0.05] hover:text-fg active:bg-white/[0.03]",
   danger:
-    "border border-danger/30 bg-danger/[0.06] text-danger hover:border-danger/50 hover:bg-danger/10",
+    "border border-danger/30 bg-danger/[0.06] text-danger hover:border-danger/50 hover:bg-danger/10 active:bg-danger/[0.08]",
 };
 
+/**
+ * One height scale. `xs` is the smallest target used inline inside a list row;
+ * it keeps a 28px visual height but compensates with a ::before hit area in
+ * globals.css so it still meets a comfortable touch target on phones.
+ */
 const BUTTON_SIZES: Record<ButtonSize, string> = {
+  xs: "h-7 px-2 text-xs",
   sm: "h-8 px-3 text-xs",
   md: "h-10 px-4 text-sm",
   lg: "h-12 px-6 text-sm",
   icon: "h-9 w-9 p-0",
+  "icon-sm": "h-8 w-8 p-0",
 };
 
 export function buttonClass(
@@ -92,19 +100,21 @@ export function ButtonLink({
 export function IconButton({
   label,
   variant = "ghost",
+  size = "icon",
   className,
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string;
   variant?: ButtonVariant;
+  size?: "icon" | "icon-sm";
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
-      className={buttonClass(variant, "icon", className)}
+      className={buttonClass(variant, size, className)}
       {...props}
     >
       {children}
@@ -113,7 +123,7 @@ export function IconButton({
 }
 
 export const inputClass =
-  "h-11 w-full rounded-lg border border-line bg-raised px-3.5 text-sm text-fg placeholder:text-subtle/70 transition-colors focus:border-line-strong focus:outline-none focus:ring-2 focus:ring-white/[0.06] disabled:opacity-50";
+  "h-11 w-full rounded-lg border border-line bg-raised px-3.5 text-sm text-fg placeholder:text-subtle/70 transition-colors hover:border-line-strong/70 focus:border-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-danger/50";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(inputClass, className)} {...props} />;
@@ -188,19 +198,28 @@ export function PageHeader({
   title,
   description,
   action,
+  size = "default",
   className,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
+  size?: "default" | "compact";
   className?: string;
 }) {
   return (
     <header className={cn("flex flex-wrap items-end justify-between gap-5", className)}>
       <div className="min-w-0">
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="display-title mt-2 text-3xl text-fg sm:text-4xl">{title}</h1>
+        <h1
+          className={cn(
+            "display-title mt-2 text-fg",
+            size === "compact" ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl",
+          )}
+        >
+          {title}
+        </h1>
         {description && (
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>
         )}

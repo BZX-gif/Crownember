@@ -62,7 +62,7 @@ export default async function RegisterPage() {
           </p>
         </div>
 
-        <p className="mt-6 flex items-center gap-2 text-[10px] text-subtle">
+        <p className="mt-6 flex items-center gap-2 text-[11px] text-subtle">
           <ShieldIcon size={12} /> Passwords are hashed. Sign-ups are rate-limited.
         </p>
       </div>
@@ -80,7 +80,7 @@ export default async function RegisterPage() {
               Free, no card, no advertising. A founding seat is reserved for you.
             </p>
             <RegisterForm seatNumber={seats.taken + 1} maxSeats={seats.max} />
-            <p className="mt-4 text-center text-[10px] leading-relaxed text-subtle">
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-subtle">
               By joining you agree to keep the room civil. Abuse is moderated.
             </p>
           </div>

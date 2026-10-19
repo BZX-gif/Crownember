@@ -243,9 +243,12 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
         }
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+        className={cn(
+          "relative flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-white/[0.05] hover:text-fg",
+          open ? "bg-white/[0.06] text-fg" : "text-muted",
+        )}
       >
-        <BellIcon size={16} />
+        <BellIcon size={17} />
         {unread > 0 && (
           <span
             className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-fg ring-2 ring-ink"
@@ -260,12 +263,12 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
           tabIndex={-1}
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-[calc(100%+6px)] z-50 w-[min(92vw,380px)] overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_18px_50px_rgba(0,0,0,0.6)] focus:outline-none"
+          className="animate-fade-in absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-6rem)] w-[min(92vw,384px)] overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_24px_60px_rgba(0,0,0,0.65)] focus:outline-none"
         >
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
             <div>
-              <p className="text-xs font-medium text-fg">Notifications</p>
-              <p className="mt-0.5 text-[10px] text-subtle">
+              <p className="text-[13px] font-medium text-fg">Notifications</p>
+              <p className="mt-0.5 text-[11px] text-subtle">
                 Replies, appreciation, requests, messages.
               </p>
             </div>
@@ -275,7 +278,7 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
                 size="sm"
                 onClick={() => void markAllRead()}
                 loading={marking}
-                className="h-7 px-2 text-[10px]"
+                className="h-7 px-2 text-[11px]"
               >
                 <CheckIcon size={12} /> Mark read
               </Button>
@@ -297,11 +300,11 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
               </div>
             ) : error ? (
               <div className="px-4 py-6 text-center">
-                <p className="text-[11px] text-muted">{error}</p>
+                <p className="text-xs text-muted">{error}</p>
                 <button
                   type="button"
                   onClick={() => void load()}
-                  className="mt-2 text-[11px] text-fg underline underline-offset-2"
+                  className="mt-2 text-xs text-fg underline underline-offset-2"
                 >
                   Try again
                 </button>
@@ -311,8 +314,8 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
                 <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line text-subtle">
                   <BellIcon size={15} />
                 </span>
-                <p className="mt-3 text-[11px] font-medium text-fg">Nothing yet</p>
-                <p className="mt-1 text-[10px] leading-relaxed text-subtle">
+                <p className="mt-3 text-xs font-medium text-fg">Nothing yet</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-subtle">
                   When someone replies, appreciates a post, adds you or messages
                   you, it lands here.
                 </p>
@@ -342,7 +345,7 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-start gap-2">
-                          <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-fg">
+                          <span className="min-w-0 flex-1 text-xs leading-snug text-fg">
                             {item.title}
                           </span>
                           {item.unread && (
@@ -352,7 +355,7 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
                             />
                           )}
                         </span>
-                        <span className="mt-0.5 line-clamp-2 block text-[10.5px] leading-relaxed text-muted">
+                        <span className="mt-0.5 line-clamp-2 block text-[11.5px] leading-relaxed text-muted">
                           {item.body}
                         </span>
                         <span className="mono-meta mt-1 block">
@@ -368,14 +371,15 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
 
           <div className="border-t border-line px-4 py-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] text-subtle">Desktop alerts</span>
+              <span className="text-[11px] text-subtle">Desktop alerts</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={alertsOn}
                 onClick={() => void toggleAlerts()}
+                aria-label="Desktop alerts"
                 className={cn(
-                  "relative h-4 w-7 rounded-full border transition-colors",
+                  "tap-target relative h-[18px] w-8 rounded-full border transition-colors",
                   alertsOn
                     ? "border-fg bg-fg"
                     : "border-line-strong bg-white/[0.04]",
@@ -383,19 +387,19 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
               >
                 <span
                   className={cn(
-                    "absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all",
-                    alertsOn ? "left-3.5 bg-ink" : "left-0.5 bg-subtle",
+                    "absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full transition-[left,background-color]",
+                    alertsOn ? "left-[17px] bg-ink" : "left-[2px] bg-subtle",
                   )}
                 />
               </button>
             </div>
             {alertError && (
-              <p className="mt-1 text-[9.5px] leading-relaxed text-danger">
+              <p className="mt-1 text-[11px] leading-relaxed text-danger">
                 {alertError}
               </p>
             )}
-            <p className="mt-1.5 text-[9.5px] leading-relaxed text-subtle">
-              Only your own activity is ever shown. No badges are invented.
+            <p className="mt-1.5 text-[11px] leading-relaxed text-subtle">
+              Only your own activity is ever shown. Nothing is invented.
             </p>
           </div>
         </div>

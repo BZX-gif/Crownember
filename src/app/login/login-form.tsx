@@ -84,7 +84,7 @@ export function LoginForm() {
         {busy ? "Signing in…" : "Sign in"}
       </Button>
 
-      <p className="text-center text-[10px] leading-relaxed text-subtle">
+      <p className="text-center text-[11px] leading-relaxed text-subtle">
         Sign-in attempts are rate-limited to protect accounts.
       </p>
     </form>

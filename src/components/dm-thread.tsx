@@ -13,7 +13,7 @@ import {
   SendIcon,
 } from "@/components/icons";
 import { ExpiryCountdown } from "@/components/expiry-countdown";
-import { cn, type PublicUser } from "@/lib/utils";
+import { avatarUrlFor, cn, type PublicUser } from "@/lib/utils";
 
 export interface DmMessage {
   id: number;
@@ -246,11 +246,11 @@ export function DmThread({
         <div className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-4">
           {messages.length === 0 ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
-              <Avatar name={other.username} size={48} dev={other.dev} />
+              <Avatar name={other.username} size={48} dev={other.dev} avatarUrl={avatarUrlFor(other)} />
               <p className="mt-4 text-sm font-medium text-fg">{other.username}</p>
               <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted">
-                This is the beginning of a private conversation. Messages clear
-                three hours after they are sent.
+                This is the beginning of a private conversation. Each message
+                clears three hours after it is sent.
               </p>
             </div>
           ) : (
@@ -279,10 +279,11 @@ export function DmThread({
                               : "border-line bg-panel text-[#e4e4e7]",
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                             {message.content}
                           </p>
-                          <div className="mt-1 flex items-center justify-end gap-2">
+                          <div className="mt-1 flex items-center justify-end gap-1.5">
+                            <span className="text-[11px] text-subtle">clears in</span>
                             <ExpiryCountdown createdAt={message.createdAt} vault={false} />
                           </div>
                         </div>
@@ -296,7 +297,7 @@ export function DmThread({
                           }
                           aria-label="Message actions"
                           aria-expanded={actionsOpen}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-subtle opacity-0 transition-opacity hover:bg-white/[0.06] hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
+                          className="tap-target flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-subtle opacity-0 transition-opacity hover:bg-white/[0.06] hover:text-fg focus-visible:opacity-100 focus:opacity-100 group-hover:opacity-100"
                         >
                           <ReplyIcon size={13} />
                         </button>
@@ -314,7 +315,7 @@ export function DmThread({
                             type="button"
                             role="menuitem"
                             onClick={() => startReply(message)}
-                            className="flex items-center gap-1.5 rounded px-2 py-1.5 text-[11px] text-fg transition-colors hover:bg-white/[0.07]"
+                            className="flex h-8 items-center gap-1.5 rounded px-2.5 text-xs text-fg transition-colors hover:bg-white/[0.07]"
                           >
                             <ReplyIcon size={12} /> Reply
                           </button>
@@ -323,7 +324,7 @@ export function DmThread({
                               type="button"
                               role="menuitem"
                               onClick={() => startEdit(message)}
-                              className="flex items-center gap-1.5 rounded px-2 py-1.5 text-[11px] text-fg transition-colors hover:bg-white/[0.07]"
+                              className="flex h-8 items-center gap-1.5 rounded px-2.5 text-xs text-fg transition-colors hover:bg-white/[0.07]"
                             >
                               <PencilIcon size={12} /> Edit
                             </button>
@@ -345,7 +346,7 @@ export function DmThread({
       >
         <div className="mx-auto w-full max-w-3xl px-3 py-2.5 sm:px-4">
           {connLost && (
-            <p className="mb-2 text-[10px] text-subtle">
+            <p className="mb-2 text-[11px] text-subtle" role="status">
               Connection interrupted — retrying automatically.
             </p>
           )}
@@ -356,7 +357,7 @@ export function DmThread({
           )}
           {(editingId !== null || replyingTo) && (
             <div className="mb-2 flex items-center gap-2 rounded-md border border-line bg-panel px-2.5 py-1.5">
-              <span className="flex-1 truncate text-[10px] text-muted">
+              <span className="flex-1 truncate text-[11px] text-muted">
                 {editingId !== null
                   ? "Editing your message"
                   : `Replying to ${replyingTo?.mine ? "yourself" : other.username}`}
@@ -364,7 +365,7 @@ export function DmThread({
               <button
                 type="button"
                 onClick={cancelAction}
-                className="text-[10px] text-subtle transition-colors hover:text-fg"
+                className="tap-target rounded px-1 text-[11px] text-subtle transition-colors hover:text-fg"
               >
                 Cancel
               </button>
@@ -386,7 +387,7 @@ export function DmThread({
                 }
                 autoComplete="off"
                 maxLength={MAX_LEN}
-                className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-panel px-3 text-[13px] text-fg placeholder:text-subtle focus:border-line-strong focus:outline-none"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-panel px-3.5 text-sm text-fg placeholder:text-subtle transition-colors hover:border-line-strong/70 focus:border-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08]"
               />
               <Button
                 type="submit"
@@ -395,12 +396,12 @@ export function DmThread({
                 disabled={!input.trim()}
                 loading={busy}
                 aria-label={editingId !== null ? "Save edit" : "Send message"}
-                className="h-10 w-10 px-0"
+                className="h-11 w-11 px-0"
               >
                 {editingId !== null ? <CheckIcon size={16} /> : <SendIcon size={16} />}
               </Button>
             </div>
-            <p className="mt-1.5 hidden text-[10px] text-subtle sm:block">
+            <p className="mt-1.5 hidden text-[11px] text-subtle sm:block">
               Private between you and {other.username}. Clears three hours after
               sending.
             </p>
@@ -421,15 +422,15 @@ function ThreadHeader({ other }: { other: PublicUser }) {
         <Link
           href="/messages"
           aria-label="Back to messages"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
         >
-          <ArrowLeftIcon size={17} />
+          <ArrowLeftIcon size={18} />
         </Link>
         <Link
           href={`/players/${encodeURIComponent(other.username)}`}
           className="flex min-w-0 flex-1 items-center gap-2.5"
         >
-          <Avatar name={other.username} size={32} dev={other.dev} />
+          <Avatar name={other.username} size={32} dev={other.dev} avatarUrl={avatarUrlFor(other)} />
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-medium text-fg">
               {other.username}

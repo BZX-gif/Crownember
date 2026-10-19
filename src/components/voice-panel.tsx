@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
 import { KeyIcon, MicIcon } from "@/components/icons";
-import { cn } from "@/lib/utils";
+import { avatarUrlFor, cn } from "@/lib/utils";
 
 interface VoiceNote {
   id: number;
@@ -377,7 +377,7 @@ export function VoicePanel({
 
         <div className="nice-scroll flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           {notes.length === 0 && !recording && (
-            <span className="whitespace-nowrap text-[10px] text-subtle">
+            <span className="whitespace-nowrap text-[11px] text-subtle">
               Voice notes are ephemeral. Nothing is archived.
             </span>
           )}
@@ -396,7 +396,7 @@ export function VoicePanel({
                     : "border-line bg-white/[0.02] text-muted hover:border-line-strong hover:text-fg",
                 )}
               >
-                <Avatar name={n.author.username} size={18} />
+                <Avatar name={n.author.username} size={18} avatarUrl={avatarUrlFor(n.author)} />
                 <span className="flex h-3 items-end gap-px" aria-hidden="true">
                   {[0, 1, 2].map((b) => (
                     <span
@@ -406,7 +406,7 @@ export function VoicePanel({
                     />
                   ))}
                 </span>
-                <span className="text-[10px] tabular-nums">
+                <span className="text-[11px] tabular-nums">
                   {Math.max(1, Math.round(n.durationMs / 1000))}s
                 </span>
               </button>
@@ -441,20 +441,22 @@ export function VoicePanel({
             </div>
           </div>
           {micError.debug && (
-            <p className="mt-2 break-words text-[9px] text-subtle">debug: {micError.debug}</p>
+            <p className="mt-2 break-words text-[11px] text-subtle">
+              Browser detail: {micError.debug}
+            </p>
           )}
           <div className="mt-2.5 flex gap-2">
             <button
               type="button"
               onClick={startRecording}
-              className="rounded-md border border-line-strong px-2.5 py-1 text-[10px] text-fg transition-colors hover:bg-white/[0.06]"
+              className="rounded-md border border-line-strong px-2.5 py-1 text-[11px] text-fg transition-colors hover:bg-white/[0.06]"
             >
               Try again
             </button>
             <button
               type="button"
               onClick={() => setMicError(null)}
-              className="rounded-md px-2.5 py-1 text-[10px] text-subtle transition-colors hover:text-fg"
+              className="rounded-md px-2.5 py-1 text-[11px] text-subtle transition-colors hover:text-fg"
             >
               Dismiss
             </button>
@@ -467,7 +469,7 @@ export function VoicePanel({
           onSubmit={rotateKey}
           className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 border-t border-line px-3 py-2 sm:px-4"
         >
-          <span className="text-[10px] uppercase tracking-[0.1em] text-subtle">
+          <span className="text-[11px] uppercase tracking-[0.1em] text-subtle">
             Rotate passcode
           </span>
           <input
@@ -489,11 +491,11 @@ export function VoicePanel({
           <button
             type="submit"
             disabled={!keyCurrent || keyNext.length < 6}
-            className="h-7 rounded border border-line-strong px-2.5 text-[10px] text-fg transition-colors hover:bg-white/[0.06] disabled:opacity-40"
+            className="h-7 rounded border border-line-strong px-2.5 text-[11px] text-fg transition-colors hover:bg-white/[0.06] disabled:opacity-40"
           >
             Rotate
           </button>
-          {keyMsg && <span className="text-[10px] text-muted">{keyMsg}</span>}
+          {keyMsg && <span className="text-[11px] text-muted">{keyMsg}</span>}
         </form>
       )}
     </div>

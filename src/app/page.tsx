@@ -24,7 +24,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getRank } from "@/lib/ranks";
 import { roomDisplay } from "@/lib/rooms";
 import { getHiddenUserIds } from "@/lib/social";
-import { serializeTopic, serializeUser, timeAgo, type PublicUser } from "@/lib/utils";
+import { avatarUrlFor, serializeTopic, serializeUser, timeAgo, type PublicUser } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -107,12 +107,12 @@ export default async function HomePage({
       {/* ---------------- Editorial header ---------------- */}
       <section className="border-b border-line">
         <div className="page-shell grid gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <BrandMark size={18} />
               <p className="eyebrow">VYRON · Global social platform</p>
             </div>
-            <h1 className="display-title mt-5 max-w-3xl text-[2.7rem] text-fg sm:text-6xl">
+            <h1 className="display-title mt-5 max-w-3xl text-[2.25rem] text-fg sm:text-[2.7rem] lg:text-6xl">
               Conversations worth
               <br className="hidden sm:block" /> returning to.
             </h1>
@@ -244,7 +244,7 @@ export default async function HomePage({
               href="/forum/new"
               className="mb-5 flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3.5 transition-colors hover:border-line-strong"
             >
-              <Avatar name={publicUser.username} size={32} dev={publicUser.dev} />
+              <Avatar name={publicUser.username} size={32} dev={publicUser.dev} avatarUrl={avatarUrlFor(publicUser)} />
               <span className="flex-1 text-sm text-subtle">
                 Share something with the community…
               </span>
@@ -313,7 +313,7 @@ export default async function HomePage({
           <div className="mt-4 flex justify-end">
             <Link
               href="/forum"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-fg"
+              className="tap-target inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-white/[0.04] hover:text-fg"
             >
               Open the full forum <ArrowRightIcon size={13} />
             </Link>
@@ -326,8 +326,11 @@ export default async function HomePage({
               <h2 id="rooms-heading" className="text-sm font-medium text-fg">
                 Rooms
               </h2>
-              <Link href="/chat" className="text-[11px] text-subtle hover:text-fg">
-                All
+              <Link
+                href="/chat"
+                className="tap-target -mr-1 rounded px-1 text-[11px] text-subtle transition-colors hover:text-fg"
+              >
+                All rooms
               </Link>
             </div>
             <div className="mt-2 divide-y divide-line/70">
@@ -347,7 +350,7 @@ export default async function HomePage({
                         {display.name}
                         {room.isVault && <LockIcon size={11} className="text-subtle" />}
                       </span>
-                      <span className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-subtle">
+                      <span className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted">
                         {display.description}
                       </span>
                     </span>
@@ -362,8 +365,11 @@ export default async function HomePage({
               <h2 id="people-heading" className="text-sm font-medium text-fg">
                 Top members
               </h2>
-              <Link href="/players" className="text-[11px] text-subtle hover:text-fg">
-                All
+              <Link
+                href="/players"
+                className="tap-target -mr-1 rounded px-1 text-[11px] text-subtle transition-colors hover:text-fg"
+              >
+                All members
               </Link>
             </div>
             <div className="mt-2 divide-y divide-line/70">
@@ -373,10 +379,10 @@ export default async function HomePage({
                   href={`/players/${encodeURIComponent(member.username)}`}
                   className="flex items-center gap-2.5 py-2.5 transition-colors hover:bg-white/[0.02]"
                 >
-                  <Avatar name={member.username} size={26} dev={member.dev} />
+                  <Avatar name={member.username} size={26} dev={member.dev} avatarUrl={avatarUrlFor(member)} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] text-fg">{member.username}</span>
-                    <span className="block truncate text-[10px] text-subtle">{member.rank.name}</span>
+                    <span className="block truncate text-[11px] text-subtle">{member.rank.name}</span>
                   </span>
                   <span className="mono-meta shrink-0">{member.xp.toLocaleString()} XP</span>
                 </Link>
@@ -436,12 +442,12 @@ export default async function HomePage({
                       <FounderChip size="xs" />
                     </div>
                     <div className="mt-3 flex items-center gap-2.5">
-                      <Avatar name={member.username} size={30} dev={member.isDev} />
+                      <Avatar name={member.username} size={30} dev={member.isDev} avatarUrl={avatarUrlFor(member)} />
                       <div className="min-w-0">
                         <p className="truncate text-[13px] font-medium text-fg">
                           {member.username}
                         </p>
-                        <p className="truncate text-[10px] text-subtle">
+                        <p className="truncate text-[11px] text-subtle">
                           {getRank(member.xp).name} · {member.xp.toLocaleString()} XP
                         </p>
                       </div>

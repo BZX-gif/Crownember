@@ -6,7 +6,8 @@ import { Avatar, RankBadge } from "@/components/ui";
 import { EmptyState, Notice, buttonClass } from "@/components/primitives";
 import { CheckIcon, MailIcon, UsersIcon, XIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
-import { timeAgo, type PublicUser } from "@/lib/utils";
+import { RelativeTime } from "@/components/relative-time";
+import { avatarUrlFor, type PublicUser } from "@/lib/utils";
 
 interface ThreadRow {
   other: PublicUser;
@@ -115,7 +116,7 @@ export function DmInbox({
                 key={person.id}
                 className="flex items-center gap-3 rounded-lg border border-line bg-panel p-3"
               >
-                <Avatar name={person.username} size={36} dev={person.dev} />
+                <Avatar name={person.username} size={36} dev={person.dev} avatarUrl={avatarUrlFor(person)} />
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/players/${encodeURIComponent(person.username)}`}
@@ -123,7 +124,7 @@ export function DmInbox({
                   >
                     {person.username}
                   </Link>
-                  <p className="mt-0.5 text-[10px] text-subtle">
+                  <p className="mt-0.5 text-[11px] text-subtle">
                     {person.rank.name} · {person.xp.toLocaleString()} XP
                   </p>
                 </div>
@@ -132,7 +133,7 @@ export function DmInbox({
                     type="button"
                     onClick={() => void respond(person.username, true)}
                     disabled={busyName === person.username}
-                    className={buttonClass("primary", "sm", "h-7 px-2.5 text-[11px]")}
+                    className={buttonClass("primary", "sm", "h-8 px-2.5")}
                   >
                     <CheckIcon size={12} /> Accept
                   </button>
@@ -140,7 +141,7 @@ export function DmInbox({
                     type="button"
                     onClick={() => void respond(person.username, false)}
                     disabled={busyName === person.username}
-                    className={buttonClass("ghost", "sm", "h-7 px-2 text-[11px] text-subtle")}
+                    className={buttonClass("ghost", "icon-sm", "text-subtle")}
                     aria-label={`Decline request from ${person.username}`}
                   >
                     <XIcon size={13} />
@@ -185,16 +186,17 @@ export function DmInbox({
                   href={`/messages/${encodeURIComponent(thread.other.username)}`}
                   className="flex items-center gap-3 py-3.5 transition-colors hover:bg-white/[0.02]"
                 >
-                  <Avatar name={thread.other.username} size={38} dev={thread.other.dev} />
+                  <Avatar name={thread.other.username} size={38} dev={thread.other.dev} avatarUrl={avatarUrlFor(thread.other)} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-[13px] font-medium text-fg">
                         {thread.other.username}
                       </span>
                       <RankBadge rank={thread.other.rank} size="xs" />
-                      <span className="ml-auto shrink-0 text-[10px] text-subtle">
-                        {timeAgo(thread.lastAt)}
-                      </span>
+                      <RelativeTime
+                        date={thread.lastAt}
+                        className="ml-auto shrink-0 text-[11px] text-subtle"
+                      />
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted">
                       {thread.lastFromMe && (
@@ -221,7 +223,7 @@ export function DmInbox({
                 key={person.id}
                 className="flex items-center gap-3 rounded-lg border border-line px-3 py-2"
               >
-                <Avatar name={person.username} size={28} dev={person.dev} />
+                <Avatar name={person.username} size={28} dev={person.dev} avatarUrl={avatarUrlFor(person)} />
                 <Link
                   href={`/players/${encodeURIComponent(person.username)}`}
                   className="min-w-0 flex-1 truncate text-[12px] text-fg hover:underline"
@@ -232,7 +234,7 @@ export function DmInbox({
                   type="button"
                   onClick={() => void cancel(person.username)}
                   disabled={busyName === person.username}
-                  className="shrink-0 text-[10px] text-subtle transition-colors hover:text-fg"
+                  className="shrink-0 text-[11px] text-subtle transition-colors hover:text-fg"
                 >
                   {busyName === person.username ? "Withdrawing…" : "Withdraw"}
                 </button>
@@ -254,7 +256,7 @@ export function DmInbox({
                   href={`/messages/${encodeURIComponent(person.username)}`}
                   className="flex items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2 transition-colors hover:border-line-strong"
                 >
-                  <Avatar name={person.username} size={26} dev={person.dev} />
+                  <Avatar name={person.username} size={26} dev={person.dev} avatarUrl={avatarUrlFor(person)} />
                   <span className="min-w-0 flex-1 truncate text-[11px] text-fg">
                     {person.username}
                   </span>

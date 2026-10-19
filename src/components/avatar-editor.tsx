@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { Notice, buttonClass } from "@/components/primitives";
-import { TrashIcon } from "@/components/icons";
+import { Notice } from "@/components/primitives";
+import { PencilIcon, XIcon } from "@/components/icons";
 
 /**
  * Own-profile avatar: one client component owns both the visible photo and the
@@ -20,12 +20,12 @@ export function EditableAvatar({
   username: string;
   size: number;
   dev: boolean;
-  initialUrl: string;
+  initialUrl?: string;
 }) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState<string | undefined>(initialUrl);
-  const [hasImage, setHasImage] = useState(true);
+  const [hasImage, setHasImage] = useState(Boolean(initialUrl));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,47 +81,56 @@ export function EditableAvatar({
   }
 
   return (
-    <div>
-      <Avatar
-        name={username}
-        size={size}
-        dev={dev}
-        avatarUrl={hasImage ? url : ""}
-        decorative={false}
-        loading="eager"
-      />
+    <div className="flex flex-col items-start">
+      <div className="relative">
+        <Avatar
+          name={username}
+          size={size}
+          dev={dev}
+          avatarUrl={hasImage ? url : undefined}
+          decorative={false}
+          loading="eager"
+        />
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={(e) => void choose(e.target.files?.[0])}
-        aria-label="Upload profile photo"
-      />
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => void choose(e.target.files?.[0])}
+          aria-label="Upload profile photo"
+        />
+
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className={buttonClass("secondary", "sm", "h-7 px-2 text-[11px]")}
+          aria-label={hasImage ? "Change profile photo" : "Add a profile photo"}
+          title={hasImage ? "Change profile photo" : "Add a profile photo"}
+          className="absolute -bottom-0.5 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-line-strong bg-elevated text-muted shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-colors hover:bg-white/[0.12] hover:text-fg disabled:opacity-60"
         >
-          {busy ? "Saving…" : "Change photo"}
+          {busy ? (
+            <span className="spinner h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <PencilIcon size={13} />
+          )}
         </button>
-        {hasImage && (
+
+        {hasImage && !busy && (
           <button
             type="button"
             onClick={() => void remove()}
-            disabled={busy}
-            className={buttonClass("ghost", "sm", "h-7 px-2 text-[11px] text-subtle hover:text-danger")}
             aria-label="Remove profile photo"
+            title="Remove profile photo"
+            className="absolute -right-0.5 top-0 flex h-6 w-6 items-center justify-center rounded-full border border-line-strong bg-elevated text-subtle shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-colors hover:bg-white/[0.12] hover:text-danger"
           >
-            <TrashIcon size={12} /> Remove
+            <XIcon size={11} />
           </button>
         )}
       </div>
+
       {error && (
-        <Notice className="mt-2" variant="error">
+        <Notice className="mt-2.5" variant="error">
           {error}
         </Notice>
       )}

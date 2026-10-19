@@ -110,11 +110,11 @@ export function ProfileActions({
     <div className="mt-4">
       <div className="flex flex-wrap items-center gap-2">
         {iBlockedThem ? (
-          <Button variant="secondary" size="sm" onClick={() => void onBlock()} loading={busy === "block"}>
+          <Button variant="secondary" size="md" onClick={() => void onBlock()} loading={busy === "block"}>
             <UnlockIcon size={14} /> Unblock
           </Button>
         ) : theyBlockedMe ? (
-          <span className={buttonClass("secondary", "sm", "pointer-events-none opacity-70")}>
+          <span className={buttonClass("secondary", "md", "pointer-events-none opacity-70")}>
             <LockIcon size={14} /> Unavailable
           </span>
         ) : (
@@ -122,7 +122,7 @@ export function ProfileActions({
             {rel === "none" && (
               <Button
                 variant="primary"
-                size="sm"
+                size="md"
                 onClick={() => void onFriend()}
                 loading={busy === "friend"}
               >
@@ -131,12 +131,12 @@ export function ProfileActions({
             )}
             {rel === "outgoing" && (
               <>
-                <span className={buttonClass("secondary", "sm", "pointer-events-none text-muted")}>
+                <span className={buttonClass("secondary", "md", "pointer-events-none text-muted")}>
                   Request sent
                 </span>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={() => void onRemove()}
                   loading={busy === "remove"}
                 >
@@ -148,7 +148,7 @@ export function ProfileActions({
               <>
                 <Button
                   variant="primary"
-                  size="sm"
+                  size="md"
                   onClick={() => void onAccept()}
                   loading={busy === "accept"}
                 >
@@ -156,7 +156,7 @@ export function ProfileActions({
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={() => void onDecline()}
                   loading={busy === "decline"}
                 >
@@ -166,12 +166,12 @@ export function ProfileActions({
             )}
             {rel === "friends" && (
               <>
-                <span className={buttonClass("secondary", "sm", "pointer-events-none")}>
+                <span className={buttonClass("secondary", "md", "pointer-events-none")}>
                   <CheckIcon size={14} /> Friends
                 </span>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="md"
                   onClick={() => void onRemove()}
                   loading={busy === "remove"}
                 >
@@ -181,13 +181,13 @@ export function ProfileActions({
             )}
             <Link
               href={`/messages/${encodeURIComponent(targetUsername)}`}
-              className={buttonClass("secondary", "sm")}
+              className={buttonClass("secondary", "md")}
             >
               <MailIcon size={14} /> Message
             </Link>
             <Button
               variant="ghost"
-              size="sm"
+              size="md"
               onClick={() => void onBlock()}
               loading={busy === "block"}
               className="text-subtle hover:text-danger"

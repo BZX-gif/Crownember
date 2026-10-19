@@ -19,15 +19,21 @@ export function messageCutoff(isVault = false): Date {
   return new Date(Date.now() - ttlForRoom(isVault));
 }
 
+/**
+ * Milliseconds until a message clears. `now` defaults to the current clock;
+ * callers that render ("ExpiryCountdown") pass an explicit tick so the computed
+ * value is a pure function of their state rather than of render timing.
+ */
 export function msUntilExpiry(
   createdAt: Date | string,
   isVault = false,
+  now = Date.now(),
 ): number {
   const t =
     typeof createdAt === "string"
       ? new Date(createdAt).getTime()
       : createdAt.getTime();
-  return t + ttlForRoom(isVault) - Date.now();
+  return t + ttlForRoom(isVault) - now;
 }
 
 export function formatTimeLeft(ms: number): string {

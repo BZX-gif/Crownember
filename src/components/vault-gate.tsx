@@ -126,11 +126,11 @@ export function VaultGate({
           )}
 
           <div className="mt-6 space-y-1.5 border-t border-line pt-4 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-[10px] text-subtle">
+            <p className="flex items-center justify-center gap-1.5 text-[11px] text-subtle">
               <ShieldIcon size={11} /> Attempts are rate-limited. The passcode is
               never stored in your browser.
             </p>
-            <p className="flex items-center justify-center gap-1.5 text-[10px] text-subtle">
+            <p className="flex items-center justify-center gap-1.5 text-[11px] text-subtle">
               <KeyIcon size={11} /> Rotating the key signs every member out.
             </p>
           </div>

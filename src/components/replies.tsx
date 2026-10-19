@@ -6,7 +6,8 @@ import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
 import { ReplyComposer } from "@/components/reply-composer";
 import { EmptyState } from "@/components/primitives";
 import { ForumIcon } from "@/components/icons";
-import { cn, timeAgo, type PublicUser, type ReplyDTO } from "@/lib/utils";
+import { RelativeTime } from "@/components/relative-time";
+import { avatarUrlFor, cn, type PublicUser, type ReplyDTO } from "@/lib/utils";
 
 export function Replies({
   topicId,
@@ -23,8 +24,8 @@ export function Replies({
   useEffect(() => {
     if (window.location.hash !== "#composer") return;
     const el = document.getElementById("composer");
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
     const textarea = el?.querySelector("textarea");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
     textarea?.focus({ preventScroll: true });
   }, []);
 
@@ -44,13 +45,14 @@ export function Replies({
 
       <div className="mt-4">
         {user ? (
-          <ReplyComposer
-            id="composer"
-            topicId={topicId}
-            user={user}
-            onPosted={(reply) => setReplies((prev) => [...prev, reply])}
-            className="rounded-xl border border-line bg-panel p-4"
-          />
+          <div id="composer" className="scroll-mt-24">
+            <ReplyComposer
+              topicId={topicId}
+              user={user}
+              onPosted={(reply) => setReplies((prev) => [...prev, reply])}
+              className="rounded-xl border border-line bg-panel p-4"
+            />
+          </div>
         ) : (
           <div className="rounded-xl border border-line bg-panel px-5 py-4 text-sm text-muted">
             <Link href="/login" className="font-medium text-fg hover:underline">
@@ -80,9 +82,10 @@ export function Replies({
                 <Link
                   href={`/players/${encodeURIComponent(reply.author.username)}`}
                   className="rounded-full"
-                  aria-label={`${reply.author.username}'s profile`}
+                  aria-hidden="true"
+                  tabIndex={-1}
                 >
-                  <Avatar name={reply.author.username} size={28} dev={reply.author.dev} />
+                  <Avatar name={reply.author.username} size={28} dev={reply.author.dev} avatarUrl={avatarUrlFor(reply.author)} />
                 </Link>
                 {index < replies.length - 1 && (
                   <span className="mt-2 w-px flex-1 bg-line" aria-hidden="true" />
@@ -100,16 +103,11 @@ export function Replies({
                   {reply.author.founder && <FounderChip size="xs" />}
                   {reply.author.dev && <DevChip size="xs" />}
                   <span className="text-subtle" aria-hidden="true">·</span>
-                  <time
-                    dateTime={new Date(reply.createdAt).toISOString()}
-                    className="text-[11px] text-subtle"
-                  >
-                    {timeAgo(reply.createdAt)}
-                  </time>
+                  <RelativeTime date={reply.createdAt} className="text-xs text-subtle" />
                 </div>
                 <p
                   className={cn(
-                    "prose-body mt-1.5 text-[14px]",
+                    "prose-body mt-1.5 text-[14.5px]",
                     reply.author.dev && "font-mono text-[13px] text-fg",
                   )}
                 >

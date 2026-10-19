@@ -177,6 +177,8 @@ test("users: public serialization never exposes the legacy uid", () => {
     uid: "1662515387",
     bio: "",
     avatarColor: "#ff6a00",
+    avatarMime: "image/png",
+    avatarVersion: new Date(),
     xp: 300,
     likes: 2,
     isBot: false,
@@ -194,6 +196,7 @@ test("users: public serialization never exposes the legacy uid", () => {
   assert.equal(serialized.username, "Annabelle");
   assert.equal(serialized.rank.name, getRank(300).name);
   assert.equal(serialized.dev, false);
+  assert.equal(serialized.hasAvatar, true);
 });
 
 test("avatar: cache version is a stable seconds value with a fallback", () => {

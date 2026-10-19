@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn, initials } from "@/lib/utils";
 import { DevGlyph } from "@/components/icons";
 
 /**
- * Avatar: initials are always painted first, the photo is progressive
- * enhancement. The <img> only exists when a URL is known, uses native lazy
- * loading and falls back silently to the initials if the request 404s.
+ * Avatar: initials are the identity; a photo is progressive enhancement.
  *
- * The legacy `color` prop is accepted for call-site compatibility but is
- * intentionally ignored — VYRON identities are neutral graphite, never a
- * random hue.
+ * `avatarUrl` must only be provided when the member actually has a picture
+ * (see `avatarUrlFor`). Historically this component fetched
+ * `/api/profile/avatar` for every name, which produced a 404 and a broken-image
+ * glyph for every member without a photo. When a URL is present and fails —
+ * including a failure that happens before hydration attaches `onError` — the
+ * initials remain and the image is removed.
  */
 export function Avatar({
   name,
@@ -31,12 +32,25 @@ export function Avatar({
   decorative?: boolean;
   loading?: "lazy" | "eager";
 }) {
-  const [failed, setFailed] = useState(false);
-  const src =
-    avatarUrl === ""
-      ? null
-      : avatarUrl ?? `/api/profile/avatar?username=${encodeURIComponent(name)}`;
-  const showImage = !failed && src !== null;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const src = avatarUrl && avatarUrl.length > 0 ? avatarUrl : null;
+  // Failure is tracked per URL, so a new picture (after an upload) is attempted
+  // without a state-resetting effect.
+  const showImage = Boolean(src) && failedSrc !== src;
+
+  // An SSR'd image can finish (and fail) before React hydrates, in which case
+  // the onError handler never runs. Check once on mount and drop the element.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    const check = () => {
+      if (img.complete && img.naturalWidth === 0) setFailedSrc(src);
+    };
+    check();
+    const frame = requestAnimationFrame(check);
+    return () => cancelAnimationFrame(frame);
+  }, [src]);
 
   return (
     <div
@@ -45,7 +59,7 @@ export function Avatar({
       aria-label={decorative ? undefined : `${name}'s profile picture`}
     >
       <div
-        className="relative flex select-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#232326] font-medium text-fg"
+        className="relative flex select-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#1c1c1f] font-medium text-fg"
         style={{
           width: size,
           height: size,
@@ -54,10 +68,14 @@ export function Avatar({
         }}
         aria-hidden="true"
       >
-        <span>{initials(name)}</span>
-        {showImage && (
+        {/* Initials are painted by CSS so they stay decorative: the
+            surrounding link or button owns the accessible name, and no
+            screen reader announces a stray "MI" next to a username. */}
+        <span className="avatar-initials" data-initials={initials(name)} aria-hidden="true" />
+        {showImage && src && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            ref={imgRef}
             src={src}
             alt=""
             width={size}
@@ -65,13 +83,13 @@ export function Avatar({
             loading={loading}
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setFailed(true)}
+            onError={() => setFailedSrc(src)}
           />
         )}
       </div>
       {dev && (
         <span
-          className="absolute -bottom-1 -right-1 flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[#3a3a3f] bg-[#0a0a0b] text-white"
+          className="absolute -bottom-0.5 -right-0.5 flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[#3a3a3f] bg-[#0a0a0b] text-white"
           title="VYRON builder"
           aria-label="VYRON builder"
         >
