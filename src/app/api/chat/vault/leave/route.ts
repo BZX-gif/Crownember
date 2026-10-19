@@ -13,7 +13,7 @@ export async function POST() {
   const user = await getVaultUser();
   if (!user) {
     return NextResponse.json(
-      { error: "The Vault is sealed. 🔐" },
+      { error: "The Vault is sealed." },
       { status: 403 },
     );
   }

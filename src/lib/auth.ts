@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -32,7 +33,13 @@ export async function createSession(userId: number): Promise<string> {
 
 export type AuthUser = typeof users.$inferSelect;
 
-export async function getSessionUser(): Promise<AuthUser | null> {
+/**
+ * Request-scoped memoisation. A page renders its layout and its page body
+ * in the same request; without this, every route paid for the same session
+ * lookup twice. React cache is scoped to one server request, so it can never
+ * leak one member's session to another.
+ */
+export const getSessionUser = cache(async function getSessionUser(): Promise<AuthUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -54,7 +61,7 @@ export async function getSessionUser(): Promise<AuthUser | null> {
     return null;
   }
   return row.user;
-}
+});
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();

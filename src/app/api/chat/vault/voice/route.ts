@@ -31,7 +31,7 @@ export async function GET() {
   const user = await getVaultUser();
   if (!user) {
     return NextResponse.json(
-      { error: "The Vault is sealed. 🔐" },
+      { error: "The Vault is sealed." },
       { status: 403 },
     );
   }
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
   const user = await getVaultUser();
   if (!user) {
     return NextResponse.json(
-      { error: "The Vault is sealed. 🔐" },
+      { error: "The Vault is sealed." },
       { status: 403 },
     );
   }

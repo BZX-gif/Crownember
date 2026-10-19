@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
-import { cn } from "@/lib/utils";
-import type { PublicUser } from "@/lib/utils";
-
-const POSITION_STYLE = ["text-amber-400", "text-slate-300", "text-amber-700"];
+import { EmptyState } from "@/components/primitives";
+import { UsersIcon } from "@/components/icons";
+import { cn, type PublicUser } from "@/lib/utils";
 
 export function Leaderboard({
   byXp,
@@ -20,93 +19,102 @@ export function Leaderboard({
 
   return (
     <div className="mt-8">
-      <div className="mx-auto flex w-fit rounded-full border border-white/10 bg-slate-900 p-1">
-        <button
-          onClick={() => setTab("xp")}
-          className={cn(
-            "rounded-full px-6 py-2 text-sm font-black transition",
-            tab === "xp"
-              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950"
-              : "text-slate-400 hover:text-white",
-          )}
-        >
-          ⭐ By XP
-        </button>
-        <button
-          onClick={() => setTab("likes")}
-          className={cn(
-            "rounded-full px-6 py-2 text-sm font-black transition",
-            tab === "likes"
-              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950"
-              : "text-slate-400 hover:text-white",
-          )}
-        >
-          ❤️ By Likes
-        </button>
-      </div>
-
-      <div className="mt-6 space-y-2">
-        {rows.length === 0 && (
-          <p className="py-10 text-center text-slate-500">
-            No players yet — be the first!
-          </p>
-        )}
-        {rows.map((p, i) => (
-          <Link
-            key={p.id}
-            href={`/players/${encodeURIComponent(p.username)}`}
+      <div className="flex items-center justify-between gap-4 border-b border-line pb-3">
+        <div className="flex items-center gap-1 rounded-lg border border-line p-0.5" role="tablist" aria-label="Leaderboard metric">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "xp"}
+            onClick={() => setTab("xp")}
             className={cn(
-              "flex items-center gap-3 rounded-2xl border p-3.5 transition sm:gap-4 sm:px-5",
-              i === 0
-                ? "border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent"
-                : "border-white/10 bg-slate-900/60 hover:border-orange-500/30",
+              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              tab === "xp" ? "bg-white/[0.07] text-fg" : "text-muted hover:text-fg",
             )}
           >
-            <span
-              className={cn(
-                "w-8 text-center text-lg font-black",
-                POSITION_STYLE[i] ?? "text-slate-600",
-              )}
-            >
-              {i === 0 ? "👑" : `#${i + 1}`}
-            </span>
-            <Avatar name={p.username} color={p.avatarColor} size={44} dev={p.dev} />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate font-black text-white">{p.username}</p>
-                <RankBadge rank={p.rank} size="xs" />
-                {p.founder && <FounderChip size="xs" />}
-                {p.dev && <DevChip size="xs" />}
-              </div>
-              <div className="mt-1.5 h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${Math.max(4, p.rank.progress * 100)}%`,
-                    backgroundColor: p.rank.color,
-                  }}
-                />
-              </div>
-              {p.rank.nextMinXp !== null && (
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {p.rank.nextMinXp - p.xp} XP to {p.rank.nextMinXp && "next rank"}
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-lg font-black text-fire">
-                {tab === "xp"
-                  ? `${p.xp.toLocaleString()} XP`
-                  : `❤️ ${p.likes.toLocaleString()}`}
-              </p>
-              <p className="text-[11px] text-slate-500">
-                Level {p.rank.level}
-                {p.uid ? ` · UID ${p.uid}` : ""}
-              </p>
-            </div>
-          </Link>
-        ))}
+            Reputation
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "likes"}
+            onClick={() => setTab("likes")}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              tab === "likes" ? "bg-white/[0.07] text-fg" : "text-muted hover:text-fg",
+            )}
+          >
+            Appreciation
+          </button>
+        </div>
+        <p className="mono-meta hidden sm:block">
+          {tab === "xp" ? "Earned by contributing" : "Likes received"}
+        </p>
       </div>
+
+      {rows.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          icon={<UsersIcon size={18} />}
+          title="No members to show yet"
+          description="Once people start posting and replying, they will appear here."
+        />
+      ) : (
+        <ol className="divide-y divide-line">
+          {rows.map((person, index) => (
+            <li key={person.id}>
+              <Link
+                href={`/players/${encodeURIComponent(person.username)}`}
+                className="group flex items-center gap-3 py-3.5 transition-colors hover:bg-white/[0.02] sm:gap-4"
+              >
+                <span
+                  className={cn(
+                    "mono-meta w-7 shrink-0 text-center",
+                    index === 0 && "text-fg",
+                    index === 1 && "text-muted",
+                    index === 2 && "text-muted",
+                  )}
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Avatar name={person.username} size={38} dev={person.dev} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="truncate text-[13px] font-medium text-fg sm:text-sm">
+                      {person.username}
+                    </span>
+                    <RankBadge rank={person.rank} size="xs" />
+                    {person.founder && <FounderChip size="xs" />}
+                    {person.dev && <DevChip size="xs" />}
+                  </span>
+                  <span className="mt-1.5 flex items-center gap-2">
+                    <span className="h-1 w-full max-w-[180px] overflow-hidden rounded-full bg-white/[0.07]">
+                      <span
+                        className="block h-full rounded-full bg-fg/70"
+                        style={{ width: `${Math.max(3, person.rank.progress * 100)}%` }}
+                      />
+                    </span>
+                    <span className="hidden text-[10px] text-subtle sm:inline">
+                      Level {person.rank.level}
+                    </span>
+                  </span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-[13px] font-medium tabular-nums text-fg sm:text-sm">
+                    {tab === "xp"
+                      ? `${person.xp.toLocaleString()} XP`
+                      : `${person.likes.toLocaleString()} likes`}
+                  </span>
+                  <span className="mt-0.5 hidden text-[10px] text-subtle sm:block">
+                    {person.rank.nextMinXp !== null
+                      ? `${Math.max(0, person.rank.nextMinXp - person.xp).toLocaleString()} XP to next tier`
+                      : "Highest tier"}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

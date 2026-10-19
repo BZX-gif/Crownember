@@ -10,7 +10,6 @@ import {
   topics,
   topicLikes,
   users,
-  waitlist,
 } from "./schema";
 import { hashPassword } from "../lib/password";
 
@@ -160,7 +159,7 @@ async function main() {
     .set({ isBot: true })
     .where(inArray(users.id, botRows.map((b) => b.id)));
 
-  // Founding Squad cap + a little waitlist social proof. The Vault gets NO
+  // Founding seat cap. The Vault gets NO
   // default passcode: a founder forges the first key in-app, so no secret is
   // ever committed to this repository. (If your DB predates this change and
   // still unlocks with the old default key, rotate it from inside the Vault.)
@@ -168,14 +167,7 @@ async function main() {
     .insert(settings)
     .values([{ key: "max_players", value: "10" }])
     .onConflictDoNothing();
-  await db
-    .insert(waitlist)
-    .values([
-      { nickname: "creative_mind", note: "Excited to join the community!" },
-      { nickname: "builder_joe", note: "Been looking for a platform like this" },
-      { nickname: "designer_amy", note: "Love the minimal aesthetic" },
-    ])
-    .onConflictDoNothing();
+  // The waitlist is not seeded: an invented queue would be fake scarcity.
 
   const byName = (n: string) =>
     botRows.find((b) => b.username === n) ?? botRows[0];

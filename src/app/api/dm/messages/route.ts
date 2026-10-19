@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const withName = url.searchParams.get("with") ?? "";
   const after = Math.max(0, Number(url.searchParams.get("after") ?? "0") || 0);
   const other = await findUserByUsername(withName);
-  if (!other) return NextResponse.json({ error: "Player not found." }, { status: 404 });
+  if (!other) return NextResponse.json({ error: "Member not found." }, { status: 404 });
   await purgeExpiredMessages();
   const block = await getBlockState(user.id, other.id);
   if (block.any) return NextResponse.json({ sealed: true, messages: [] });
@@ -52,12 +52,12 @@ export async function POST(req: Request) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
   const content = String(body.content ?? "").trim();
   const other = await findUserByUsername(String(body.username ?? ""));
-  if (!other) return NextResponse.json({ error: "Player not found." }, { status: 404 });
-  if (other.id === user.id) return NextResponse.json({ error: "Notes to self go in the forum. 😄" }, { status: 400 });
+  if (!other) return NextResponse.json({ error: "Member not found." }, { status: 404 });
+  if (other.id === user.id) return NextResponse.json({ error: "You cannot message yourself." }, { status: 400 });
   if (!content || content.length > MAX_DM_LENGTH) return NextResponse.json({ error: `Message must be 1-${MAX_DM_LENGTH} characters.` }, { status: 400 });
-  if (containsInjection(content)) return NextResponse.json({ error: "Messages can't contain code or script tags. 🛡️" }, { status: 400 });
+  if (containsInjection(content)) return NextResponse.json({ error: "Messages cannot contain code or script tags." }, { status: 400 });
   const block = await getBlockState(user.id, other.id);
-  if (block.any) return NextResponse.json({ error: "This channel is sealed. 🔒" }, { status: 403 });
+  if (block.any) return NextResponse.json({ error: "This conversation is sealed." }, { status: 403 });
   const verdict = await enforceAbuseRule(user, content);
   if (!verdict.ok) return NextResponse.json({ error: verdict.error, code: verdict.code, mutedUntil: verdict.mutedUntil }, { status: 403 });
   const [created] = await db.insert(directMessages).values({ senderId: user.id, recipientId: other.id, content }).returning();
@@ -73,7 +73,7 @@ export async function PUT(req: Request) {
   const content = String(body.content ?? "").trim();
   if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Invalid message." }, { status: 400 });
   if (!content || content.length > MAX_DM_LENGTH) return NextResponse.json({ error: `Message must be 1-${MAX_DM_LENGTH} characters.` }, { status: 400 });
-  if (containsInjection(content)) return NextResponse.json({ error: "Messages can't contain code or script tags. 🛡️" }, { status: 400 });
+  if (containsInjection(content)) return NextResponse.json({ error: "Messages cannot contain code or script tags." }, { status: 400 });
   const cutoff = new Date(Date.now() - EDIT_WINDOW_MS);
   const [updated] = await db.update(directMessages).set({ content }).where(and(
     eq(directMessages.id, id),

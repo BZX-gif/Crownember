@@ -1,68 +1,73 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Chrome } from "@/components/chrome";
-import { NotificationCenter } from "@/components/notification-center";
 import { SecurityGuard } from "@/components/security-guard";
+import { ToastProvider } from "@/components/toast";
 import { getSessionUser } from "@/lib/auth";
+import { countPendingRequests } from "@/lib/social";
 import { serializeUser } from "@/lib/utils";
 
-/* System font stacks — no external dependencies, works everywhere.
- * CSS variables are defined in globals.css for consistency. */
-const fontDisplayVariable = "--font-russo";
-const fontBodyVariable = "--font-grotesk";
-const fontHudVariable = "--font-jetbrains";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://crownember.vercel.app";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://crownember.vercel.app"),
+  metadataBase: new URL(siteUrl),
+  applicationName: "VYRON",
   title: {
-    default: "VYRON — Global Social Platform",
-    template: "%s | VYRON",
+    default: "VYRON — Conversations worth returning to",
+    template: "%s · VYRON",
   },
   description:
-    "VYRON — a premium global social platform. Share thoughts, join conversations, build your presence. Luxury design, zero compromise.",
-  keywords: [
-    "social platform",
-    "global community",
-    "discussions",
-    "social network",
-    "VYRON",
-  ],
+    "VYRON is a global social platform for thoughtful conversations: a permanent forum, ephemeral rooms, and direct messages built around real people.",
+  keywords: ["social platform", "community", "forum", "discussions", "VYRON"],
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    shortcut: ["/favicon.ico"],
+  },
+  manifest: "/manifest.json",
   openGraph: {
-    title: "VYRON — Global Social Platform",
-    description: "A premium global social platform. Share thoughts, join conversations, build your presence.",
+    title: "VYRON — Conversations worth returning to",
+    description:
+      "A global social platform for thoughtful conversations. Permanent forum, ephemeral rooms, real people.",
     type: "website",
     siteName: "VYRON",
+    url: siteUrl,
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "VYRON — Conversations worth returning to",
+    description:
+      "A global social platform for thoughtful conversations. Permanent forum, ephemeral rooms, real people.",
+  },
+  robots: { index: true, follow: true },
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export const viewport: Viewport = {
+  themeColor: "#050505",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const user = await getSessionUser();
   const publicUser = user ? serializeUser(user) : null;
+  const pendingRequests = user ? await countPendingRequests(user.id) : 0;
+
   return (
-    <html
-      lang="en"
-      className={`${fontDisplayVariable} ${fontBodyVariable} ${fontHudVariable}`}
-    >
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
-        {/* Preconnect to Google Fonts for production (optional enhancement) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body className="min-h-screen bg-black font-body text-white antialiased">
-        <SecurityGuard />
-        <Chrome user={publicUser}>
-          {children}
-          <NotificationCenter user={publicUser} />
-        </Chrome>
+    <html lang="en">
+      <body className="min-h-screen bg-ink text-fg antialiased">
+        <ToastProvider>
+          <SecurityGuard />
+          <Chrome user={publicUser} pendingRequests={pendingRequests}>
+            {children}
+          </Chrome>
+        </ToastProvider>
       </body>
     </html>
   );

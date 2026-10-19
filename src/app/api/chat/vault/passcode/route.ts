@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user || !user.founder) {
     return NextResponse.json(
-      { error: "Only 🛡️ Founding Squad members can rotate the Vault key." },
+      { error: "Only founding members can rotate the Vault passcode." },
       { status: 403 },
     );
   }

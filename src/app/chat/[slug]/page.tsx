@@ -3,59 +3,106 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChatRoom } from "@/components/chat-room";
-import { GlobalChatActions } from "@/components/global-chat-actions";
 import { VaultGate } from "@/components/vault-gate";
+import { Brand } from "@/components/brand";
+import { buttonClass } from "@/components/primitives";
+import { ArrowLeftIcon } from "@/components/icons";
 import { db } from "@/db";
 import { rooms } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
-import { serializeUser } from "@/lib/utils";
+import { getRoomMessages, getRoomOnlineCount, getRoomReactions } from "@/lib/chat";
+import { roomDisplay } from "@/lib/rooms";
+import { serializeMessage, serializeUser } from "@/lib/utils";
 import { getVaultPasscodeHash, getVaultUser } from "@/lib/vault";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
-  const room = await db.select({ name: rooms.name }).from(rooms).where(eq(rooms.slug, slug)).limit(1);
-  return { title: room[0] ? room[0].name : "Chat" };
+  const rows = await db
+    .select({ slug: rooms.slug, name: rooms.name, isVault: rooms.isVault, description: rooms.description })
+    .from(rooms)
+    .where(eq(rooms.slug, slug))
+    .limit(1);
+  const room = rows[0];
+  if (!room) return { title: "Chat" };
+  const display = roomDisplay(room);
+  return { title: display.name, description: display.description };
 }
 
-export default async function RoomPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function RoomPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
-  const [user, room] = await Promise.all([
+  const [user, roomRows] = await Promise.all([
     getSessionUser(),
     db.select().from(rooms).where(eq(rooms.slug, slug)).limit(1),
   ]);
-  if (!room[0]) notFound();
+  const room = roomRows[0];
+  if (!room) notFound();
 
-  const isVault = room[0].isVault;
+  const isVault = room.isVault;
   const [vaultUser, vaultHash] = await Promise.all([
     isVault ? getVaultUser() : Promise.resolve(null),
     isVault ? getVaultPasscodeHash() : Promise.resolve(null),
   ]);
-  const current = room[0];
 
   if (isVault && !vaultUser) {
     return (
-      <div className="bg-grid flex h-[100dvh] items-center justify-center overflow-y-auto p-4">
-        <div className="w-full max-w-md">
-          <VaultGate needsSetup={!vaultHash} isFounder={Boolean(user?.founder)} username={user?.username ?? null} />
-          <Link href="/chat" className="mt-4 block text-center font-hud text-xs font-bold uppercase tracking-widest text-slate-500 transition hover:text-orange-400">
-            ← back to inbox
-          </Link>
+      <div className="nice-scroll flex min-h-[100dvh] flex-col bg-ink">
+        <header
+          className="border-b border-line"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        >
+          <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
+            <Link href="/" aria-label="VYRON home">
+              <Brand />
+            </Link>
+            <Link href="/chat" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
+              <ArrowLeftIcon size={14} /> Rooms
+            </Link>
+          </div>
+        </header>
+        <div className="flex flex-1 items-center justify-center px-4 py-10">
+          <div className="w-full max-w-md">
+            <VaultGate
+              needsSetup={!vaultHash}
+              isFounder={Boolean(user?.founder)}
+              username={user?.username ?? null}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
+  const [initialRows, initialReactions, online] = await Promise.all([
+    getRoomMessages(room.id, isVault),
+    getRoomReactions(room.id, user?.id ?? null),
+    getRoomOnlineCount(room.id),
+  ]);
+
+  const display = roomDisplay(room);
+
   return (
-    <div className="relative h-[100dvh]">
-      <ChatRoom
-        room={{ slug: current.slug, name: current.name, description: current.description, icon: current.icon, color: current.color }}
-        user={user ? serializeUser(user) : null}
-        vault={isVault}
-        vaultIsFounder={Boolean(user?.founder)}
-      />
-      <GlobalChatActions />
-    </div>
+    <ChatRoom
+      room={{
+        slug: room.slug,
+        name: display.name,
+        description: display.description,
+        retention: display.retention,
+        isVault,
+      }}
+      user={user ? serializeUser(user) : null}
+      initialMessages={initialRows.map((row) => serializeMessage(row.message, row.author))}
+      initialReactions={initialReactions}
+      initialOnline={online}
+    />
   );
 }

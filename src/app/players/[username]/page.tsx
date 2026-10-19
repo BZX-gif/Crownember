@@ -1,16 +1,19 @@
 import Link from "next/link";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
-import { AvatarEditor } from "@/components/avatar-editor";
+import { EditableAvatar } from "@/components/avatar-editor";
+import { PostRow } from "@/components/post-row";
+import { ProfileActions } from "@/components/profile-actions";
+import { EmptyState, buttonClass } from "@/components/primitives";
+import { LockIcon, MailIcon, PencilIcon } from "@/components/icons";
 import { db } from "@/db";
-import { replies, topics, users } from "@/db/schema";
+import { replies, topicLikes, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { eqLower } from "@/lib/lookup";
 import { getBlockState, getRelationship } from "@/lib/social";
-import { ProfileActions } from "@/components/profile-actions";
-import { categoryMeta, formatDate, timeAgo } from "@/lib/utils";
+import { serializeTopic, serializeUser, formatDate } from "@/lib/utils";
 import { getRank } from "@/lib/ranks";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +24,7 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  return { title: `${username} — Player Profile` };
+  return { title: username };
 }
 
 export default async function ProfilePage({
@@ -30,11 +33,11 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+
   const rows = await db
     .select({
       id: users.id,
       username: users.username,
-      uid: users.uid,
       bio: users.bio,
       avatarColor: users.avatarColor,
       xp: users.xp,
@@ -44,8 +47,9 @@ export default async function ProfilePage({
       isDev: users.isDev,
     })
     .from(users)
-    .where(eqLower(users.username, username))
+    .where(and(eq(users.isBot, false), eqLower(users.username, username)))
     .limit(1);
+
   const profile = rows[0];
   if (!profile) notFound();
   if (profile.username !== username) {
@@ -62,185 +66,233 @@ export default async function ProfilePage({
 
   if (blockState.theyBlockedMe && !blockState.iBlockedThem) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16">
-        <div className="hud-corners clip-card bg-slate-900/80 p-8 text-center">
-          <span className="text-5xl">🚫</span>
-          <h1 className="mt-4 font-display text-2xl uppercase tracking-wide text-white">
-            Presence <span className="text-fire">sealed</span>
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
-            This player has sealed their presence from you. Their words,
-            topics and profile details no longer exist in your world.
+      <div className="page-shell max-w-md py-20">
+        <div className="rounded-xl border border-line bg-panel p-8 text-center">
+          <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-line text-muted">
+            <LockIcon size={18} />
+          </span>
+          <h1 className="display-title mt-5 text-2xl text-fg">This profile is sealed</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            A block sits between you. Their posts, replies and profile details are
+            removed from your view, and yours are removed from theirs.
           </p>
+          <Link href="/players" className={buttonClass("secondary", "sm", "mt-6")}>
+            Back to people
+          </Link>
         </div>
       </div>
     );
   }
 
-  const [counts, recentTopics] = await Promise.all([
+  const [countsRows, recentRows] = await Promise.all([
     db.execute(sql`
       select
         (select count(*)::int from topics where user_id = ${profile.id}) as topics,
         (select count(*)::int from replies where user_id = ${profile.id}) as replies
     `),
-    db
-      .select({ topic: topics })
-      .from(topics)
-      .where(eq(topics.userId, profile.id))
-      .orderBy(desc(topics.id))
-      .limit(8),
+    blockState.any
+      ? Promise.resolve([])
+      : db
+          .select({ topic: topics, author: users })
+          .from(topics)
+          .innerJoin(users, eq(topics.userId, users.id))
+          .where(and(eq(topics.userId, profile.id), eq(users.isBot, false)))
+          .orderBy(desc(topics.id))
+          .limit(6),
   ]);
 
+  const likedRows =
+    viewer && recentRows.length > 0
+      ? await db
+          .select({ topicId: topicLikes.topicId })
+          .from(topicLikes)
+          .where(
+            and(
+              eq(topicLikes.userId, viewer.id),
+              inArray(topicLikes.topicId, recentRows.map((r) => r.topic.id)),
+            ),
+          )
+      : [];
+  const liked = new Set(likedRows.map((r) => r.topicId));
+
   const rank = getRank(profile.xp);
-  const stats = counts.rows[0] as unknown as {
-    topics: number;
-    replies: number;
-  };
-  // The avatar endpoint is deliberately no-store, so the profile page does
-  // not need to read or format avatarVersion at all.
+  const stats = countsRows.rows[0] as unknown as { topics: number; replies: number };
+  const isSelf = viewer?.id === profile.id;
+  const publicViewer = viewer ? serializeUser(viewer) : null;
   const avatarUrl = `/api/profile/avatar?username=${encodeURIComponent(profile.username)}`;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-      <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70">
-        <div
-          className="h-24 sm:h-28"
-          style={{
-            background: `linear-gradient(120deg, ${profile.avatarColor}55, ${profile.avatarColor}11)`,
-          }}
-        />
-        <div className="px-5 pb-6 sm:px-8">
-          <div className="-mt-11 flex flex-wrap items-end gap-4">
-            <div>
-              <Avatar
-                name={profile.username}
-                color={profile.avatarColor}
-                avatarUrl={avatarUrl}
-                size={88}
-                dev={profile.isDev}
-                className="border-4 border-slate-950"
-              />
-              {viewer?.id === profile.id && (
-                <AvatarEditor username={profile.username} avatarUrl={avatarUrl} />
+    <div className="page-shell max-w-4xl py-8 sm:py-10">
+      <section className="overflow-hidden rounded-xl border border-line bg-panel">
+        <div className="h-16 border-b border-line bg-[#0c0c0e]" aria-hidden="true" />
+        <div className="px-5 pb-6 sm:px-7">
+          <div className="-mt-8 flex flex-wrap items-end gap-4">
+            <div className="rounded-full border-4 border-panel">
+              {isSelf ? (
+                <EditableAvatar
+                  username={profile.username}
+                  size={82}
+                  dev={profile.isDev}
+                  initialUrl={avatarUrl}
+                />
+              ) : (
+                <Avatar
+                  name={profile.username}
+                  size={82}
+                  dev={profile.isDev}
+                  avatarUrl={avatarUrl}
+                  decorative={false}
+                  loading="eager"
+                />
               )}
             </div>
-            <div className="flex-1 pb-1">
+            <div className="min-w-0 flex-1 pb-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-black">{profile.username}</h1>
+                <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
+                  {profile.username}
+                </h1>
                 <RankBadge rank={rank} size="md" />
                 {profile.founder && <FounderChip size="md" />}
                 {profile.isDev && <DevChip size="sm" />}
               </div>
-              {viewer && (
-                <ProfileActions
-                  targetUsername={profile.username}
-                  relationship={relationship}
-                  iBlockedThem={blockState.iBlockedThem}
-                  theyBlockedMe={blockState.theyBlockedMe}
-                />
-              )}
-              {!viewer && (
-                <p className="mt-3 font-hud text-[11px] uppercase tracking-wider text-slate-500">
-                  <Link href="/login" className="text-orange-400 hover:underline">
-                    Log in
-                  </Link>{" "}
-                  to add friends, message or block
-                </p>
-              )}
-              <p className="mt-1 text-sm text-slate-400">
-                Level {rank.level} · Joined {formatDate(profile.createdAt)}
-                {profile.uid ? ` · UID ${profile.uid}` : ""}
+              <p className="mono-meta mt-1.5">
+                {rank.name} · Level {rank.level} · Joined {formatDate(profile.createdAt)}
               </p>
             </div>
           </div>
 
+          {viewer && (
+            <ProfileActions
+              targetUsername={profile.username}
+              relationship={relationship}
+              iBlockedThem={blockState.iBlockedThem}
+              theyBlockedMe={blockState.theyBlockedMe}
+            />
+          )}
+          {!viewer && (
+            <p className="mt-3 text-xs text-subtle">
+              <Link href="/login" className="text-fg hover:underline">
+                Sign in
+              </Link>{" "}
+              to add a friend, send a message or manage a block.
+            </p>
+          )}
+
           {profile.bio && (
-            <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[#d4d4d8]">
               {profile.bio}
             </p>
           )}
 
-          <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-bold" style={{ color: rank.color }}>
-                {rank.icon} {rank.name}
-              </span>
-              <span className="text-slate-400">
+          <div className="mt-6 rounded-lg border border-line bg-ink/40 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-muted">{rank.name}</span>
+              <span className="mono-meta">
                 {rank.nextMinXp !== null
                   ? `${profile.xp.toLocaleString()} / ${rank.nextMinXp.toLocaleString()} XP`
-                  : `${profile.xp.toLocaleString()} XP — max rank!`}
+                  : `${profile.xp.toLocaleString()} XP · highest tier`}
               </span>
             </div>
-            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.07]">
               <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${rank.progress * 100}%`,
-                  background: `linear-gradient(90deg, ${rank.color}, #ff6a00)`,
-                }}
+                className="h-full rounded-full bg-fg/80"
+                style={{ width: `${Math.max(2, rank.progress * 100)}%` }}
               />
             </div>
-            {rank.nextMinXp !== null && (
-              <p className="mt-1.5 text-xs text-slate-500">
-                {rank.nextMinXp - profile.xp} XP to the next rank — keep
-                chatting! 🔥
-              </p>
-            )}
+            <p className="mt-2 text-[10px] text-subtle">
+              {rank.nextMinXp !== null
+                ? `${Math.max(0, rank.nextMinXp - profile.xp).toLocaleString()} XP to ${getRank(rank.nextMinXp).name}.`
+                : "The highest reputation tier on VYRON."}
+            </p>
           </div>
 
-          <dl className="mt-4 grid grid-cols-3 gap-3">
+          <dl className="mt-5 grid grid-cols-2 divide-x divide-line rounded-lg border border-line sm:grid-cols-4">
             {[
-              { label: "Topics", value: stats.topics, icon: "✍️" },
-              { label: "Replies", value: stats.replies, icon: "↩️" },
-              { label: "Likes", value: profile.likes, icon: "❤️" },
-            ].map((s) => (
+              { label: "Topics", value: stats.topics },
+              { label: "Replies", value: stats.replies },
+              { label: "Appreciation", value: profile.likes },
+              { label: "Reputation", value: profile.xp },
+            ].map((item, index) => (
               <div
-                key={s.label}
-                className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-center"
+                key={item.label}
+                className={index > 1 ? "border-t border-line sm:border-t-0" : ""}
               >
-                <dd className="text-xl font-black text-white sm:text-2xl">
-                  {s.icon} {s.value.toLocaleString()}
-                </dd>
-                <dt className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {s.label}
-                </dt>
+                <div className="px-4 py-3">
+                  <dd className="text-base font-medium tabular-nums text-fg">
+                    {item.value.toLocaleString()}
+                  </dd>
+                  <dt className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-subtle">
+                    {item.label}
+                  </dt>
+                </div>
               </div>
             ))}
           </dl>
 
-          <p className="mt-3 text-center font-hud text-[10px] uppercase tracking-wider text-slate-600">
-            🔒 chat history is private — never shown on profiles
+          <p className="mt-3 text-[10px] text-subtle">
+            Chat history is private. Only forum activity is shown here.
           </p>
         </div>
-      </div>
+      </section>
 
-      <section className={blockState.any ? "mt-8 hidden" : "mt-8"}>
-        <h2 className="text-lg font-black">✍️ Topics Started</h2>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {recentTopics.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-slate-900/60 p-4 text-sm text-slate-500">
-              No topics yet.
-            </p>
+      <section className="mt-9" aria-labelledby="activity-heading">
+        <div className="flex items-center justify-between gap-4 border-b border-line pb-3">
+          <h2 id="activity-heading" className="text-sm font-medium text-fg">
+            Conversations
+          </h2>
+          {isSelf && (
+            <Link
+              href="/forum/new"
+              className="inline-flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-fg"
+            >
+              <PencilIcon size={13} /> New post
+            </Link>
           )}
-          {recentTopics.map(({ topic }) => {
-            const meta = categoryMeta(topic.category);
-            return (
-              <Link
-                key={topic.id}
-                href={`/forum/${topic.id}`}
-                className="block rounded-xl border border-white/10 bg-slate-900/60 p-4 transition hover:border-orange-500/30"
-              >
-                <p className="text-xs text-slate-500">
-                  {meta.icon} {meta.label} · {timeAgo(topic.createdAt)}
-                </p>
-                <p className="mt-1 font-bold text-slate-100">{topic.title}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  ❤️ {topic.likes} · 💬 {topic.replyCount}
-                </p>
-              </Link>
-            );
-          })}
         </div>
+
+        {blockState.any ? (
+          <EmptyState
+            className="mt-5"
+            icon={<LockIcon size={17} />}
+            title="Activity hidden"
+            description="A block removes both members from each other's public activity."
+          />
+        ) : recentRows.length === 0 ? (
+          <EmptyState
+            className="mt-5"
+            title="No conversations yet"
+            description={
+              isSelf
+                ? "Your posts will appear here. Start with something you would want to reply to."
+                : "This member has not started a conversation yet."
+            }
+            action={
+              isSelf ? (
+                <Link href="/forum/new" className={buttonClass("primary", "sm")}>
+                  Write your first post
+                </Link>
+              ) : (
+                <Link
+                  href={`/messages/${encodeURIComponent(profile.username)}`}
+                  className={buttonClass("secondary", "sm")}
+                >
+                  <MailIcon size={14} /> Send a message
+                </Link>
+              )
+            }
+          />
+        ) : (
+          <div className="divide-y divide-line">
+            {recentRows.map(({ topic, author }) => (
+              <PostRow
+                key={topic.id}
+                topic={serializeTopic(topic, author)}
+                user={publicViewer}
+                liked={liked.has(topic.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

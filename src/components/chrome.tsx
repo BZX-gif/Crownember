@@ -6,24 +6,46 @@ import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import type { PublicUser } from "@/lib/utils";
 
-/** VYRON site chrome; chat and DM routes remain full-screen. */
-export function Chrome({ user, children }: { user: PublicUser | null; children: ReactNode }) {
-  const pathname = usePathname();
-  const isChat = pathname === "/chat" || pathname?.startsWith("/chat/") === true || pathname === "/messages" || pathname?.startsWith("/messages/") === true;
-  if (isChat) return <div className="h-[100dvh] overflow-hidden">{children}</div>;
+/**
+ * Site chrome. Rooms and direct messages are full-height application screens
+ * with their own app bars, so the marketing footer and top navigation are not
+ * stacked around them.
+ */
+export function Chrome({
+  user,
+  pendingRequests = 0,
+  children,
+}: {
+  user: PublicUser | null;
+  pendingRequests?: number;
+  children: ReactNode;
+}) {
+  const pathname = usePathname() ?? "/";
+  const isAppScreen =
+    pathname === "/chat" ||
+    pathname.startsWith("/chat/") ||
+    pathname === "/messages" ||
+    pathname.startsWith("/messages/");
+
+  if (isAppScreen) {
+    return <div className="h-[100dvh] overflow-hidden">{children}</div>;
+  }
+
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <a
         href="#main-content"
-        className="skip-link clip-tag bg-orange-500 px-4 py-2 font-display text-xs uppercase tracking-widest text-slate-950"
+        className="skip-link rounded-lg bg-fg px-4 py-2 text-xs font-medium text-ink"
       >
         Skip to content
       </a>
-      <Navbar user={user} />
-      <main id="main-content" className="min-h-[70vh]">
+      <Navbar user={user} pendingRequests={pendingRequests} />
+      <main id="main-content" className="flex-1 pb-16 md:pb-0">
         {children}
       </main>
-      <Footer />
-    </>
+      <div className="pb-16 md:pb-0">
+        <Footer />
+      </div>
+    </div>
   );
 }

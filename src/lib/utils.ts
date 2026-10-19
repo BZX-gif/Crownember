@@ -32,16 +32,16 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-const AVATAR_COLORS = [
-  "#ff6a00",
-  "#f43f5e",
-  "#8b5cf6",
-  "#0ea5e9",
-  "#10b981",
-  "#eab308",
-  "#ec4899",
-  "#14b8a6",
-];
+export function excerpt(text: string, max = 220): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > max * 0.6 ? lastSpace : max).trimEnd()}…`;
+}
+
+/** Neutral graphite palette — VYRON does not tint identities by hue. */
+const AVATAR_COLORS = ["#27272a", "#303033", "#3a3a3f", "#44444a"];
 
 export function colorForName(name: string): string {
   let h = 0;
@@ -58,10 +58,20 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/**
+ * Compact, cache-safe avatar version string. Accepts the row's
+ * `avatar_version` timestamp (when the caller has it) and falls back to a
+ * stable placeholder so the URL is still deterministic.
+ */
+export function avatarVersion(value?: Date | string | null): string {
+  if (!value) return "0";
+  const time = typeof value === "string" ? new Date(value) : value;
+  return String(Math.floor(time.getTime() / 1000));
+}
+
 export interface PublicUser {
   id: number;
   username: string;
-  uid: string;
   bio: string;
   avatarColor: string;
   xp: number;
@@ -72,11 +82,16 @@ export interface PublicUser {
   rank: RankInfo;
 }
 
+/**
+ * The public shape of a member.
+ * `uid` is deliberately NOT included: it is a legacy external identifier
+ * that was being rendered on public leaderboards. It stays in the database
+ * for account continuity but is never sent to a browser again.
+ */
 export function serializeUser(u: typeof users.$inferSelect): PublicUser {
   return {
     id: u.id,
     username: u.username,
-    uid: u.uid,
     bio: u.bio,
     avatarColor: u.avatarColor,
     xp: u.xp,
@@ -157,14 +172,20 @@ export function serializeReply(
   };
 }
 
+/**
+ * Category slugs are stored in the database, so they stay stable. Labels and
+ * icons are presentation only and can evolve without a migration.
+ */
 export const CATEGORIES = [
-  { slug: "general", label: "General", icon: "💬" },
-  { slug: "tips", label: "Tips & Tricks", icon: "🎯" },
-  { slug: "squad", label: "Squad Up", icon: "🤝" },
-  { slug: "tournament", label: "Tournaments", icon: "🏆" },
-  { slug: "memes", label: "Memes & Fun", icon: "😂" },
-  { slug: "news", label: "Bugs & News", icon: "📣" },
+  { slug: "general", label: "General", icon: "chat" },
+  { slug: "tips", label: "Ideas", icon: "bulb" },
+  { slug: "squad", label: "Connections", icon: "users" },
+  { slug: "tournament", label: "Showcase", icon: "spark" },
+  { slug: "memes", label: "Culture", icon: "smile" },
+  { slug: "news", label: "Updates", icon: "megaphone" },
 ] as const;
+
+export type CategoryIcon = (typeof CATEGORIES)[number]["icon"];
 
 export function categoryMeta(slug: string) {
   return CATEGORIES.find((c) => c.slug === slug) ?? CATEGORIES[0];

@@ -1,326 +1,240 @@
 @import "tailwindcss";
 
+/* ============================================================
+   VYRON design tokens
+   One restrained system: deep ink, charcoal surfaces, crisp white,
+   controlled grey. No decorative gradients, no glow, no gaming hue.
+   ============================================================ */
 @theme {
-  --font-display: "Russo One", "Arial Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-hud: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-ink: #050505;
+  --color-panel: #0a0a0b;
+  --color-raised: #101012;
+  --color-elevated: #17171a;
+  --color-line: #232327;
+  --color-line-strong: #34343a;
+  --color-fg: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-subtle: #7c7c86;
+  --color-success: #6ee7b7;
+  --color-danger: #fda4af;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
 }
 
 :root {
   color-scheme: dark;
+  --nav-height: 3.75rem;
+}
+
+* {
+  border-color: var(--color-line);
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: #000;
+  background-color: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background-color: rgba(244, 244, 245, 0.95);
+  color: #050505;
 }
 
-/* ============ VYRON Brand Accent ============ */
-.text-vyron {
-  background: linear-gradient(90deg, #fff 0%, #a3a3a3 50%, #fff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-muted {
-  color: #737373;
-}
-
-.display-glow {
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
-}
-
-/* ============ Geometric Angular Cuts ============ */
-.vyron-btn {
-  clip-path: polygon(
-    12px 0,
-    100% 0,
-    100% calc(100% - 12px),
-    calc(100% - 12px) 100%,
-    0 100%,
-    0 12px
-  );
-}
-
-.vyron-tag {
-  clip-path: polygon(
-    6px 0,
-    100% 0,
-    100% calc(100% - 6px),
-    calc(100% - 6px) 100%,
-    0 100%,
-    0 6px
-  );
-}
-
-.vyron-card {
-  clip-path: polygon(
-    16px 0,
-    100% 0,
-    100% calc(100% - 16px),
-    calc(100% - 16px) 100%,
-    0 100%,
-    0 16px
-  );
-}
-
-/* Subtle corner brackets for premium feel */
-.vyron-corners {
-  position: relative;
-}
-.vyron-corners::before,
-.vyron-corners::after {
-  content: "";
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  pointer-events: none;
-  border-color: rgba(255, 255, 255, 0.15);
-}
-.vyron-corners::before {
-  top: -1px;
-  left: -1px;
-  border-top: 1px solid;
-  border-left: 1px solid;
-}
-.vyron-corners::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 1px solid;
-  border-right: 1px solid;
-}
-
-/* ============ Ambient Layers ============ */
-.bg-grid-subtle {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 48px 48px;
-}
-
-.bg-scan-subtle {
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.015) 0px,
-    rgba(255, 255, 255, 0.015) 1px,
-    transparent 1px,
-    transparent 4px
-  );
-}
-
-/* ============ Motion ============ */
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.animate-marquee { animation: marquee 80s linear infinite; }
-.marquee-pause:hover .animate-marquee { animation-play-state: paused; }
-
-@keyframes line-up {
-  from { transform: translateY(112%); }
-  to { transform: translateY(0); }
-}
-.mask-line { display: block; overflow: hidden; padding-bottom: 0.08em; }
-.mask-line > span { display: block; animation: line-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both; }
-
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-.animate-floaty { animation: floaty 6s ease-in-out infinite; }
-
-/* ============ Developer Signature (preserved) ============ */
-@keyframes dev-border-flow {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
-.dev-frame { background: linear-gradient(100deg, #fff, #a3a3a3, #525252, #a3a3a3, #fff); background-size: 200% 100%; animation: dev-border-flow 4s linear infinite; padding: 1.5px; }
-
-@keyframes dev-shimmer { to { background-position: 200% center; } }
-.dev-chip { background: linear-gradient(110deg, #fff, #d4d4d4 38%, #fafafa 50%, #d4d4d4 62%, #fff); background-size: 200% auto; animation: dev-shimmer 2.5s linear infinite; }
-.dev-name { background: linear-gradient(110deg, #e5e5e5, #fff 38%, #a3a3a3 50%, #fff 62%, #e5e5e5); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: dev-shimmer 3s linear infinite; }
-
-@keyframes dev-blink { 50% { opacity: 0; } }
-.dev-cursor { animation: dev-blink 0.9s step-end infinite; }
-
-/* ============ Scrollbars ============ */
-.nice-scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.1) transparent; }
-.nice-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-.nice-scroll::-webkit-scrollbar-track { background: transparent; }
-.nice-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 9999px; }
-.nice-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
-
-/* ============ Accessibility ============ */
 :focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid rgba(255, 255, 255, 0.75);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
+/* ============================================================
+   Shared layout helpers
+   ============================================================ */
+@layer components {
+  .page-shell {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-subtle);
+  }
+
+  .surface {
+    background-color: var(--color-panel);
+    border: 1px solid var(--color-line);
+  }
+
+  .surface-raised {
+    background-color: var(--color-raised);
+    border: 1px solid var(--color-line);
+  }
+
+  .hairline {
+    height: 1px;
+    background-color: var(--color-line);
+  }
+
+  .display-title {
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+
+  .prose-body {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: #d4d4d8;
+    font-size: 0.9375rem;
+    line-height: 1.75;
+  }
+
+  .mono-meta {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    color: var(--color-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row-hover {
+    transition: background-color 140ms ease;
+  }
+  .row-hover:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+  }
+}
+
+/* ============================================================
+   Scrollbars
+   ============================================================ */
+.nice-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+.nice-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.nice-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nice-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+}
+.nice-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+/* ============================================================
+   Minimal motion — feedback only, never decoration
+   ============================================================ */
+@keyframes vyron-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: vyron-fade 160ms ease-out both;
+}
+
+@keyframes vyron-skeleton {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+.skeleton {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  animation: vyron-skeleton 1.6s ease-in-out infinite;
+}
+
+@keyframes vyron-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.24);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vyron-spin 700ms linear infinite;
+}
+
+/* ============================================================
+   Accessibility
+   ============================================================ */
 .skip-link {
   position: fixed;
   top: -100px;
   left: 1rem;
-  z-index: 100;
+  z-index: 200;
   transition: top 0.15s ease;
 }
-.skip-link:focus-visible { top: 1rem; }
+.skip-link:focus-visible {
+  top: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .mask-line > span { animation: none; opacity: 1; transform: none; }
-}
-
-/* ============ Ambient particles ============ */
-.vyron-particle {
-  position: absolute;
-  bottom: -10px;
-  border-radius: 9999px;
-  background: #fff;
-  opacity: 0;
-  animation: vyron-particle-rise linear infinite;
-  pointer-events: none;
-}
-@keyframes vyron-particle-rise {
-  0% {
-    transform: translateY(0) translateX(0) scale(1);
-    opacity: 0;
+  .animate-fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
-  10% {
-    opacity: 0.15;
-  }
-  60% {
-    opacity: 0.08;
-  }
-  100% {
-    transform: translateY(-80vh) translateX(15px) scale(0.2);
-    opacity: 0;
-  }
-}
-
-/* ============ VYRON Specific Utilities (using @utility for Tailwind v4) ============ */
-@utility vyron-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-}
-
-@utility vyron-glow-subtle {
-  box-shadow: 0 0 40px -10px rgba(255, 255, 255, 0.05);
-}
-
-/* Button utilities */
-@utility btn-primary {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  background-color: #fff;
-  color: #000;
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: all 0.2s;
-}
-@utility btn-primary-hover {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
-}
-@utility btn-primary-active {
-  transform: translateY(0);
-  filter: brightness(1);
-}
-@utility btn-primary-disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-@utility btn-secondary {
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  border: 1px solid rgba(255,255,255,0.1);
-  background-color: rgba(255,255,255,0.05);
-  color: #fff;
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: all 0.2s;
-}
-@utility btn-secondary-hover {
-  border-color: rgba(255,255,255,0.25);
-  background-color: rgba(255,255,255,0.1);
-}
-
-@utility btn-ghost {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.7);
-  transition: color 0.2s;
-}
-@utility btn-ghost-hover {
-  color: #fff;
-}
-
-/* Card utility */
-@utility card-base {
-  border-radius: 1rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  background-color: rgba(255,255,255,0.05);
-  backdrop-filter: blur(8px);
-}
-
-/* Avatar ring utility */
-@utility avatar-ring {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
-}
-
-/* Form utilities */
-@utility form-input {
-  width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  background-color: rgba(255,255,255,0.05);
-  padding: 0.75rem 1rem;
-  color: #fff;
-  transition: border-color 0.2s;
-}
-@utility form-input-focus {
-  border-color: rgba(255,255,255,0.3);
-  outline: none;
-}
-@utility form-textarea {
-  @apply form-input;
-  resize: vertical;
-  min-height: 100px;
-}
-
-/* Badge utilities */
-@utility badge {
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-@utility badge-primary {
-  @apply badge;
-  background-color: rgba(255,255,255,0.1);
-  color: #fff;
-}
-@utility badge-muted {
-  @apply badge;
-  background-color: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.5);
 }

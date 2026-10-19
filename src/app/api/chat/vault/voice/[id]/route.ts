@@ -13,7 +13,7 @@ export async function GET(
   const user = await getVaultUser();
   if (!user) {
     return NextResponse.json(
-      { error: "The Vault is sealed. 🔐" },
+      { error: "The Vault is sealed." },
       { status: 403 },
     );
   }
@@ -33,7 +33,7 @@ export async function GET(
   if (!note) {
     // Already burned — that's the promise.
     return NextResponse.json(
-      { error: "This voice note has burned. 🔥" },
+      { error: "This voice note has expired." },
       { status: 410 },
     );
   }
@@ -43,7 +43,7 @@ export async function GET(
   if (Date.now() - note.createdAt.getTime() > VOICE_TTL_MS) {
     await db.delete(voiceNotes).where(eq(voiceNotes.id, noteId));
     return NextResponse.json(
-      { error: "This voice note has burned. 🔥" },
+      { error: "This voice note has expired." },
       { status: 410 },
     );
   }

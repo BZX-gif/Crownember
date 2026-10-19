@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
+import { KeyIcon, MicIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 interface VoiceNote {
@@ -330,7 +331,7 @@ export function VoicePanel({
       });
       const data = await res.json();
       if (!res.ok) {
-        setKeyMsg(`❌ ${data.error ?? "Could not rotate key."}`);
+        setKeyMsg(data.error ?? "Could not rotate key.");
         return;
       }
       setKeyCurrent("");
@@ -338,75 +339,74 @@ export function VoicePanel({
       if (data.relocked) {
         // Rotation revokes every vault token — including yours. That's the
         // guarantee: nobody keeps access on the old key.
-        setKeyMsg("✅ Key rotated. Every member must unlock again with the new key — starting with you…");
+        setKeyMsg("Key rotated. Every member must unlock again with the new key — starting with you…");
         setTimeout(() => window.location.reload(), 1800);
         return;
       }
-      setKeyMsg("✅ Key rotated.");
+      setKeyMsg("Key rotated.");
     } catch {
-      setKeyMsg("❌ Network error.");
+      setKeyMsg("Network error.");
     }
   }
 
   return (
-    <div className="border-t border-white/10 bg-slate-950/70">
-      <div className="flex items-center gap-2 px-3 py-2">
+    <div className="shrink-0 border-t border-line bg-panel/50">
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-3 py-2 sm:px-4">
         {recording ? (
           <button
+            type="button"
             onClick={stopRecording}
             title="Stop and send"
-            className="flex shrink-0 items-center gap-1.5 bg-rose-500 px-3 py-1.5 font-hud text-[11px] font-bold text-white transition hover:brightness-110"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2.5 text-[11px] font-medium text-danger transition-colors hover:bg-danger/15"
           >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-            {recSec}s
+            <span className="h-1.5 w-1.5 rounded-full bg-danger" />
+            Stop · {recSec}s
           </button>
         ) : (
           <button
+            type="button"
             onClick={startRecording}
             disabled={sending || sentFlash}
-            title="Record a voice note (max 25s — burns when anyone leaves)"
-            className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 font-hud text-[11px] font-bold text-slate-950 transition hover:brightness-110 disabled:opacity-40"
+            title="Record a voice note (max 25s, burns when anyone leaves)"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-line bg-white/[0.04] px-2.5 text-[11px] text-fg transition-colors hover:border-line-strong disabled:opacity-40"
           >
-            {sending ? "…" : sentFlash ? "✓ sent" : "🎙️ talk"}
+            <MicIcon size={13} />
+            {sending ? "Sending…" : sentFlash ? "Sent" : "Voice note"}
           </button>
         )}
 
         <div className="nice-scroll flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           {notes.length === 0 && !recording && (
-            <span className="whitespace-nowrap font-hud text-[10px] uppercase tracking-wider text-slate-600">
-              voice burns on exit 🔥
+            <span className="whitespace-nowrap text-[10px] text-subtle">
+              Voice notes are ephemeral. Nothing is archived.
             </span>
           )}
           {notes.map((n) => {
-            const mine = n.author.username === myName;
             const active = playingId === n.id;
             return (
               <button
+                type="button"
                 key={n.id}
                 onClick={() => play(n)}
-                title={`${n.author.username} · tap to play`}
+                title={`${n.author.username} · play voice note`}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 border px-2 py-1 transition",
+                  "flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 transition-colors",
                   active
-                    ? "border-amber-400/70 bg-amber-500/15"
-                    : "border-white/10 bg-white/5 hover:border-amber-500/40",
+                    ? "border-line-strong bg-white/[0.08] text-fg"
+                    : "border-line bg-white/[0.02] text-muted hover:border-line-strong hover:text-fg",
                 )}
               >
-                <Avatar
-                  name={n.author.username}
-                  color={n.author.avatarColor}
-                  size={18}
-                />
-                <span className="flex h-3 items-end gap-px">
+                <Avatar name={n.author.username} size={18} />
+                <span className="flex h-3 items-end gap-px" aria-hidden="true">
                   {[0, 1, 2].map((b) => (
                     <span
                       key={b}
-                      className={cn("w-px bg-amber-400", active && "animate-pulse")}
+                      className={cn("w-px bg-current", active && "animate-pulse")}
                       style={{ height: `${4 + ((b * 4 + n.id * 3) % 8)}px` }}
                     />
                   ))}
                 </span>
-                <span className="font-hud text-[10px] font-bold text-slate-300">
+                <span className="text-[10px] tabular-nums">
                   {Math.max(1, Math.round(n.durationMs / 1000))}s
                 </span>
               </button>
@@ -416,24 +416,24 @@ export function VoicePanel({
 
         {isFounder && (
           <button
+            type="button"
             onClick={() => setShowKeys((s) => !s)}
-            title="Rotate the vault key"
-            className="shrink-0 border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 font-hud text-[11px] text-amber-300 transition hover:bg-amber-500/20"
+            title="Rotate the Vault passcode"
+            aria-label="Rotate the Vault passcode"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-line text-muted transition-colors hover:border-line-strong hover:text-fg"
           >
-            🗝️
+            <KeyIcon size={13} />
           </button>
         )}
       </div>
 
       {micError && (
-        <div className="mx-3 mb-2 border border-rose-500/40 bg-rose-950/50 p-3">
+        <div className="mx-3 mb-2 rounded-lg border border-line bg-ink p-3 sm:mx-4">
           <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 text-lg">🎙️</span>
+            <MicIcon size={15} className="mt-0.5 shrink-0 text-muted" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-black uppercase tracking-wide text-rose-300">
-                {micError.title}
-              </p>
-              <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-slate-300">
+              <p className="text-xs font-medium text-fg">{micError.title}</p>
+              <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[11px] leading-relaxed text-muted">
                 {micError.steps.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
@@ -441,22 +441,22 @@ export function VoicePanel({
             </div>
           </div>
           {micError.debug && (
-            <p className="mt-2 font-hud text-[9px] text-slate-600">
-              debug: {micError.debug}
-            </p>
+            <p className="mt-2 break-words text-[9px] text-subtle">debug: {micError.debug}</p>
           )}
           <div className="mt-2.5 flex gap-2">
             <button
+              type="button"
               onClick={startRecording}
-              className="bg-rose-500/25 px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-rose-200 transition hover:bg-rose-500/40"
+              className="rounded-md border border-line-strong px-2.5 py-1 text-[10px] text-fg transition-colors hover:bg-white/[0.06]"
             >
-              ↻ try again
+              Try again
             </button>
             <button
+              type="button"
               onClick={() => setMicError(null)}
-              className="px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-slate-500 transition hover:text-slate-300"
+              className="rounded-md px-2.5 py-1 text-[10px] text-subtle transition-colors hover:text-fg"
             >
-              dismiss
+              Dismiss
             </button>
           </div>
         </div>
@@ -465,35 +465,35 @@ export function VoicePanel({
       {isFounder && showKeys && (
         <form
           onSubmit={rotateKey}
-          className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-2"
+          className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 border-t border-line px-3 py-2 sm:px-4"
         >
-          <span className="font-hud text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            rotate key:
+          <span className="text-[10px] uppercase tracking-[0.1em] text-subtle">
+            Rotate passcode
           </span>
           <input
             type="password"
             value={keyCurrent}
             onChange={(e) => setKeyCurrent(e.target.value)}
-            placeholder="current"
-            className="w-32 border border-white/10 bg-slate-950/80 px-2.5 py-1.5 font-hud text-xs text-slate-200 placeholder:text-slate-600 focus:border-amber-400/60 focus:outline-none"
+            placeholder="Current"
+            aria-label="Current passcode"
+            className="h-7 w-28 rounded border border-line bg-ink px-2 text-[11px] text-fg placeholder:text-subtle focus:border-line-strong focus:outline-none"
           />
           <input
             type="password"
             value={keyNext}
             onChange={(e) => setKeyNext(e.target.value)}
-            placeholder="new (6+ chars)"
-            className="w-32 border border-white/10 bg-slate-950/80 px-2.5 py-1.5 font-hud text-xs text-slate-200 placeholder:text-slate-600 focus:border-amber-400/60 focus:outline-none"
+            placeholder="New (6+ chars)"
+            aria-label="New passcode"
+            className="h-7 w-32 rounded border border-line bg-ink px-2 text-[11px] text-fg placeholder:text-subtle focus:border-line-strong focus:outline-none"
           />
           <button
             type="submit"
             disabled={!keyCurrent || keyNext.length < 6}
-            className="bg-amber-500/20 px-3 py-1.5 font-hud text-[10px] font-bold uppercase tracking-wider text-amber-300 transition hover:bg-amber-500/30 disabled:opacity-40"
+            className="h-7 rounded border border-line-strong px-2.5 text-[10px] text-fg transition-colors hover:bg-white/[0.06] disabled:opacity-40"
           >
-            rotate
+            Rotate
           </button>
-          {keyMsg && (
-            <span className="font-hud text-[11px] text-slate-300">{keyMsg}</span>
-          )}
+          {keyMsg && <span className="text-[10px] text-muted">{keyMsg}</span>}
         </form>
       )}
     </div>

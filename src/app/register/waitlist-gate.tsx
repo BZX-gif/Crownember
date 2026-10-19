@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Field, Input, Notice } from "@/components/primitives";
+import { CheckIcon, UsersIcon } from "@/components/icons";
 
 export function WaitlistGate({
   taken,
   max,
-  initialWaitlistCount,
 }: {
   taken: number;
   max: number;
-  initialWaitlistCount: number;
 }) {
   const [nickname, setNickname] = useState("");
   const [note, setNote] = useState("");
@@ -17,13 +17,16 @@ export function WaitlistGate({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [position, setPosition] = useState<number | null>(null);
-  const [waitlistCount, setWaitlistCount] = useState(initialWaitlistCount);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError("");
+    if (nickname.trim().length < 3) {
+      setError("Choose a username of at least 3 characters.");
+      return;
+    }
+    setBusy(true);
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
@@ -31,16 +34,15 @@ export function WaitlistGate({
         body: JSON.stringify({
           nickname: nickname.trim(),
           note: note.trim(),
-          website: honey, // honeypot — real users never fill this
+          website: honey,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { position?: number; error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Could not join the waitlist.");
+        setError(data.error ?? "The waitlist could not be joined.");
         return;
       }
-      setPosition(data.position);
-      setWaitlistCount((c) => c + 1);
+      setPosition(data.position ?? null);
     } catch {
       setError("Network error — try again.");
     } finally {
@@ -49,57 +51,46 @@ export function WaitlistGate({
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-slate-900/80 p-8 shadow-2xl">
-      <div className="text-center">
-        <span className="inline-block animate-floaty text-5xl">🔒</span>
-        <h1 className="mt-3 text-2xl font-black italic">
-          <span className="text-fire">SOLD OUT.</span> All {max} Seats Claimed.
-        </h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-400">
-          The Founding Squad is locked.{" "}
-          <span className="font-bold text-orange-400">
-            {waitlistCount} player{waitlistCount === 1 ? "" : "s"}
-          </span>{" "}
-          are already in line. If a seat ever opens up — or we raise the cap —
-          the waitlist goes first.
+    <div id="waitlist" className="mt-6 rounded-xl border border-line bg-panel p-6 sm:p-7 lg:mt-0">
+      <div>
+        <p className="eyebrow">Waitlist</p>
+        <h1 className="display-title mt-2 text-2xl text-fg">Founding seats are full</h1>
+        <p className="mt-2 text-xs leading-relaxed text-muted">
+          All {max} founding seats are claimed. Add your username and we will
+          open registration in order when a seat is released or the cap changes.
         </p>
       </div>
 
-      {/* Full seat meter */}
-      <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-        <div className="flex items-center justify-between text-xs font-black">
-          <span className="uppercase tracking-wider text-slate-400">
-            Founding Squad
-          </span>
-          <span className="text-rose-400">
-            {taken}/{max} · CLOSED
+      <div className="mt-5 rounded-lg border border-line bg-ink/50 p-3.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-muted">Founding members</span>
+          <span className="mono-meta">
+            {taken}/{max} · closed
           </span>
         </div>
-        <div className="mt-2 grid grid-cols-10 gap-1">
-          {Array.from({ length: max }, (_, i) => (
-            <span
-              key={i}
-              className="h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500"
-            />
+        <div className="mt-2 grid grid-cols-10 gap-1" aria-hidden="true">
+          {Array.from({ length: max }, (_, index) => (
+            <span key={index} className="h-1.5 rounded-full bg-fg/60" />
           ))}
         </div>
+        <p className="mt-2 flex items-center gap-1.5 text-[10px] text-subtle">
+          <UsersIcon size={11} /> Everyone in line is a real person.
+        </p>
       </div>
 
       {position !== null ? (
-        <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
-          <p className="text-3xl">🎟️</p>
-          <p className="mt-1 text-lg font-black text-emerald-400">
-            You&apos;re in line!
-          </p>
-          <p className="mt-1 text-sm text-slate-300">
-            Ticket <span className="font-black text-white">#{position}</span> —
-            keep an eye on VYRON. Founders who go inactive lose their seat,
-            and the waitlist gets the call.
+        <div className="mt-5 rounded-lg border border-line px-4 py-5 text-center">
+          <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line text-fg">
+            <CheckIcon size={15} />
+          </span>
+          <p className="mt-3 text-sm font-medium text-fg">You are on the list</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted">
+            Position <span className="text-fg">#{position}</span>. Sign-in
+            details will be yours if a seat opens. Nothing else is promised.
           </p>
         </div>
       ) : (
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          {/* Honeypot: invisible to humans, irresistible to bots */}
+        <form onSubmit={submit} className="mt-5 space-y-3.5" noValidate>
           <input
             type="text"
             value={honey}
@@ -109,52 +100,43 @@ export function WaitlistGate({
             autoComplete="off"
             aria-hidden="true"
           />
-          <div>
-            <label
-              htmlFor="wl-nickname"
-              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-            >
-              Your IGN / Nickname *
-            </label>
-            <input
+          <Field label="Username" htmlFor="wl-nickname">
+            <Input
               id="wl-nickname"
               value={nickname}
               onChange={(e) =>
-                setNickname(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))
+                setNickname(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20))
               }
-              placeholder="ShadowSniper07"
+              placeholder="yourname"
               maxLength={20}
-              className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+              autoComplete="username"
+              required
             />
-          </div>
-          <div>
-            <label
-              htmlFor="wl-note"
-              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-            >
-              Why should we save you a seat?{" "}
-              <span className="text-slate-600">(optional)</span>
-            </label>
-            <input
+          </Field>
+          <Field label="Note" htmlFor="wl-note" hint={`${note.length}/160 · optional`}>
+            <Input
               id="wl-note"
               value={note}
-              onChange={(e) => setNote(e.target.value.slice(0, 200))}
-              placeholder="Diamond II rusher, I'll bring my whole squad"
-              className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+              onChange={(e) => setNote(e.target.value.slice(0, 160))}
+              placeholder="What would you like to write about?"
+              maxLength={160}
             />
-          </div>
+          </Field>
           {error && (
-            <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400">
+            <Notice variant="error">
               {error}
-            </p>
+            </Notice>
           )}
-          <button
+          <Button
             type="submit"
-            disabled={busy || nickname.trim().length < 3}
-            className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
+            variant="primary"
+            size="md"
+            loading={busy}
+            disabled={nickname.trim().length < 3}
+            className="w-full"
           >
-            {busy ? "Reserving…" : `Join the Waitlist (${waitlistCount} in line)`}
-          </button>
+            {busy ? "Reserving…" : "Join the waitlist"}
+          </Button>
         </form>
       )}
     </div>

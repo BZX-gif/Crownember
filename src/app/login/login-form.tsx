@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Field, Input, Notice } from "@/components/primitives";
 
 export function LoginForm() {
   const [username, setUsername] = useState("");
@@ -8,77 +9,84 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError("");
+    if (!username.trim() || !password) {
+      setError("Enter your username and password.");
+      return;
+    }
+    setBusy(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), password }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Login failed. Try again.");
+        setError(data.error ?? "Sign in failed. Check your details and try again.");
         return;
       }
       window.location.href = "/";
     } catch {
-      setError("Network error — try again.");
+      setError("Network error — check your connection and try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base sm:text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none";
-
   return (
-    <form onSubmit={submit} className="mt-6 space-y-4">
-      <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          Username
-        </label>
-        <input
-          id="username"
+    <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
+      <Field label="Username" htmlFor="login-username">
+        <Input
+          id="login-username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="alex"
+          placeholder="Your username"
           autoComplete="username"
-          className={inputCls}
+          autoCapitalize="none"
+          spellCheck={false}
+          maxLength={16}
+          required
+          autoFocus
         />
-      </div>
-      <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          Password
-        </label>
-        <input
-          id="password"
+      </Field>
+
+      <Field label="Password" htmlFor="login-password">
+        <Input
+          id="login-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
+          placeholder="Your password"
           autoComplete="current-password"
-          className={inputCls}
+          maxLength={128}
+          required
         />
-      </div>
+      </Field>
+
       {error && (
-        <p
-          role="alert"
-          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400"
-        >
+        <Notice variant="error">
           {error}
-        </p>
+        </Notice>
       )}
-      <button
+
+      <Button
         type="submit"
-        disabled={busy || !username.trim() || !password}
-        className="vyron-btn bg-white text-black w-full px-4 py-3.5 text-sm font-black transition hover:brightness-110 disabled:opacity-40"
+        variant="primary"
+        size="md"
+        loading={busy}
+        disabled={!username.trim() || !password}
+        className="w-full"
       >
-        {busy ? "Signing in…" : "Log In"}
-      </button>
+        {busy ? "Signing in…" : "Sign in"}
+      </Button>
+
+      <p className="text-center text-[10px] leading-relaxed text-subtle">
+        Sign-in attempts are rate-limited to protect accounts.
+      </p>
     </form>
   );
 }

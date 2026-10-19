@@ -14,6 +14,9 @@ import { detectAbuse } from "../src/lib/moderation";
 import { botTrap, containsInjection } from "../src/lib/antibot";
 import { NICKNAME_RE, USERNAME_RE } from "../src/lib/lookup";
 import { checkRateLimit } from "../src/lib/rate-limit";
+import { getRank, RANKS } from "../src/lib/ranks";
+import { roomDisplay } from "../src/lib/rooms";
+import { avatarVersion, serializeUser } from "../src/lib/utils";
 
 // ---------- password hashing ----------
 
@@ -120,4 +123,83 @@ test("rate-limit: allows N then blocks, and keys are independent", () => {
   assert.ok(blocked.retryInMs > 0);
   // a different key is unaffected
   assert.equal(checkRateLimit(other, 3, 60_000).allowed, true);
+});
+
+
+// ---------- product presentation rules ----------
+
+test("ranks: tiers are ordered and every XP value maps to exactly one tier", () => {
+  assert.equal(getRank(0).name, RANKS[0].name);
+  assert.equal(getRank(250).name, RANKS[1].name);
+  assert.equal(getRank(249).name, RANKS[0].name);
+  const top = getRank(1_000_000);
+  assert.equal(top.nextMinXp, null);
+  assert.equal(top.progress, 1);
+  for (const rank of RANKS) {
+    const at = getRank(rank.minXp);
+    assert.equal(at.name, rank.name, `boundary ${rank.minXp}`);
+  }
+});
+
+test("rooms: legacy display copy is replaced and emoji never reaches the UI", () => {
+  const legacy = roomDisplay({
+    slug: "guides",
+    name: "Community Guides",
+    description: "Loadouts, sensitivity settings, booyah.",
+    isVault: false,
+  });
+  assert.equal(legacy.name, "Community");
+  assert.ok(!/[\u{1F300}-\u{1FAFF}]/u.test(legacy.name));
+
+  const custom = roomDisplay({
+    slug: "design",
+    name: "🎨 Design",
+    description: "Critique and craft.",
+    isVault: false,
+  });
+  assert.equal(custom.name, "Design");
+
+  const vault = roomDisplay({
+    slug: "omega-vault",
+    name: "⚡ OMEGA VAULT [CLASSIFIED]",
+    description: "x",
+    isVault: true,
+  });
+  assert.equal(vault.name, "The Vault");
+  assert.equal(vault.icon, "lock");
+});
+
+test("users: public serialization never exposes the legacy uid", () => {
+  const row = {
+    id: 7,
+    username: "Annabelle",
+    passwordHash: "secret",
+    uid: "1662515387",
+    bio: "",
+    avatarColor: "#ff6a00",
+    xp: 300,
+    likes: 2,
+    isBot: false,
+    founder: true,
+    isDev: false,
+    strikes: 0,
+    lastStrikeAt: null,
+    mutedUntil: null,
+    banned: false,
+    lastSeenAt: new Date(),
+    createdAt: new Date(),
+  };
+  const serialized = serializeUser(row);
+  assert.equal("uid" in serialized, false);
+  assert.equal(serialized.username, "Annabelle");
+  assert.equal(serialized.rank.name, getRank(300).name);
+  assert.equal(serialized.dev, false);
+});
+
+test("avatar: cache version is a stable seconds value with a fallback", () => {
+  const stamp = new Date("2026-10-19T10:00:00Z");
+  assert.equal(avatarVersion(stamp), String(Math.floor(stamp.getTime() / 1000)));
+  assert.equal(avatarVersion(stamp), avatarVersion(stamp.toISOString()));
+  assert.equal(avatarVersion(null), "0");
+  assert.equal(avatarVersion(undefined), "0");
 });

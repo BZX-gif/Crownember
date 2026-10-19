@@ -50,10 +50,24 @@ export async function GET() {
     const cols = await db.execute(sql`
       select count(*)::int as n from information_schema.columns
       where table_name = 'users'
-        and column_name in ('is_dev','is_bot','founder','strikes','muted_until','banned')
+        and column_name in (
+          'is_dev','is_bot','founder','strikes','muted_until','banned',
+          'avatar_data','avatar_mime','avatar_version'
+        )
+    `);
+    const extra = await db.execute(sql`
+      select
+        (select count(*)::int from information_schema.columns
+         where table_name = 'messages' and column_name = 'reply_to_id') as reply_col,
+        (select count(*)::int from information_schema.tables
+         where table_name = 'chat_message_reactions') as reaction_table
     `);
     const c = probe.rows[0] as Record<string, number>;
-    const schemaOk = Number((cols.rows[0] as Record<string, number>).n) >= 6;
+    const e = extra.rows[0] as Record<string, number>;
+    const schemaOk =
+      Number((cols.rows[0] as Record<string, number>).n) >= 9 &&
+      Number(e.reply_col) >= 1 &&
+      Number(e.reaction_table) >= 1;
     return Response.json({
       ok: true,
       db: "connected",

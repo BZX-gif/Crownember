@@ -1,116 +1,224 @@
 import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
-import { TopicList } from "@/components/topic-list";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import type { Metadata } from "next";
 import { db } from "@/db";
 import { topicLikes, topics, users } from "@/db/schema";
+import { PostRow } from "@/components/post-row";
+import {
+  CategoryGlyph,
+  EmptyState,
+  PageHeader,
+  buttonClass,
+} from "@/components/primitives";
+import { ArrowLeftIcon, ArrowRightIcon, ForumIcon, PencilIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth";
 import { getHiddenUserIds } from "@/lib/social";
-import {
-  CATEGORIES,
-  cn,
-  serializeTopic,
-  serializeUser,
-  type TopicDTO,
-} from "@/lib/utils";
+import { CATEGORIES, cn, serializeTopic, serializeUser, type TopicDTO } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Forum" };
+export const metadata: Metadata = {
+  title: "Forum",
+  description: "The permanent record of VYRON: ideas, questions and conversations.",
+};
+
+const PAGE_SIZE = 20;
+
+function forumHref(params: { category?: string; sort?: string; page?: number }) {
+  const search = new URLSearchParams();
+  if (params.category) search.set("category", params.category);
+  if (params.sort === "popular") search.set("sort", "popular");
+  if (params.page && params.page > 1) search.set("page", String(params.page));
+  const query = search.toString();
+  return query ? `/forum?${query}` : "/forum";
+}
 
 export default async function ForumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
 }) {
-  const { category } = await searchParams;
+  const { category, sort, page: pageParam } = await searchParams;
   const user = await getSessionUser();
+  const popular = sort === "popular";
+  const page = Math.max(1, Math.min(500, Number(pageParam) || 1));
+  const validCategory = CATEGORIES.some((c) => c.slug === category)
+    ? category
+    : undefined;
 
-  const where =
-    category && CATEGORIES.some((c) => c.slug === category)
-      ? eq(topics.category, category)
-      : undefined;
+  const where = validCategory
+    ? and(eq(users.isBot, false), eq(topics.category, validCategory))
+    : eq(users.isBot, false);
 
-  const [rows, likedRows] = await Promise.all([
-    db
-      .select({ topic: topics, author: users })
-      .from(topics)
-      .innerJoin(users, eq(topics.userId, users.id))
-      .where(where)
-      .orderBy(desc(topics.pinned), desc(topics.lastActivityAt))
-      .limit(50),
-    user
-      ? db
+  const rows = await db
+    .select({ topic: topics, author: users })
+    .from(topics)
+    .innerJoin(users, eq(topics.userId, users.id))
+    .where(where)
+    .orderBy(
+      desc(topics.pinned),
+      popular ? desc(topics.likes) : desc(topics.lastActivityAt),
+      desc(topics.lastActivityAt),
+    )
+    .limit(PAGE_SIZE + 1)
+    .offset((page - 1) * PAGE_SIZE);
+
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  const visible = rows.filter((row) => !hidden.has(row.author.id));
+  const hasNext = visible.length > PAGE_SIZE;
+  const pageRows = visible.slice(0, PAGE_SIZE);
+  const topicIds = pageRows.map((r) => r.topic.id);
+  const likedRows =
+    user && topicIds.length > 0
+      ? await db
           .select({ topicId: topicLikes.topicId })
           .from(topicLikes)
-          .where(eq(topicLikes.userId, user.id))
-      : Promise.resolve([]),
-  ]);
+          .where(and(eq(topicLikes.userId, user.id), inArray(topicLikes.topicId, topicIds)))
+      : [];
+  const liked = new Set(likedRows.map((r) => r.topicId));
+  const publicUser = user ? serializeUser(user) : null;
 
-  const likedIds = likedRows.map((r) => r.topicId);
-  // The block veil: sealed players' topics disappear from the forum.
-  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
-  const topicDtos: TopicDTO[] = rows
-    .filter((r) => !hidden.has(r.author.id))
-    .map((r) => serializeTopic(r.topic, r.author));
+  const dir = {
+    category: validCategory,
+    sort: popular ? "popular" : undefined,
+  };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
-            {"// permanent archive"}
-          </p>
-          <h1 className="mt-2 font-display text-4xl uppercase text-white">
-            Community <span className="text-fire">Forum</span>
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Chat burns in 3 hours — the forum keeps it forever. Start a topic,
-            earn +10 XP.
-          </p>
-        </div>
-        <Link
-          href="/forum/new"
-          className="clip-btn bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 font-display text-xs uppercase tracking-widest text-slate-950 transition hover:-translate-y-0.5 hover:brightness-110"
-        >
-          ✍️ New Topic
-        </Link>
-      </div>
-
-      <div className="nice-scroll mt-6 flex gap-2 overflow-x-auto pb-2">
-        <Link
-          href="/forum"
-          className={cn(
-            "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
-            !category
-              ? "border-orange-500/50 bg-orange-500/15 text-orange-400"
-              : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25",
-          )}
-        >
-          🔥 All Topics
-        </Link>
-        {CATEGORIES.map((c) => (
+    <div className="page-shell py-9 sm:py-12">
+      <PageHeader
+        eyebrow="Forum"
+        title="Conversations that stay."
+        description="Rooms clear in hours. The forum keeps the ideas, questions and answers worth returning to."
+        action={
           <Link
-            key={c.slug}
-            href={`/forum?category=${c.slug}`}
+            href={publicUser ? "/forum/new" : "/register"}
+            className={buttonClass("primary", "md")}
+          >
+            <PencilIcon size={15} />
+            {publicUser ? "New post" : "Join to post"}
+          </Link>
+        }
+      />
+
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+        <nav aria-label="Categories" className="nice-scroll flex gap-1.5 overflow-x-auto pb-1">
+          <Link
+            href={forumHref({ sort: dir.sort })}
             className={cn(
-              "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
-              category === c.slug
-                ? "border-orange-500/50 bg-orange-500/15 text-orange-400"
-                : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25",
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              !validCategory
+                ? "border-line-strong bg-white/[0.07] text-fg"
+                : "border-line text-muted hover:border-line-strong hover:text-fg",
             )}
           >
-            {c.icon} {c.label}
+            All
           </Link>
-        ))}
+          {CATEGORIES.map((c) => (
+            <Link
+              key={c.slug}
+              href={forumHref({ category: c.slug, sort: dir.sort })}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                validCategory === c.slug
+                  ? "border-line-strong bg-white/[0.07] text-fg"
+                  : "border-line text-muted hover:border-line-strong hover:text-fg",
+              )}
+            >
+              <CategoryGlyph icon={c.icon} size={12} />
+              {c.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-1 rounded-lg border border-line p-0.5">
+          <Link
+            href={forumHref({ category: dir.category })}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-[11px] transition-colors",
+              popular ? "text-muted hover:text-fg" : "bg-white/[0.06] text-fg",
+            )}
+          >
+            Latest
+          </Link>
+          <Link
+            href={forumHref({ category: dir.category, sort: "popular" })}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-[11px] transition-colors",
+              popular ? "bg-white/[0.06] text-fg" : "text-muted hover:text-fg",
+            )}
+          >
+            Popular
+          </Link>
+        </div>
       </div>
 
-      <div className="mt-6">
-        <TopicList
-          topics={topicDtos}
-          likedIds={likedIds}
-          user={user ? serializeUser(user) : null}
+      {pageRows.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          icon={<ForumIcon size={18} />}
+          title={page > 1 ? "Nothing older than this" : "No conversations yet"}
+          description={
+            page > 1
+              ? "You have reached the end of the archive."
+              : "VYRON does not manufacture posts or engagement. The first real conversation can start here."
+          }
+          action={
+            page > 1 ? (
+              <Link href={forumHref(dir)} className={buttonClass("secondary", "sm")}>
+                Back to the latest
+              </Link>
+            ) : (
+              <Link
+                href={publicUser ? "/forum/new" : "/register"}
+                className={buttonClass("primary", "sm")}
+              >
+                {publicUser ? "Start a conversation" : "Join VYRON"}
+              </Link>
+            )
+          }
         />
-      </div>
+      ) : (
+        <div className="mt-5 divide-y divide-line border-y border-line">
+          {pageRows.map(({ topic, author }) => (
+            <PostRow
+              key={topic.id}
+              topic={serializeTopic(topic, author) as TopicDTO}
+              user={publicUser}
+              liked={liked.has(topic.id)}
+              variant="forum"
+            />
+          ))}
+        </div>
+      )}
+
+      {(page > 1 || hasNext) && (
+        <nav
+          aria-label="Forum pages"
+          className="mt-6 flex items-center justify-between gap-4"
+        >
+          {page > 1 ? (
+            <Link
+              href={forumHref({ ...dir, page: page - 1 })}
+              className={buttonClass("secondary", "sm")}
+            >
+              <ArrowLeftIcon size={14} /> Newer
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="mono-meta">Page {page}</span>
+          {hasNext ? (
+            <Link
+              href={forumHref({ ...dir, page: page + 1 })}
+              className={buttonClass("secondary", "sm")}
+            >
+              Older <ArrowRightIcon size={14} />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   );
 }

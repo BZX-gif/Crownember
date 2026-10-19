@@ -1,30 +1,36 @@
+/**
+ * VYRON reputation ladder.
+ *
+ * XP is still awarded exactly as before (messages, topics, replies and
+ * received likes), so no member's history changes. Only the presentation
+ * changed: the old game-rank names (Bronze → Grandmaster) and emoji medals
+ * were Free Fire holdovers. These names describe contribution on a social
+ * platform and render as a restrained monochrome glyph.
+ */
 export interface Rank {
   name: string;
-  icon: string;
   minXp: number;
-  color: string;
+  tier: number;
 }
 
-/** Free Fire-inspired rank ladder driven by community XP. */
 export const RANKS: Rank[] = [
-  { name: "Bronze", icon: "🥉", minXp: 0, color: "#cd7f32" },
-  { name: "Silver", icon: "🥈", minXp: 250, color: "#c0c0c0" },
-  { name: "Gold", icon: "🥇", minXp: 500, color: "#ffd700" },
-  { name: "Platinum", icon: "💎", minXp: 1000, color: "#7dd3fc" },
-  { name: "Diamond", icon: "💠", minXp: 1800, color: "#a78bfa" },
-  { name: "Heroic", icon: "🛡️", minXp: 3000, color: "#f97316" },
-  { name: "Grandmaster", icon: "👑", minXp: 5000, color: "#ef4444" },
+  { name: "Member", minXp: 0, tier: 1 },
+  { name: "Contributor", minXp: 250, tier: 2 },
+  { name: "Voice", minXp: 500, tier: 3 },
+  { name: "Editor", minXp: 1000, tier: 4 },
+  { name: "Curator", minXp: 1800, tier: 5 },
+  { name: "Luminary", minXp: 3000, tier: 6 },
+  { name: "Icon", minXp: 5000, tier: 7 },
 ];
 
 export interface RankInfo {
   name: string;
-  icon: string;
-  color: string;
   minXp: number;
   nextMinXp: number | null;
   /** 0..1 progress towards the next rank */
   progress: number;
   level: number;
+  tier: number;
 }
 
 export function getRank(xp: number): RankInfo {
@@ -40,12 +46,11 @@ export function getRank(xp: number): RankInfo {
   const level = Math.min(100, Math.floor(xp / 100) + 1);
   return {
     name: current.name,
-    icon: current.icon,
-    color: current.color,
     minXp: current.minXp,
     nextMinXp: next ? next.minXp : null,
     progress,
     level,
+    tier: current.tier,
   };
 }
 
