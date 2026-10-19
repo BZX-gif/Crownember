@@ -7,7 +7,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --import ./tests/db-stub.mjs --test tests/unit.test.ts"
+    "test": "node --import tsx --import ./tests/db-stub.mjs --test tests/unit.test.ts tests/groups.test.ts tests/groups.integration.test.mts",
+    "test:db": "node --import tsx --test tests/groups.integration.test.mts"
   },
   "dependencies": {
     "dotenv": "17.3.1",

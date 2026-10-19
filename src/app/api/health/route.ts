@@ -63,7 +63,9 @@ export async function GET() {
          where table_name = 'chat_message_reactions') as reaction_table,
         (select count(*)::int from information_schema.columns
          where table_name = 'users'
-           and column_name in ('avatar_data','avatar_mime','avatar_version')) as avatar_cols
+           and column_name in ('avatar_data','avatar_mime','avatar_version')) as avatar_cols,
+        (select count(*)::int from information_schema.tables
+         where table_name in ('groups','group_members','group_invitations','group_entitlements')) as group_tables
     `);
     const c = probe.rows[0] as Record<string, number>;
     const e = extra.rows[0] as Record<string, number>;
@@ -80,6 +82,8 @@ export async function GET() {
       features: {
         profilePictures: Number(e.avatar_cols) >= 3,
         chatReactions: Number(e.reaction_table) >= 1 && Number(e.reply_col) >= 1,
+        // Presence only: how many private groups exist is not public information.
+        privateGroups: Number(e.group_tables) >= 4,
       },
       counts: c,
     });

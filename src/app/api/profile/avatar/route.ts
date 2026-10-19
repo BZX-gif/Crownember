@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { getSessionUser } from "@/lib/auth";
+import { MAX_IMAGE_BYTES, safeServeMime, validateImageFile } from "@/lib/images";
 import { avatarVersion, serializeUser } from "@/lib/utils";
 
-const MAX_BYTES = 1024 * 1024;
-const TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_BYTES = MAX_IMAGE_BYTES;
 
 /**
  * Public profile picture. The response carries a strong ETag derived from
@@ -48,9 +48,22 @@ export async function GET(request: Request) {
     return new NextResponse(null, { status: 304, headers: { ETag: etag } });
   }
 
-  return new NextResponse(new Uint8Array(avatar.avatarData), {
+  // The served Content-Type comes from the bytes, never from what a client
+  // once claimed. A row whose stored mime disagrees with its content (or whose
+  // content is not an image at all) is not served: run
+  // `npx tsx scripts/fix-avatar-mimes.ts` to reclassify legacy rows.
+  const bytes = avatar.avatarData as Buffer;
+  const mime = safeServeMime(bytes, avatar.avatarMime);
+  if (!mime) {
+    return new NextResponse(null, {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
+  return new NextResponse(new Uint8Array(bytes), {
     headers: {
-      "Content-Type": avatar.avatarMime,
+      "Content-Type": mime,
       "Cache-Control": "public, max-age=300, must-revalidate",
       ETag: etag,
     },
@@ -66,17 +79,16 @@ export async function POST(request: Request) {
   if (!(value instanceof File)) {
     return NextResponse.json({ error: "Choose an image first." }, { status: 400 });
   }
-  if (!TYPES.has(value.type)) {
-    return NextResponse.json({ error: "Use a JPG, PNG or WebP image." }, { status: 400 });
-  }
-  if (value.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Images must be under 1 MB." }, { status: 400 });
+  // Size and declared type are checked first (cheap), then the real format is
+  // sniffed from the file signature. The SNIFFED mime is what gets stored.
+  const image = await validateImageFile(value, { maxBytes: MAX_BYTES, label: "Image" });
+  if (!image.ok) {
+    return NextResponse.json({ error: image.error }, { status: 400 });
   }
 
-  const bytes = Buffer.from(await value.arrayBuffer());
   try {
     await db.execute(
-      sql`update users set avatar_data = ${bytes}, avatar_mime = ${value.type},
+      sql`update users set avatar_data = ${image.bytes}, avatar_mime = ${image.mime},
                  avatar_version = now() where id = ${user.id}`,
     );
   } catch {
