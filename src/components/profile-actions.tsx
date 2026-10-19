@@ -2,35 +2,34 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { Button, Notice, buttonClass } from "@/components/primitives";
+import { LockIcon, MailIcon, UserIcon, XIcon, CheckIcon, UnlockIcon } from "@/components/icons";
+import { useToast } from "@/components/toast";
 
-interface Props {
-  targetUsername: string;
-  relationship: "self" | "friends" | "outgoing" | "incoming" | "none";
-  iBlockedThem: boolean;
-  theyBlockedMe: boolean;
-}
+type Relationship = "self" | "friends" | "outgoing" | "incoming" | "none";
 
-/**
- * The social control deck on every profile: friend requests, squad status,
- * a direct line to DMs, and the block seal.
- */
 export function ProfileActions({
   targetUsername,
   relationship: initialRel,
   iBlockedThem: initialBlocked,
   theyBlockedMe,
-}: Props) {
-  const [rel, setRel] = useState(initialRel);
+}: {
+  targetUsername: string;
+  relationship: Relationship;
+  iBlockedThem: boolean;
+  theyBlockedMe: boolean;
+}) {
+  const { toast } = useToast();
+  const [rel, setRel] = useState<Relationship>(initialRel);
   const [iBlockedThem, setIBlockedThem] = useState(initialBlocked);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState("");
   const [flash, setFlash] = useState("");
 
   const sealed = iBlockedThem || theyBlockedMe;
 
-  async function call(path: string) {
-    if (busy) return;
-    setBusy(true);
+  async function call(path: string, action: string) {
+    if (busy) return null;
+    setBusy(action);
     setFlash("");
     try {
       const res = await fetch(path, {
@@ -38,177 +37,171 @@ export function ProfileActions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: targetUsername }),
       });
-      const d = await res.json();
+      const data = (await res.json()) as {
+        ok?: boolean;
+        autoAccepted?: boolean;
+        blocked?: boolean;
+        message?: string;
+        error?: string;
+      };
       if (!res.ok) {
-        setFlash(d.error ?? "Something went wrong.");
-        return;
+        setFlash(data.error ?? "That action could not be completed.");
+        toast({
+          title: "Action failed",
+          description: data.error ?? "Try again in a moment.",
+          variant: "danger",
+        });
+        return null;
       }
-      setFlash(d.message ?? "");
-      return d;
+      if (data.message) setFlash(data.message);
+      return data;
     } catch {
-      setFlash("Network error.");
+      setFlash("Network error — try again.");
+      toast({ title: "Network error", variant: "danger" });
+      return null;
     } finally {
-      setBusy(false);
+      setBusy("");
     }
   }
 
   async function onFriend() {
-    const d = await call("/api/friends/request");
-    if (d?.ok) setRel(d.autoAccepted ? "friends" : "outgoing");
+    const data = await call("/api/friends/request", "friend");
+    if (data?.ok) {
+      setRel(data.autoAccepted ? "friends" : "outgoing");
+      toast({
+        title: data.autoAccepted ? "You are now friends" : "Friend request sent",
+        variant: "success",
+      });
+    }
   }
   async function onAccept() {
-    const d = await call("/api/friends/accept");
-    if (d?.ok) setRel("friends");
+    const data = await call("/api/friends/accept", "accept");
+    if (data?.ok) {
+      setRel("friends");
+      toast({ title: "Friend request accepted", variant: "success" });
+    }
   }
   async function onDecline() {
-    const d = await call("/api/friends/decline");
-    if (d?.ok) setRel("none");
+    const data = await call("/api/friends/decline", "decline");
+    if (data?.ok) setRel("none");
   }
   async function onRemove() {
-    const d = await call("/api/friends/remove");
-    if (d?.ok) setRel("none");
+    const data = await call("/api/friends/remove", "remove");
+    if (data?.ok) setRel("none");
   }
   async function onBlock() {
-    const d = await call("/api/block/toggle");
-    if (d?.ok) {
-      setIBlockedThem(d.blocked);
-      if (d.blocked) setRel("none");
+    const data = await call("/api/block/toggle", "block");
+    if (data?.ok) {
+      setIBlockedThem(Boolean(data.blocked));
+      if (data.blocked) setRel("none");
+      toast({
+        title: data.blocked ? "Member blocked" : "Member unblocked",
+        description: data.blocked
+          ? "Neither of you will see the other's content."
+          : "You may see each other's public content again.",
+        variant: "success",
+      });
     }
   }
 
   if (rel === "self") return null;
 
-  const btn =
-    "px-4 py-2 font-hud text-[11px] font-bold uppercase tracking-wider transition disabled:opacity-40";
-
   return (
     <div className="mt-4">
       <div className="flex flex-wrap items-center gap-2">
         {iBlockedThem ? (
-          <button
-            onClick={onBlock}
-            disabled={busy}
-            className={cn(
-              btn,
-              "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20",
-            )}
-          >
-            🔓 unblock
-          </button>
+          <Button variant="secondary" size="sm" onClick={() => void onBlock()} loading={busy === "block"}>
+            <UnlockIcon size={14} /> Unblock
+          </Button>
         ) : theyBlockedMe ? (
-          <span
-            className={cn(btn, "border border-white/10 bg-white/5 text-slate-500")}
-            title="This player sealed their presence from you"
-          >
-            🚫 sealed
+          <span className={buttonClass("secondary", "sm", "pointer-events-none opacity-70")}>
+            <LockIcon size={14} /> Unavailable
           </span>
         ) : (
           <>
             {rel === "none" && (
-              <button
-                onClick={onFriend}
-                disabled={busy}
-                className={cn(
-                  btn,
-                  "clip-btn bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 hover:-translate-y-0.5 hover:brightness-110",
-                )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => void onFriend()}
+                loading={busy === "friend"}
               >
-                ⚡ add friend
-              </button>
+                <UserIcon size={14} /> Add friend
+              </Button>
             )}
             {rel === "outgoing" && (
               <>
-                <span
-                  className={cn(
-                    btn,
-                    "border border-amber-500/40 bg-amber-500/10 text-amber-300",
-                  )}
-                >
-                  ⏳ request sent
+                <span className={buttonClass("secondary", "sm", "pointer-events-none text-muted")}>
+                  Request sent
                 </span>
-                <button
-                  onClick={onRemove}
-                  disabled={busy}
-                  className={cn(
-                    btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
-                  )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void onRemove()}
+                  loading={busy === "remove"}
                 >
-                  cancel
-                </button>
+                  Cancel
+                </Button>
               </>
             )}
             {rel === "incoming" && (
               <>
-                <button
-                  onClick={onAccept}
-                  disabled={busy}
-                  className={cn(
-                    btn,
-                    "clip-btn bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:-translate-y-0.5 hover:brightness-110",
-                  )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => void onAccept()}
+                  loading={busy === "accept"}
                 >
-                  🤝 accept
-                </button>
-                <button
-                  onClick={onDecline}
-                  disabled={busy}
-                  className={cn(
-                    btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
-                  )}
+                  <CheckIcon size={14} /> Accept
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void onDecline()}
+                  loading={busy === "decline"}
                 >
-                  decline
-                </button>
+                  Decline
+                </Button>
               </>
             )}
             {rel === "friends" && (
               <>
-                <span
-                  className={cn(
-                    btn,
-                    "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-                  )}
-                >
-                  🤝 squad
+                <span className={buttonClass("secondary", "sm", "pointer-events-none")}>
+                  <CheckIcon size={14} /> Friends
                 </span>
-                <button
-                  onClick={onRemove}
-                  disabled={busy}
-                  className={cn(
-                    btn,
-                    "border border-white/10 bg-white/5 text-slate-400 hover:text-slate-200",
-                  )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void onRemove()}
+                  loading={busy === "remove"}
                 >
-                  unfriend
-                </button>
+                  Remove
+                </Button>
               </>
             )}
             <Link
               href={`/messages/${encodeURIComponent(targetUsername)}`}
-              className={cn(
-                btn,
-                "clip-btn border-0 bg-white/10 text-white hover:-translate-y-0.5 hover:bg-white/20",
-              )}
+              className={buttonClass("secondary", "sm")}
             >
-              ✉️ message
+              <MailIcon size={14} /> Message
             </Link>
-            <button
-              onClick={onBlock}
-              disabled={busy}
-              title="Block: they vanish from your screens, everywhere"
-              className={cn(
-                btn,
-                "border border-rose-500/30 bg-rose-500/5 text-rose-400/80 hover:bg-rose-500/15 hover:text-rose-300",
-              )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void onBlock()}
+              loading={busy === "block"}
+              className="text-subtle hover:text-danger"
+              title="Block this member"
             >
-              🚫 block
-            </button>
+              <XIcon size={14} /> Block
+            </Button>
           </>
         )}
       </div>
-      {flash && (
-        <p className="mt-2 font-hud text-[11px] text-slate-400">{flash}</p>
+      {flash && !sealed && (
+        <Notice className="mt-2.5" variant="info">
+          {flash}
+        </Notice>
       )}
     </div>
   );

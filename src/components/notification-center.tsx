@@ -1,191 +1,405 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import type { PublicUser } from "@/lib/utils";
+import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  BellIcon,
+  CheckIcon,
+  HeartIcon,
+  MailIcon,
+  ReplyIcon,
+  UserIcon,
+} from "@/components/icons";
+import { Button } from "@/components/primitives";
+import { cn, timeAgo, type PublicUser } from "@/lib/utils";
+import type { AppNotification, NotificationType } from "@/lib/notifications";
 
-interface RoomSummary {
-  slug: string;
-  name: string;
-  isVault: boolean;
-  locked: boolean;
+const ALERTS_KEY = "vyron.desktop-alerts";
+const ALERTS_EVENT = "vyron:desktop-alerts";
+const POLL_MS = 90_000;
+
+/** Desktop alerts are an external store (localStorage), not React state. */
+function subscribeAlerts(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(ALERTS_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(ALERTS_EVENT, onChange);
+  };
 }
 
-interface ChatMessage {
-  id: number;
-  content: string;
-  user: { id: number; username: string };
+function alertsSnapshot() {
+  try {
+    return window.localStorage.getItem(ALERTS_KEY) === "on";
+  } catch {
+    return false;
+  }
 }
 
-interface DmThread {
-  other: { username: string };
-  lastContent: string;
-  lastAt: string;
-  lastFromMe: boolean;
+function writeAlerts(on: boolean) {
+  try {
+    window.localStorage.setItem(ALERTS_KEY, on ? "on" : "off");
+  } catch {
+    /* storage can be unavailable in private modes */
+  }
+  window.dispatchEvent(new Event(ALERTS_EVENT));
 }
 
-function canNotify() {
-  return typeof window !== "undefined" && "Notification" in window;
-}
+const ICONS: Record<
+  NotificationType,
+  (p: { size?: number; className?: string }) => React.ReactElement
+> = {
+  reply: (p) => <ReplyIcon {...p} />,
+  like: (p) => <HeartIcon {...p} />,
+  friend: (p) => <UserIcon {...p} />,
+  message: (p) => <MailIcon {...p} />,
+};
 
-export function NotificationCenter({ user }: { user: PublicUser | null }) {
-  const pathname = usePathname();
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
-    "default",
+const LABELS: Record<NotificationType, string> = {
+  reply: "Reply",
+  like: "Appreciation",
+  friend: "Friend request",
+  message: "Direct message",
+};
+
+export function NotificationBell({ user }: { user: PublicUser | null }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<AppNotification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [marking, setMarking] = useState(false);
+  const alertsOn = useSyncExternalStore(
+    subscribeAlerts,
+    alertsSnapshot,
+    () => false,
   );
-  const [enabled, setEnabled] = useState(false);
-  const roomCursors = useRef(new Map<string, number>());
-  const dmCursors = useRef(new Map<string, number>());
-  const bootstrapped = useRef(false);
-  const notifying = useRef(false);
+  const [alertError, setAlertError] = useState("");
+
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const seenRef = useRef<Set<string>>(new Set());
+  const firstLoadRef = useRef(true);
+  const lastLoadRef = useRef(0);
+  const alertsRef = useRef(false);
 
   useEffect(() => {
-    // Sync the browser's external permission state in after the effect —
-    // never during render (it would tear against hydration).
-    if (!canNotify()) {
-      queueMicrotask(() => setPermission("unsupported"));
-      return;
+    alertsRef.current = alertsOn;
+  }, [alertsOn]);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (!res.ok) {
+        setError("Notifications could not load.");
+        return;
+      }
+      const data = (await res.json()) as {
+        items?: AppNotification[];
+        unreadCount?: number;
+      };
+      const next = data.items ?? [];
+      setItems(next);
+      setUnread(data.unreadCount ?? 0);
+      setError("");
+      lastLoadRef.current = Date.now();
+
+      const unseen = next.filter((item) => item.unread && !seenRef.current.has(item.id));
+      if (
+        !firstLoadRef.current &&
+        alertsRef.current &&
+        document.visibilityState === "hidden" &&
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        for (const item of unseen.slice(0, 3)) {
+          try {
+            const notification = new Notification(item.title, {
+              body: item.body,
+              tag: item.id,
+            });
+            notification.onclick = () => {
+              window.focus();
+              window.location.assign(item.href);
+            };
+          } catch {
+            /* Notification construction can fail on some platforms */
+          }
+        }
+      }
+      for (const item of next) seenRef.current.add(item.id);
+      firstLoadRef.current = false;
+    } catch {
+      setError("Notifications could not load.");
+    } finally {
+      setLoading(false);
     }
-    const current = Notification.permission;
-    // Permission is persistent at the browser level. If the user has already
-    // approved VYRON, don't make them re-enable it after a refresh.
-    queueMicrotask(() => {
-      setPermission(current);
-      if (current === "granted") setEnabled(true);
-    });
   }, []);
 
-  const notify = useCallback(
-    (title: string, body: string, href: string) => {
-      if (!enabled || !canNotify() || Notification.permission !== "granted") return;
-      if (notifying.current) return;
-      notifying.current = true;
-      try {
-        const n = new Notification(title, {
-          body: body.slice(0, 180),
-          tag: `vyron-${href}`,
-          icon: "/favicon.ico",
-        });
-        n.onclick = () => {
-          window.focus();
-          window.location.href = href;
-          n.close();
-        };
-      } catch {
-        // Browser/OS refused the notification; leave chat untouched.
-      } finally {
-        window.setTimeout(() => {
-          notifying.current = false;
-        }, 250);
-      }
-    },
-    [enabled],
-  );
+  useEffect(() => {
+    if (!user) return;
+    const start = setTimeout(() => void load(), 700);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, POLL_MS);
 
-  const poll = useCallback(async () => {
-    if (!user || !enabled || !canNotify() || Notification.permission !== "granted") {
-      return;
+    function onVisible() {
+      if (
+        document.visibilityState === "visible" &&
+        Date.now() - lastLoadRef.current > 60_000
+      ) {
+        void load();
+      }
     }
-
-    try {
-      const roomsRes = await fetch("/api/chat/rooms", { cache: "no-store" });
-      if (!roomsRes.ok) return;
-      const roomsData = (await roomsRes.json()) as { rooms?: RoomSummary[] };
-
-      // SECURITY RULE: Vault rooms are excluded by the server-provided
-      // isVault flag, even when the Vault is currently unlocked. Never rely
-      // on a room name/slug because those can be changed.
-      const rooms = (roomsData.rooms ?? []).filter((r) => !r.isVault && !r.locked);
-
-      for (const room of rooms) {
-        const after = roomCursors.current.get(room.slug) ?? 0;
-        const res = await fetch(
-          `/api/chat/messages?room=${encodeURIComponent(room.slug)}&after=${after}`,
-          { cache: "no-store" },
-        );
-        if (!res.ok) continue;
-        const data = (await res.json()) as { messages?: ChatMessage[] };
-        const messages = data.messages ?? [];
-        if (messages.length === 0) continue;
-
-        const newest = Math.max(...messages.map((m) => m.id));
-        roomCursors.current.set(room.slug, newest);
-
-        // First successful read establishes the cursor; existing messages
-        // must never produce a notification when notifications are enabled.
-        if (!bootstrapped.current || after === 0) continue;
-
-        for (const message of messages) {
-          if (message.id <= after || message.user.id === user.id) continue;
-          const sameRoom = pathname === `/chat/${room.slug}`;
-          if (document.visibilityState === "visible" && sameRoom) continue;
-          notify(
-            `${message.user.username} · ${room.name}`,
-            message.content,
-            `/chat/${encodeURIComponent(room.slug)}`,
-          );
-        }
-      }
-
-      const dmRes = await fetch("/api/dm/threads", { cache: "no-store" });
-      if (dmRes.ok) {
-        const dmData = (await dmRes.json()) as { threads?: DmThread[] };
-        for (const thread of dmData.threads ?? []) {
-          if (thread.lastFromMe) continue;
-          const key = thread.other.username;
-          const timestamp = new Date(thread.lastAt).getTime();
-          const previous = dmCursors.current.get(key) ?? 0;
-          dmCursors.current.set(key, timestamp);
-          if (!bootstrapped.current || previous === 0 || timestamp <= previous) continue;
-          if (document.visibilityState === "visible" && pathname.startsWith("/messages/")) continue;
-          notify(
-            `Message from ${thread.other.username}`,
-            thread.lastContent,
-            `/messages/${encodeURIComponent(thread.other.username)}`,
-          );
-        }
-      }
-
-      bootstrapped.current = true;
-    } catch {
-      // Notifications are optional; a polling failure must never affect chat.
-    }
-  }, [enabled, notify, pathname, user]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearTimeout(start);
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load, user]);
 
   useEffect(() => {
-    if (!user || !enabled) return;
-    void poll();
-    const timer = window.setInterval(() => void poll(), 5000);
-    return () => window.clearInterval(timer);
-  }, [enabled, poll, user]);
-
-  async function enableNotifications() {
-    if (!canNotify()) return;
-    if (Notification.permission === "denied") {
-      setPermission("denied");
-      return;
+    if (!open) return;
+    function onPointerDown(event: MouseEvent | TouchEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
     }
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === "granted") {
-      roomCursors.current.clear();
-      dmCursors.current.clear();
-      bootstrapped.current = false;
-      setEnabled(true);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    panelRef.current?.focus();
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  async function markAllRead() {
+    if (marking || unread === 0) return;
+    setMarking(true);
+    try {
+      const res = await fetch("/api/notifications", { method: "POST" });
+      if (!res.ok) {
+        setError("Could not mark notifications read.");
+        return;
+      }
+      setItems((prev) => prev.map((item) => ({ ...item, unread: false })));
+      setUnread(0);
+    } catch {
+      setError("Could not mark notifications read.");
+    } finally {
+      setMarking(false);
     }
   }
 
-  if (!user || permission === "unsupported" || permission === "denied") return null;
+  async function toggleAlerts() {
+    setAlertError("");
+    if (alertsOn) {
+      writeAlerts(false);
+      return;
+    }
+    if (!("Notification" in window)) {
+      setAlertError("This browser does not support desktop alerts.");
+      return;
+    }
+    let permission = Notification.permission;
+    if (permission === "default") {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== "granted") {
+      setAlertError("Desktop alerts are blocked in your browser settings.");
+      return;
+    }
+    writeAlerts(true);
+  }
+
+  if (!user) return null;
 
   return (
-    <button
-      type="button"
-      onClick={() => void enableNotifications()}
-      title={permission === "granted" ? "Chrome notifications enabled" : "Enable Chrome notifications"}
-      aria-label={permission === "granted" ? "Chrome notifications enabled" : "Enable Chrome notifications"}
-      className="fixed bottom-4 right-4 z-[80] flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/90 text-base shadow-lg backdrop-blur transition hover:border-white/20 hover:bg-white/5"
-    >
-      {permission === "granted" ? "🔔" : "🔕"}
-    </button>
+    <div className="relative" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-label={
+          unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+        }
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+      >
+        <BellIcon size={16} />
+        {unread > 0 && (
+          <span
+            className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-fg ring-2 ring-ink"
+            aria-hidden="true"
+          />
+        )}
+      </button>
+
+      {open && (
+        <div
+          ref={panelRef}
+          tabIndex={-1}
+          role="dialog"
+          aria-label="Notifications"
+          className="absolute right-0 top-[calc(100%+6px)] z-50 w-[min(92vw,380px)] overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_18px_50px_rgba(0,0,0,0.6)] focus:outline-none"
+        >
+          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+            <div>
+              <p className="text-xs font-medium text-fg">Notifications</p>
+              <p className="mt-0.5 text-[10px] text-subtle">
+                Replies, appreciation, requests, messages.
+              </p>
+            </div>
+            {unread > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void markAllRead()}
+                loading={marking}
+                className="h-7 px-2 text-[10px]"
+              >
+                <CheckIcon size={12} /> Mark read
+              </Button>
+            )}
+          </div>
+
+          <div className="nice-scroll max-h-[min(60vh,420px)] overflow-y-auto">
+            {loading ? (
+              <div className="space-y-2 p-3" aria-hidden="true">
+                {[0, 1, 2].map((row) => (
+                  <div key={row} className="flex gap-3">
+                    <span className="skeleton h-7 w-7 rounded-full" />
+                    <span className="flex-1 space-y-1.5">
+                      <span className="skeleton block h-2.5 w-3/4 rounded" />
+                      <span className="skeleton block h-2 w-1/2 rounded" />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-[11px] text-muted">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="mt-2 text-[11px] text-fg underline underline-offset-2"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line text-subtle">
+                  <BellIcon size={15} />
+                </span>
+                <p className="mt-3 text-[11px] font-medium text-fg">Nothing yet</p>
+                <p className="mt-1 text-[10px] leading-relaxed text-subtle">
+                  When someone replies, appreciates a post, adds you or messages
+                  you, it lands here.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-line">
+                {items.map((item) => (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "flex gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]",
+                        item.unread && "bg-white/[0.025]",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
+                          item.unread
+                            ? "border-line-strong text-fg"
+                            : "border-line text-subtle",
+                        )}
+                        aria-hidden="true"
+                      >
+                        {ICONS[item.type]({ size: 13 })}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-start gap-2">
+                          <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-fg">
+                            {item.title}
+                          </span>
+                          {item.unread && (
+                            <span
+                              className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-fg"
+                              aria-label="Unread"
+                            />
+                          )}
+                        </span>
+                        <span className="mt-0.5 line-clamp-2 block text-[10.5px] leading-relaxed text-muted">
+                          {item.body}
+                        </span>
+                        <span className="mono-meta mt-1 block">
+                          {LABELS[item.type]} · {timeAgo(item.createdAt)}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="border-t border-line px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10px] text-subtle">Desktop alerts</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={alertsOn}
+                onClick={() => void toggleAlerts()}
+                className={cn(
+                  "relative h-4 w-7 rounded-full border transition-colors",
+                  alertsOn
+                    ? "border-fg bg-fg"
+                    : "border-line-strong bg-white/[0.04]",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-2.5 w-2.5 rounded-full transition-all",
+                    alertsOn ? "left-3.5 bg-ink" : "left-0.5 bg-subtle",
+                  )}
+                />
+              </button>
+            </div>
+            {alertError && (
+              <p className="mt-1 text-[9.5px] leading-relaxed text-danger">
+                {alertError}
+              </p>
+            )}
+            <p className="mt-1.5 text-[9.5px] leading-relaxed text-subtle">
+              Only your own activity is ever shown. No badges are invented.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { cache } from "react";
 import { and, eq, lt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
@@ -93,7 +94,8 @@ export async function purgeExpiredVaultTokens(): Promise<void> {
   await db.delete(vaultAccess).where(lt(vaultAccess.createdAt, cutoff));
 }
 
-export async function getVaultUser(): Promise<AuthUser | null> {
+/** Request-scoped: the vault page and chat API never verify the same token twice. */
+export const getVaultUser = cache(async function getVaultUser(): Promise<AuthUser | null> {
   const store = await cookies();
   const token = store.get(VAULT_COOKIE)?.value;
   if (!token) return null;
@@ -119,5 +121,4 @@ export async function getVaultUser(): Promise<AuthUser | null> {
       .where(and(eq(vaultAccess.userId, row.user.id)));
     return null;
   }
-  return row.user;
-}
+  return row.user;});

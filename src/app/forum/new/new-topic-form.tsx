@@ -1,21 +1,34 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CATEGORIES } from "@/lib/utils";
+import { Button, CategoryGlyph, Field, Input, Notice, Textarea } from "@/components/primitives";
+import { useToast } from "@/components/toast";
 
 const MAX_TITLE = 120;
 const MAX_CONTENT = 4000;
 
 export function NewTopicForm() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState<string>("general");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
     if (busy) return;
+    if (title.trim().length < 3) {
+      setError("Give the conversation a title of at least 3 characters.");
+      return;
+    }
+    if (!content.trim()) {
+      setError("Add a body so people have something to reply to.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -28,95 +41,98 @@ export function NewTopicForm() {
           category,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to create topic.");
+      const data = (await res.json()) as {
+        topic?: { id: number };
+        error?: string;
+      };
+      if (!res.ok || !data.topic) {
+        setError(data.error ?? "The post could not be published. Try again.");
         return;
       }
-      window.location.href = `/forum/${data.topic.id}`;
+      toast({ title: "Conversation published", variant: "success" });
+      router.push(`/forum/${data.topic.id}`);
+      router.refresh();
     } catch {
-      setError("Network error — try again.");
+      setError("Network error — your post was not published. Try again.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-5">
-      <div>
-        <label
-          htmlFor="title"
-          className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-        >
-          Title *
-        </label>
-        <input
+    <form onSubmit={submit} className="space-y-5">
+      <Field
+        label="Title"
+        htmlFor="title"
+        hint={`${title.length}/${MAX_TITLE} characters`}
+        error={title.length > 0 && title.trim().length < 3 ? "Use at least 3 characters." : undefined}
+      >
+        <Input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value.slice(0, MAX_TITLE))}
-          placeholder="e.g. Best drop spots in Bermuda this season?"
-          className="w-full rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          placeholder="What do you want to talk about?"
+          maxLength={MAX_TITLE}
+          autoFocus
+          required
         />
-        <p className="mt-1 text-right text-[11px] text-slate-500">
-          {title.length}/{MAX_TITLE}
-        </p>
-      </div>
+      </Field>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
-          Category
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <fieldset>
+        <legend className="mb-2 text-xs font-medium text-muted">Category</legend>
+        <div className="flex flex-wrap gap-1.5">
           {CATEGORIES.map((c) => (
             <button
               key={c.slug}
               type="button"
               onClick={() => setCategory(c.slug)}
+              aria-pressed={category === c.slug}
               className={
                 category === c.slug
-                  ? "rounded-full border border-orange-500/50 bg-orange-500/15 px-4 py-2 text-sm font-bold text-orange-400"
-                  : "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-white/25"
+                  ? "inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-white/[0.07] px-3 py-1.5 text-xs font-medium text-fg"
+                  : "inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-muted transition-colors hover:border-line-strong hover:text-fg"
               }
             >
-              {c.icon} {c.label}
+              <CategoryGlyph icon={c.icon} size={12} />
+              {c.label}
             </button>
           ))}
         </div>
-      </div>
+      </fieldset>
 
-      <div>
-        <label
-          htmlFor="content"
-          className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400"
-        >
-          Body *
-        </label>
-        <textarea
+      <Field
+        label="Body"
+        htmlFor="content"
+        hint={`${content.length}/${MAX_CONTENT} characters`}
+      >
+        <Textarea
           id="content"
           value={content}
           onChange={(e) => setContent(e.target.value.slice(0, MAX_CONTENT))}
-          rows={10}
-          placeholder="Give the community the details: loadout, UID, rules, story…"
-          className="nice-scroll w-full resize-y rounded-xl border border-white/10 bg-slate-900/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+          rows={11}
+          maxLength={MAX_CONTENT}
+          placeholder="Add the context, the question, or the story. Specific posts get better replies."
+          required
+          className="min-h-[240px]"
         />
-        <p className="mt-1 text-right text-[11px] text-slate-500">
-          {content.length}/{MAX_CONTENT}
+      </Field>
+
+      {error && <Notice variant="error">{error}</Notice>}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[11px] text-subtle">
+          Posts are public and remain in the archive.
         </p>
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          loading={busy}
+          disabled={!title.trim() || !content.trim()}
+        >
+          {busy ? "Publishing…" : "Publish conversation"}
+        </Button>
       </div>
-
-      {error && (
-        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={busy || title.trim().length < 3 || !content.trim()}
-        className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
-      >
-        {busy ? "Posting…" : "Post Topic · +10 XP"}
-      </button>
     </form>
   );
 }

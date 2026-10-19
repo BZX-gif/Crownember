@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import type { PublicUser } from "@/lib/utils";
+import { HeartIcon } from "@/components/icons";
+import { useToast } from "@/components/toast";
+import { cn, type PublicUser } from "@/lib/utils";
 
 export function LikeButton({
   topicId,
@@ -10,13 +12,17 @@ export function LikeButton({
   initiallyLiked,
   user,
   size = "sm",
+  className,
 }: {
   topicId: number;
   initialLikes: number;
   initiallyLiked: boolean;
   user: PublicUser | null;
   size?: "sm" | "md";
+  className?: string;
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [likes, setLikes] = useState(initialLikes);
   const [liked, setLiked] = useState(initiallyLiked);
   const [busy, setBusy] = useState(false);
@@ -24,7 +30,8 @@ export function LikeButton({
   async function toggle() {
     if (busy) return;
     if (!user) {
-      window.location.href = "/login";
+      toast({ title: "Sign in to react", description: "It takes a few seconds to join." });
+      router.push("/login");
       return;
     }
     setBusy(true);
@@ -32,13 +39,24 @@ export function LikeButton({
       const res = await fetch(`/api/forum/topics/${topicId}/like`, {
         method: "POST",
       });
-      const data = await res.json();
-      if (res.ok) {
-        setLiked(data.liked);
-        setLikes(data.likes);
+      const data = (await res.json()) as { liked?: boolean; likes?: number; error?: string };
+      if (!res.ok) {
+        toast({
+          title: "Could not update your reaction",
+          description: data.error ?? "Try again in a moment.",
+          variant: "danger",
+        });
+        return;
       }
+      // No optimistic guess: the count shown is always the server's count.
+      setLiked(Boolean(data.liked));
+      setLikes(Number(data.likes ?? 0));
     } catch {
-      /* ignore */
+      toast({
+        title: "Network error",
+        description: "Your reaction was not saved. Try again.",
+        variant: "danger",
+      });
     } finally {
       setBusy(false);
     }
@@ -46,20 +64,29 @@ export function LikeButton({
 
   return (
     <button
-      onClick={toggle}
-      className={cn(
-        "flex items-center gap-1.5 rounded-full border font-semibold transition",
-        size === "md" ? "px-4 py-2 text-sm" : "px-3 py-1.5 text-xs",
+      type="button"
+      onClick={() => void toggle()}
+      disabled={busy}
+      aria-pressed={liked}
+      aria-label={
         liked
-          ? "border-rose-500/50 bg-rose-500/15 text-rose-400"
-          : "border-white/10 bg-white/5 text-slate-300 hover:border-rose-500/40 hover:text-rose-400",
+          ? `Remove your like. ${likes} ${likes === 1 ? "like" : "likes"}.`
+          : `Like this post. ${likes} ${likes === 1 ? "like" : "likes"}.`
+      }
+      title={liked ? "Remove like" : "Like"}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50",
+        size === "md" ? "h-9 px-3 text-sm" : "h-7 px-2 text-xs",
+        liked ? "text-fg" : "text-muted hover:bg-white/[0.05] hover:text-fg",
+        className,
       )}
-      title={user ? (liked ? "Unlike" : "Like this topic") : "Log in to like"}
     >
-      <span className={cn("transition", liked && "scale-110")}>
-        {liked ? "❤️" : "🤍"}
-      </span>
-      {likes}
+      <HeartIcon
+        size={size === "md" ? 16 : 14}
+        filled={liked}
+        className={cn("transition-transform", liked && "scale-105")}
+      />
+      <span className="tabular-nums">{likes}</span>
     </button>
   );
 }

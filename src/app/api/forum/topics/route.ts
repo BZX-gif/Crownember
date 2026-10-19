@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
   if (containsInjection(title) || containsInjection(content)) {
     return NextResponse.json(
-      { error: "Topics can't contain code or script tags. 🛡️" },
+      { error: "Posts cannot contain code or script tags." },
       { status: 400 },
     );
   }

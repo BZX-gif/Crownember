@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar, DevChip, FounderChip, RankBadge } from "@/components/ui";
-import { timeAgo } from "@/lib/utils";
-import type { PublicUser, ReplyDTO } from "@/lib/utils";
-
-const MAX_LEN = 2000;
+import { ReplyComposer } from "@/components/reply-composer";
+import { EmptyState } from "@/components/primitives";
+import { ForumIcon } from "@/components/icons";
+import { cn, timeAgo, type PublicUser, type ReplyDTO } from "@/lib/utils";
 
 export function Replies({
   topicId,
@@ -18,123 +18,108 @@ export function Replies({
   user: PublicUser | null;
 }) {
   const [replies, setReplies] = useState<ReplyDTO[]>(initialReplies);
-  const [content, setContent] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const sectionRef = useRef<HTMLDivElement>(null);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const text = content.trim();
-    if (!text || busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/forum/topics/${topicId}/replies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Failed to post reply.");
-        return;
-      }
-      setReplies((prev) => [...prev, data.reply]);
-      setContent("");
-    } catch {
-      setError("Network error — try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  useEffect(() => {
+    if (window.location.hash !== "#composer") return;
+    const el = document.getElementById("composer");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const textarea = el?.querySelector("textarea");
+    textarea?.focus({ preventScroll: true });
+  }, []);
 
   return (
-    <div>
-      <h2 className="mb-4 text-lg font-black">
-        💬 Replies <span className="text-slate-500">({replies.length})</span>
-      </h2>
-
-      {replies.length === 0 && (
-        <p className="mb-4 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-sm text-slate-400">
-          No replies yet — drop the first one!
-        </p>
-      )}
-
-      <div className="space-y-3">
-        {replies.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-2xl border border-white/10 bg-slate-900/60 p-4"
-          >
-            <div className="flex flex-wrap items-center gap-x-2">
-              <Link
-                href={`/players/${encodeURIComponent(r.author.username)}`}
-                className="flex items-center gap-2"
-              >
-                <Avatar
-                  name={r.author.username}
-                  color={r.author.avatarColor}
-                  size={28}
-                  dev={r.author.dev}
-                />
-                <span className="text-sm font-bold text-slate-200 hover:text-white">
-                  {r.author.username}
-                </span>
-              </Link>
-              <RankBadge rank={r.author.rank} size="xs" />
-              {r.author.founder && <FounderChip size="xs" />}
-              {r.author.dev && <DevChip size="xs" />}
-              <span className="text-[11px] text-slate-500">
-                {timeAgo(r.createdAt)}
-              </span>
-            </div>
-            <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-slate-200">
-              {r.content}
-            </p>
-          </div>
-        ))}
+    <section
+      id="replies"
+      ref={sectionRef}
+      aria-labelledby="replies-heading"
+      className="mt-9 scroll-mt-20"
+    >
+      <div className="flex items-center justify-between gap-4 border-b border-line pb-3">
+        <h2 id="replies-heading" className="text-sm font-medium text-fg">
+          Replies <span className="ml-1 text-subtle">{replies.length}</span>
+        </h2>
+        <p className="mono-meta hidden sm:block">Chronological</p>
       </div>
 
-      {user ? (
-        <form onSubmit={submit} className="mt-5">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value.slice(0, MAX_LEN))}
-            placeholder="Share your thoughts… earn +5 XP per reply 🔥"
-            rows={4}
-            className="nice-scroll w-full resize-y rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-base sm:text-sm text-white placeholder:text-slate-600 focus:border-orange-500/60 focus:outline-none"
+      <div className="mt-4">
+        {user ? (
+          <ReplyComposer
+            id="composer"
+            topicId={topicId}
+            user={user}
+            onPosted={(reply) => setReplies((prev) => [...prev, reply])}
+            className="rounded-xl border border-line bg-panel p-4"
           />
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500">
-              {content.length}/{MAX_LEN}
-            </span>
-            <button
-              type="submit"
-              disabled={busy || !content.trim()}
-              className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-orange-500/25 transition hover:brightness-110 disabled:opacity-40 disabled:shadow-none"
-            >
-              {busy ? "Posting…" : "Post Reply"}
-            </button>
+        ) : (
+          <div className="rounded-xl border border-line bg-panel px-5 py-4 text-sm text-muted">
+            <Link href="/login" className="font-medium text-fg hover:underline">
+              Sign in
+            </Link>{" "}
+            or{" "}
+            <Link href="/register" className="font-medium text-fg hover:underline">
+              join VYRON
+            </Link>{" "}
+            to add your reply to this conversation.
           </div>
-          {error && (
-            <p className="mt-2 text-xs font-semibold text-rose-400">{error}</p>
-          )}
-        </form>
+        )}
+      </div>
+
+      {replies.length === 0 ? (
+        <EmptyState
+          className="mt-5"
+          icon={<ForumIcon size={17} />}
+          title="No replies yet"
+          description="Be the first to add something useful. Replies earn reputation and stay in the archive."
+        />
       ) : (
-        <div className="mt-5 rounded-xl border border-white/10 bg-slate-900/60 p-4 text-center text-sm text-slate-300">
-          <Link href="/login" className="font-bold text-orange-400 hover:underline">
-            Log in
-          </Link>{" "}
-          or{" "}
-          <Link
-            href="/register"
-            className="font-bold text-orange-400 hover:underline"
-          >
-            join free
-          </Link>{" "}
-          to reply and earn XP.
+        <div className="mt-6 divide-y divide-line border-t border-line">
+          {replies.map((reply, index) => (
+            <article key={reply.id} className="flex gap-3.5 py-5">
+              <div className="flex w-7 shrink-0 flex-col items-center">
+                <Link
+                  href={`/players/${encodeURIComponent(reply.author.username)}`}
+                  className="rounded-full"
+                  aria-label={`${reply.author.username}'s profile`}
+                >
+                  <Avatar name={reply.author.username} size={28} dev={reply.author.dev} />
+                </Link>
+                {index < replies.length - 1 && (
+                  <span className="mt-2 w-px flex-1 bg-line" aria-hidden="true" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <Link
+                    href={`/players/${encodeURIComponent(reply.author.username)}`}
+                    className="text-[13px] font-medium text-fg hover:text-white"
+                  >
+                    {reply.author.username}
+                  </Link>
+                  <RankBadge rank={reply.author.rank} size="xs" />
+                  {reply.author.founder && <FounderChip size="xs" />}
+                  {reply.author.dev && <DevChip size="xs" />}
+                  <span className="text-subtle" aria-hidden="true">·</span>
+                  <time
+                    dateTime={new Date(reply.createdAt).toISOString()}
+                    className="text-[11px] text-subtle"
+                  >
+                    {timeAgo(reply.createdAt)}
+                  </time>
+                </div>
+                <p
+                  className={cn(
+                    "prose-body mt-1.5 text-[14px]",
+                    reply.author.dev && "font-mono text-[13px] text-fg",
+                  )}
+                >
+                  {reply.content}
+                </p>
+              </div>
+            </article>
+          ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

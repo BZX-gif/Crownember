@@ -17,16 +17,12 @@ export function ExpiryCountdown({
   return (
     <span
       className={cn(
-        "font-hud text-[10px] font-bold tracking-wider",
-        danger
-          ? "animate-pulse text-rose-400"
-          : warn
-            ? "text-amber-400"
-            : "text-slate-500",
+        "text-[10px] tabular-nums",
+        danger ? "text-danger" : warn ? "text-muted" : "text-subtle",
       )}
-      title={`This message self-destructs ${vault ? "14 minutes" : "3 hours"} after it was sent`}
+      title={`This message clears ${vault ? "14 minutes" : "3 hours"} after it was sent`}
     >
-      ⏳ {formatTimeLeft(left)}
+      {formatTimeLeft(left)}
     </span>
   );
 }

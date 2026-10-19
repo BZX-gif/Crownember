@@ -8,10 +8,11 @@ their phones, you just need to put it on the internet. Everything below is a
 - **Database:** Neon free PostgreSQL → https://neon.tech (or Supabase free → https://supabase.com)
 - **Code storage:** GitHub free → https://github.com
 
-> Why this works with zero money: chat uses smart polling (every 3 seconds),
+> Why this works with zero money: chat uses visibility-aware polling (every 6 seconds),
 > so it runs perfectly on free serverless hosting — no paid WebSocket servers
-> needed. Messages are saved in the database, so **every user sees every
-> message from everyone, on any device, forever.**
+> needed. Messages are stored in the database so **every member sees the same
+> room on any device** — for the life of the message: 3 hours in public
+> rooms, 14 minutes in the Vault.
 
 ---
 
@@ -41,9 +42,10 @@ their phones, you just need to put it on the internet. Everything below is a
    ```
    node scripts/migrate.mjs && npx tsx src/db/seed.ts && next build
    ```
-   - `scripts/migrate.mjs` is a bulletproof, prompt-free migration: it creates
-     every missing table/column/index, reshapes rooms to the live 3-room
-     layout, and is 100% idempotent — safe on every single deploy.
+   - `scripts/migrate.mjs` is a prompt-free migration: it creates every
+     missing table/column/index (including profile-picture storage and chat
+     reactions), marks the Vault room, and is 100% idempotent — safe on every
+     single deploy. It never deletes rooms or rewrites community content.
    - `seed.ts` fills the community on a brand-new database and safely skips
      itself afterwards.
    - **Use this command even if you previously used `drizzle-kit push`** —
@@ -55,8 +57,8 @@ their phones, you just need to put it on the internet. Everything below is a
 
 1. Open your link on your phone **and** your laptop (or send it to a friend)
 2. Register on both devices → chat in **Global Chat**
-3. You'll see each other's messages appear within 3 seconds. ✅ That's it —
-   you're live.
+3. You'll see each other's messages appear within a few seconds (rooms
+   refresh every 6 seconds while the tab is visible). That's it — you're live.
 
 ## Step 5 — Free custom touches (optional)
 
@@ -156,9 +158,9 @@ or tables on Neon). Fix:
   available in **Build** ✓).
 
 **Chat rooms look empty after a deploy**
-Normal for ~3 hours — messages self-destruct. The migration automatically
-refreshes ancient seeded messages once, so the demo chat comes back to life
-on the first deploy after this update.
+Expected. Public messages clear three hours after they are sent and the Vault
+clears after fourteen minutes. Nothing is re-dated or replayed by a deploy;
+an empty room means nobody has spoken recently.
 
 ## 📣 Getting your first users (also free)
 

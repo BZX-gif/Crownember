@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   }
   const target = await findUserByUsername(String(body.username ?? ""));
   if (!target) {
-    return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    return NextResponse.json({ error: "Member not found." }, { status: 404 });
   }
 
   const result = await sendFriendRequest(user.id, target.id);
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     ok: true,
     autoAccepted: result.autoAccepted ?? false,
     message: result.autoAccepted
-      ? "🤝 They had already sent you a request — you're squad now!"
+      ? "They had already sent you a request — you are friends now."
       : "⚡ Friend request dispatched.",
   });
 }

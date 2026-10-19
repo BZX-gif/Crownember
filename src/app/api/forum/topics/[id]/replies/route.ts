@@ -46,7 +46,7 @@ export async function POST(
   }
   if (containsInjection(content)) {
     return NextResponse.json(
-      { error: "Replies can't contain code or script tags. 🛡️" },
+      { error: "Replies cannot contain code or script tags." },
       { status: 400 },
     );
   }

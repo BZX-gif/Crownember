@@ -38,7 +38,6 @@ export async function POST(req: Request) {
 
   const username = String(body.username ?? "").trim();
   const password = String(body.password ?? "");
-  const uid = String(body.uid ?? "").trim().slice(0, 15);
   const bio = String(body.bio ?? "").trim().slice(0, 200);
 
   if (!USERNAME_RE.test(username)) {
@@ -59,13 +58,6 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  if (uid && !/^\d{6,15}$/.test(uid)) {
-    return NextResponse.json(
-      { error: "Free Fire UID should be a number (6-15 digits)." },
-      { status: 400 },
-    );
-  }
-
   const existing = await db
     .select({ id: users.id })
     .from(users)
@@ -73,17 +65,17 @@ export async function POST(req: Request) {
     .limit(1);
   if (existing.length > 0) {
     return NextResponse.json(
-      { error: "That username is already taken. Pick another IGN!" },
+      { error: "That username is already taken. Pick another one." },
       { status: 409 },
     );
   }
 
-  // Founding Squad gate: only 10 real players allowed at launch.
+  // Founding seat gate: registration opens fully once the founding cohort is complete.
   const stats = await getSeatStats();
   if (!stats.open) {
     return NextResponse.json(
       {
-        error: `The Founding Squad is FULL (${stats.taken}/${stats.max} seats taken). Join the waitlist!`,
+        error: `Founding seats are full (${stats.taken}/${stats.max}). Join the waitlist to be considered when one opens.`,
         seats: stats,
       },
       { status: 403 },
@@ -98,16 +90,15 @@ export async function POST(req: Request) {
       .values({
         username,
         passwordHash: hashPassword(password),
-        uid,
         bio,
         founder: isFounder,
       })
       .returning();
   } catch {
-    // Two people clicked "claim" with the same IGN at once — the DB unique
+    // Two people submitted the same username at once — the DB unique
     // constraint is the final referee.
     return NextResponse.json(
-      { error: "That username is already taken. Pick another IGN!" },
+      { error: "That username is already taken. Pick another one." },
       { status: 409 },
     );
   }

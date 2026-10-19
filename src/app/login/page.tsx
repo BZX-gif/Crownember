@@ -1,37 +1,65 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/auth";
+import { Brand } from "@/components/brand";
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "Log In" };
+export const metadata: Metadata = {
+  title: "Sign in",
+  description: "Sign in to your VYRON account.",
+};
 
 export default async function LoginPage() {
   const user = await getSessionUser();
   if (user) redirect("/");
 
   return (
-    <div className="bg-grid-subtle flex min-h-[70vh] items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
-        <div className="vyron-corners rounded-3xl border border-white/10 bg-black/80 p-8 shadow-2xl backdrop-blur">
-          <div className="text-center">
-            <svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true" className="mx-auto">
-              <rect width="32" height="32" rx="6" fill="currentColor"/>
-              <path d="M8 12h16M8 16h12M8 20h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="26" cy="6" r="4" fill="#fff" opacity="0.15"/>
-            </svg>
-            <h1 className="mt-4 font-display text-2xl uppercase tracking-wide">
-              Welcome Back
-            </h1>
-            <p className="mt-2 text-sm text-white/50">
-              Your conversations are waiting. Sign in to continue.
-            </p>
-          </div>
+    <div className="mx-auto grid min-h-[calc(100dvh-140px)] w-full max-w-5xl items-center gap-12 px-5 py-12 lg:grid-cols-2 lg:gap-20">
+      <div className="hidden lg:block">
+        <Brand size={30} />
+        <h1 className="display-title mt-10 text-4xl leading-[1.1] text-fg">
+          The conversation
+          <br />
+          remembers you.
+        </h1>
+        <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted">
+          Your posts, replies and reputation are tied to one account. Sign in to
+          pick up where you left off.
+        </p>
+        <ul className="mt-8 space-y-2.5 text-xs text-muted">
+          <li className="flex items-center gap-2.5">
+            <span className="h-px w-4 bg-line-strong" aria-hidden="true" />
+            Real conversations, no algorithmic feed
+          </li>
+          <li className="flex items-center gap-2.5">
+            <span className="h-px w-4 bg-line-strong" aria-hidden="true" />
+            Reputation earned by contributing
+          </li>
+          <li className="flex items-center gap-2.5">
+            <span className="h-px w-4 bg-line-strong" aria-hidden="true" />
+            Free to join, no advertising
+          </li>
+        </ul>
+      </div>
+
+      <div className="mx-auto w-full max-w-sm">
+        <div className="lg:hidden">
+          <Brand size={28} />
+        </div>
+        <div className="mt-6 rounded-xl border border-line bg-panel p-6 sm:p-7 lg:mt-0">
+          <p className="eyebrow">Welcome back</p>
+          <h1 className="display-title mt-2 text-2xl text-fg">Sign in</h1>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">
+            Enter the username and password you registered with.
+          </p>
           <LoginForm />
         </div>
-        <p className="mt-4 text-center text-sm text-white/40">
-          New here?{" "}
-          <a href="/register" className="font-bold text-white hover:underline">
-            Create a free account
-          </a>
+        <p className="mt-4 text-center text-xs text-muted">
+          No account?{" "}
+          <Link href="/register" className="text-fg underline underline-offset-4">
+            Join VYRON
+          </Link>
         </p>
       </div>
     </div>

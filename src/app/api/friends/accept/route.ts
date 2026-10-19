@@ -15,11 +15,11 @@ export async function POST(req: Request) {
   }
   const target = await findUserByUsername(String(body.username ?? ""));
   if (!target) {
-    return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    return NextResponse.json({ error: "Member not found." }, { status: 404 });
   }
   const result = await respondFriendRequest(user.id, target.id, true);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }
-  return NextResponse.json({ ok: true, message: "🤝 Squad formed." });
+  return NextResponse.json({ ok: true, message: "You are now friends." });
 }

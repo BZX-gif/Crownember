@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   }
   const target = await findUserByUsername(String(body.username ?? ""));
   if (!target) {
-    return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    return NextResponse.json({ error: "Member not found." }, { status: 404 });
   }
   const result = await respondFriendRequest(user.id, target.id, false);
   if (!result.ok) {

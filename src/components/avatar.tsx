@@ -2,56 +2,80 @@
 
 import { useState } from "react";
 import { cn, initials } from "@/lib/utils";
+import { DevGlyph } from "@/components/icons";
 
+/**
+ * Avatar: initials are always painted first, the photo is progressive
+ * enhancement. The <img> only exists when a URL is known, uses native lazy
+ * loading and falls back silently to the initials if the request 404s.
+ *
+ * The legacy `color` prop is accepted for call-site compatibility but is
+ * intentionally ignored — VYRON identities are neutral graphite, never a
+ * random hue.
+ */
 export function Avatar({
   name,
-  color,
   avatarUrl,
   size = 40,
   dev = false,
   className,
+  decorative = true,
+  loading = "lazy",
 }: {
   name: string;
-  color: string;
+  color?: string;
   avatarUrl?: string;
   size?: number;
   dev?: boolean;
   className?: string;
+  decorative?: boolean;
+  loading?: "lazy" | "eager";
 }) {
-  const resolvedAvatarUrl = avatarUrl ?? `/api/profile/avatar?username=${encodeURIComponent(name)}`;
-  const [showImage, setShowImage] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const src =
+    avatarUrl === ""
+      ? null
+      : avatarUrl ?? `/api/profile/avatar?username=${encodeURIComponent(name)}`;
+  const showImage = !failed && src !== null;
 
   return (
-    <div className={cn("relative shrink-0", className)}>
+    <div
+      className={cn("relative shrink-0", className)}
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : `${name}'s profile picture`}
+    >
       <div
-        className={cn(
-          "relative flex select-none items-center justify-center overflow-hidden rounded-full font-bold text-white ring-2",
-          dev ? "ring-emerald-400/60" : "ring-white/10",
-        )}
+        className="relative flex select-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#232326] font-medium text-fg"
         style={{
           width: size,
           height: size,
-          fontSize: Math.max(11, Math.round(size * 0.36)),
-          background: `linear-gradient(135deg, ${color}, ${color}88)`,
+          fontSize: Math.max(10, Math.round(size * 0.34)),
+          letterSpacing: "0.02em",
         }}
+        aria-hidden="true"
       >
-        {initials(name)}
+        <span>{initials(name)}</span>
         {showImage && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={resolvedAvatarUrl}
-            alt={`${name}'s profile picture`}
+            src={src}
+            alt=""
+            width={size}
+            height={size}
+            loading={loading}
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setShowImage(false)}
+            onError={() => setFailed(true)}
           />
         )}
       </div>
       {dev && (
         <span
-          className="ghost-badge absolute -bottom-1 -right-1.5 leading-none"
-          style={{ fontSize: Math.max(11, Math.round(size * 0.48)) }}
-          title="👻 Developer — the ghost in the machine"
+          className="absolute -bottom-1 -right-1 flex h-[15px] w-[15px] items-center justify-center rounded-full border border-[#3a3a3f] bg-[#0a0a0b] text-white"
+          title="VYRON builder"
+          aria-label="VYRON builder"
         >
-          👻
+          <DevGlyph size={9} />
         </span>
       )}
     </div>

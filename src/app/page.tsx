@@ -1,615 +1,502 @@
 import Link from "next/link";
-import Image from "next/image";
-import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { messages, rooms, topics, users } from "@/db/schema";
-import { Avatar, RankBadge } from "@/components/ui";
-import { Reveal } from "@/components/reveal";
+import { rooms, topicLikes, topics, users } from "@/db/schema";
+import { Avatar, FounderChip, RankBadge } from "@/components/ui";
+import { PostRow } from "@/components/post-row";
+import { BrandMark } from "@/components/brand";
+import { EmptyState, RoomGlyph, buttonClass } from "@/components/primitives";
+import {
+  ActivityIcon,
+  ArrowRightIcon,
+  ChatIcon,
+  ClockIcon,
+  FeedIcon,
+  ForumIcon,
+  LockIcon,
+  MailIcon,
+  PencilIcon,
+  SparkIcon,
+  UsersIcon,
+} from "@/components/icons";
 import { FOUNDING_LIMIT, getSeatStats } from "@/lib/access";
 import { getSessionUser } from "@/lib/auth";
+import { getRank } from "@/lib/ranks";
+import { roomDisplay } from "@/lib/rooms";
 import { getHiddenUserIds } from "@/lib/social";
-import {
-  formatTimeLeft,
-  messageCutoff,
-  msUntilExpiry,
-} from "@/lib/retention";
-import { serializeUser, type PublicUser } from "@/lib/utils";
+import { serializeTopic, serializeUser, timeAgo, type PublicUser } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const LOADOUT = [
-  {
-    n: "01",
-    icon: "💬",
-    title: "Real Conversations",
-    desc: "Feed, forum, and chat — all in one place. Share thoughts, join discussions, build connections.",
-  },
-  {
-    n: "02",
-    icon: "⏳",
-    title: "Ephemeral Chat",
-    desc: "Live rooms where messages burn after 3 hours. Talk freely. What deserves to last, post in the forum.",
-  },
-  {
-    n: "03",
-    icon: "📈",
-    title: "Reputation That Matters",
-    desc: "Earn XP for quality contributions. Climb from Member → Legend on the public leaderboard.",
-  },
-  {
-    n: "04",
-    icon: "🤝",
-    title: "Find Your People",
-    desc: "Discover collaborators, mentors, friends. Drop your interests, find your tribe.",
-  },
-  {
-    n: "05",
-    icon: "🛡️",
-    title: "Founding Members",
-    desc: "Only 10 seats at launch. Founders carry a permanent badge in every post, chat, and leaderboard.",
-  },
-  {
-    n: "06",
-    icon: "🔐",
-    title: "Guard Protected",
-    desc: "Rate limits, bot traps, server-verified actions. Your reputation is earned, not hacked.",
-  },
+const SPACES = [
+  { href: "/", label: "Feed", Icon: FeedIcon },
+  { href: "/forum", label: "Forum", Icon: ForumIcon },
+  { href: "/chat", label: "Rooms", Icon: ChatIcon },
+  { href: "/messages", label: "Messages", Icon: MailIcon },
+  { href: "/players", label: "People", Icon: UsersIcon },
 ];
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Claim your seat",
-    desc: "Pick your username, add a bio. 10 seconds, ₹0, and the 🛡️ FOUNDER badge is yours.",
-  },
-  {
-    n: "02",
-    title: "Join the conversation",
-    desc: "Post, reply, chat. Every quality action earns XP before your words burn in 3h.",
-  },
-  {
-    n: "03",
-    title: "Build your reputation",
-    desc: "Climb to Legend, own the leaderboard, and go down in VYRON history.",
-  },
-];
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>;
+}) {
+  const { sort } = await searchParams;
+  const popular = sort === "popular";
+  const user = await getSessionUser();
 
-export default async function HomePage() {
-  const cutoff = messageCutoff();
+  const [feeds, topRows, founderRows, roomRows, seats, counts] = await Promise.all([
+    db
+      .select({ topic: topics, author: users })
+      .from(topics)
+      .innerJoin(users, eq(topics.userId, users.id))
+      .where(eq(users.isBot, false))
+      .orderBy(
+        popular ? desc(topics.likes) : desc(topics.lastActivityAt),
+        desc(topics.lastActivityAt),
+      )
+      .limit(10),
+    db
+      .select()
+      .from(users)
+      .where(eq(users.isBot, false))
+      .orderBy(desc(users.xp))
+      .limit(5),
+    db
+      .select()
+      .from(users)
+      .where(eq(users.isBot, false))
+      .orderBy(asc(users.id))
+      .limit(FOUNDING_LIMIT),
+    db.select().from(rooms).orderBy(asc(rooms.id)),
+    getSeatStats(),
+    db.execute(sql`
+      select
+        (select count(*)::int from users where is_bot = false) as members,
+        (select count(*)::int
+           from topics t join users u on u.id = t.user_id
+          where u.is_bot = false) as conversations,
+        (select count(*)::int
+           from messages m join users u on u.id = m.user_id
+          where u.is_bot = false) as messages
+    `),
+  ]);
 
-  const [statsRows, allRooms, topPlayersRaw, foundingRaw, seats, tickerRaw, lobbyRaw] =
-    await Promise.all([
-      db.execute(sql`
-        select
-          (select count(*)::int from users where is_bot = false) as players,
-          (select count(*)::int from messages) as messages,
-          (select count(*)::int from topics) as topics,
-          (select count(*)::int from rooms) as rooms
-      `),
-      db.select().from(rooms).orderBy(asc(rooms.id)),
-      db.select().from(users).orderBy(desc(users.xp)).limit(5),
-      db
-        .select()
-        .from(users)
-        .where(eq(users.isBot, false))
-        .orderBy(asc(users.id))
-        .limit(FOUNDING_LIMIT),
-      getSeatStats(),
-      // PUBLIC feeds only — Vault whispers never reach the front page.
-      db
-        .select({
-          content: messages.content,
-          username: users.username,
-          authorId: users.id,
-        })
-        .from(messages)
-        .innerJoin(users, eq(messages.userId, users.id))
-        .innerJoin(rooms, eq(messages.roomId, rooms.id))
-        .where(and(gte(messages.createdAt, cutoff), eq(rooms.isVault, false)))
-        .orderBy(desc(messages.id))
-        .limit(14),
-      db
-        .select({ message: messages, author: users })
-        .from(messages)
-        .innerJoin(users, eq(messages.userId, users.id))
-        .innerJoin(rooms, eq(messages.roomId, rooms.id))
-        .where(and(gte(messages.createdAt, cutoff), eq(rooms.isVault, false)))
-        .orderBy(desc(messages.id))
-        .limit(5),
-    ]);
-
-  const stats = statsRows.rows[0] as unknown as {
-    players: number;
+  const hidden = user ? await getHiddenUserIds(user.id) : new Set<number>();
+  const visibleTopics = feeds.filter((row) => !hidden.has(row.author.id));
+  const topicIds = visibleTopics.map((r) => r.topic.id);
+  const likedRows =
+    user && topicIds.length > 0
+      ? await db
+          .select({ topicId: topicLikes.topicId })
+          .from(topicLikes)
+          .where(and(eq(topicLikes.userId, user.id), inArray(topicLikes.topicId, topicIds)))
+      : [];
+  const liked = new Set(likedRows.map((r) => r.topicId));
+  const topMembers = topRows.filter((u) => !hidden.has(u.id)).map(serializeUser);
+  const founders = founderRows.filter((u) => !hidden.has(u.id));
+  const stats = counts.rows[0] as unknown as {
+    members: number;
+    conversations: number;
     messages: number;
-    topics: number;
-    rooms: number;
   };
-  const topPlayers = topPlayersRaw.map((u) => serializeUser(u));
-  const founding = foundingRaw.map((u) => serializeUser(u));
-  const globalRoom = allRooms[0];
-
-  // The block veil: blocked users leave no trace on the front page.
-  const viewer = await getSessionUser();
-  const hiddenIds = viewer
-    ? await getHiddenUserIds(viewer.id)
-    : new Set<number>();
-  const ticker = tickerRaw.filter((t) => !hiddenIds.has(t.authorId));
-  const lobby = lobbyRaw
-    .filter((r) => !hiddenIds.has(r.author.id))
-    .filter((r) => !globalRoom || r.message.roomId === globalRoom.id)
-    .concat(
-      lobbyRaw.filter((r) => globalRoom && r.message.roomId !== globalRoom.id),
-    )
-    .slice(0, 5)
-    .reverse();
-
-  const fmt = (n: number) => n.toLocaleString("en-US");
+  const publicUser: PublicUser | null = user ? serializeUser(user) : null;
 
   return (
     <div>
-      {/* ================= HERO / LOBBY ================= */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#111] to-black" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.03)_0%,_transparent_70%)]" />
-        </div>
-
-        {/* subtle ambient particles */}
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          {Array.from({ length: 5 }, (_, i) => (
-            <span
-              key={i}
-              className="vyron-particle"
-              style={{
-                left: `${(i * 17.3 + 8) % 94}%`,
-                width: 1.5 + (i % 2),
-                height: 1.5 + (i % 2),
-                animationDelay: `${(i * 2.1) % 12}s`,
-                animationDuration: `${15 + (i % 5)}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-16 sm:pt-24 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          {/* Left: the call */}
+      {/* ---------------- Editorial header ---------------- */}
+      <section className="border-b border-line">
+        <div className="page-shell grid gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
           <div>
-            <div className="vyron-tag inline-flex items-center gap-2 bg-white/5 px-4 py-1.5 font-hud text-[11px] font-bold uppercase tracking-[0.2em] text-white/60 backdrop-blur">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/40" />
-              {seats.open
-                ? `Founding access — ${seats.left}/${seats.max} seats left`
-                : `Applications closed — ${fmt(seats.waitlistCount)} on waitlist`}
+            <div className="flex items-center gap-2.5">
+              <BrandMark size={18} />
+              <p className="eyebrow">VYRON · Global social platform</p>
             </div>
-
-            <h1 className="mt-6 font-display text-6xl uppercase leading-[0.95] tracking-tight text-white sm:text-8xl">
-              <span className="mask-line">
-                <span style={{ animationDelay: "0.05s" }}>Share.</span>
-              </span>
-              <span className="mask-line">
-                <span style={{ animationDelay: "0.18s" }}>Connect.</span>
-              </span>
-              <span className="mask-line">
-                <span className="text-vyron" style={{ animationDelay: "0.31s" }}>
-                  Belong.
-                </span>
-              </span>
+            <h1 className="display-title mt-5 max-w-3xl text-[2.7rem] text-fg sm:text-6xl">
+              Conversations worth
+              <br className="hidden sm:block" /> returning to.
             </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/60">
-              The premium global social platform — open to{" "}
-              <span className="font-bold text-white">only 10 founding members</span>{" "}
-              . Chat burns every 3 hours ⏳, reputation climbs from Member to
-              Legend, and everything is free. Forever.
+            <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted">
+              A permanent forum for ideas that deserve to last, ephemeral rooms
+              for the thoughts that do not, and a small community of people who
+              show up.
             </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/register"
-                className="vyron-btn bg-white text-black px-8 py-4 font-display text-sm uppercase tracking-widest transition hover:-translate-y-0.5 hover:brightness-110"
-              >
-                {seats.open ? `Claim seat #${seats.taken + 1} →` : "Join waitlist →"}
-              </Link>
-              <Link
-                href="/forum"
-                className="vyron-btn border border-white/10 bg-white/5 px-8 py-4 font-display text-sm uppercase tracking-widest text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/20"
-              >
-                Explore the forum
-              </Link>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              {publicUser ? (
+                <>
+                  <Link href="/forum/new" className={buttonClass("primary", "md")}>
+                    <PencilIcon size={15} /> Write a post
+                  </Link>
+                  <Link href="/chat" className={buttonClass("secondary", "md")}>
+                    Open rooms <ArrowRightIcon size={15} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={seats.open ? "/register" : "/register#waitlist"}
+                    className={buttonClass("primary", "md")}
+                  >
+                    {seats.open ? "Join VYRON" : "Join the waitlist"}
+                    <ArrowRightIcon size={15} />
+                  </Link>
+                  <Link href="/forum" className={buttonClass("secondary", "md")}>
+                    Read the forum
+                  </Link>
+                </>
+              )}
             </div>
-
-            {/* Seat HUD */}
-            <div className="vyron-corners mt-10 max-w-md bg-black/60 p-4 backdrop-blur">
-              <div className="flex items-center justify-between font-hud text-[11px] uppercase tracking-[0.18em]">
-                <span className="text-white/40">{"// founding_members"}</span>
-                <span className={seats.open ? "text-white" : "text-white/40"}>
-                  {seats.open ? `${seats.left} seats open` : "closed"}
-                </span>
-              </div>
-              <div className="mt-2.5 grid grid-cols-10 gap-1.5">
-                {Array.from({ length: seats.max }, (_, i) => (
-                  <span
-                    key={i}
-                    className={
-                      i < seats.taken
-                        ? "vyron-tag h-3 bg-gradient-to-r from-white to-white/60"
-                        : "vyron-tag h-3 border border-dashed border-white/15 bg-white/5"
-                    }
-                  />
-                ))}
-              </div>
-              <p className="mt-2.5 font-hud text-[11px] text-white/30">
-                {fmt(stats.players)} member{stats.players === 1 ? "" : "s"} in ·{" "}
-                {fmt(stats.messages)} messages sent · {fmt(stats.topics)} topics
-                created
-              </p>
-            </div>
+            <p className="mono-meta mt-5">
+              {stats.members} {stats.members === 1 ? "member" : "members"} ·{" "}
+              {stats.conversations} {stats.conversations === 1 ? "conversation" : "conversations"} ·{" "}
+              {seats.open ? `${seats.left} founding ${seats.left === 1 ? "seat" : "seats"} open` : "Founding membership closed"}
+            </p>
           </div>
 
-          {/* Right: live lobby feed */}
-          <div className="vyron-corners card-base relative p-5">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-white/30 opacity-75" />
-                  <span className="relative h-2.5 w-2.5 rounded-full bg-white/60" />
-                </span>
-                <span className="font-hud text-xs font-bold uppercase tracking-[0.2em] text-white/60">
-                  live_feed // global
-                </span>
-              </div>
-              <span className="vyron-tag bg-white/5 px-2.5 py-1 font-hud text-[10px] font-bold text-white/60">
-                TTL 3H
-              </span>
-            </div>
-            <div className="mt-4 space-y-4">
-              {lobby.length === 0 && (
-                <p className="py-6 text-center font-hud text-xs text-white/30">
-                  {"// quiet in the lobby… be the first to speak"}
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-fg">Founding membership</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  The first ten members shape VYRON and keep a permanent Founding badge.
                 </p>
-              )}
-              {lobby.map((r) => (
-                <div key={r.message.id} className="flex gap-3">
-                  <Avatar
-                    name={r.author.username}
-                    color={r.author.avatarColor}
-                    size={32}
-                    dev={r.author.isDev}
-                    className="avatar-ring"
-                  />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <span className="text-sm font-bold text-white">
-                        {r.author.username}
-                      </span>
-                      <span className="font-hud text-[10px] text-white/30">
-                        ⏳ {formatTimeLeft(msUntilExpiry(r.message.createdAt))}
-                      </span>
-                    </div>
-                    <p className="truncate text-sm text-white/70">
-                      {r.message.content}
-                    </p>
-                  </div>
-                </div>
+              </div>
+              <SparkIcon size={18} className="shrink-0 text-muted" />
+            </div>
+            <div className="mt-5 grid grid-cols-10 gap-1.5" aria-hidden="true">
+              {Array.from({ length: seats.max }, (_, i) => (
+                <span
+                  key={i}
+                  className={
+                    i < seats.taken
+                      ? "h-1.5 rounded-full bg-fg"
+                      : "h-1.5 rounded-full border border-line bg-transparent"
+                  }
+                />
               ))}
             </div>
-            <Link
-              href="/chat"
-              className="mt-5 flex items-center justify-between border-t border-white/10 pt-3 font-hud text-xs font-bold uppercase tracking-[0.18em] text-white/60 transition hover:text-white"
-            >
-              enter chat
-              <span className="transition-transform group-hover:translate-x-1">→</span>
-            </Link>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="mono-meta">
+                {seats.taken}/{seats.max} claimed
+              </p>
+              {seats.open ? (
+                <Link
+                  href="/register"
+                  className="text-xs font-medium text-fg hover:underline"
+                >
+                  Claim a seat
+                </Link>
+              ) : (
+                <Link
+                  href="/register"
+                  className="text-xs font-medium text-fg hover:underline"
+                >
+                  View waitlist
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ================= LIVE TICKER ================= */}
-      <div className="marquee-pause relative overflow-hidden border-y border-white/10 bg-black py-3">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-black to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-black to-transparent" />
-        <div className="animate-marquee flex w-max items-center gap-10 px-4 font-hud text-xs text-white/30">
-          {[...ticker, ...ticker].map((m, i) => (
-            <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="font-bold text-white/50">{m.username}</span>
-              <span className="text-white/15">▸</span>
-              <span className="max-w-[320px] truncate text-white/60">{m.content}</span>
-              <span className="text-white/10">💬</span>
-            </span>
-          ))}
-        </div>
+      {/* ---------------- Feed + rails ---------------- */}
+      <div className="page-shell grid gap-10 py-9 lg:grid-cols-[168px_minmax(0,1fr)_272px]">
+        <aside className="hidden lg:block">
+          <nav aria-label="Spaces" className="sticky top-24 space-y-0.5">
+            <p className="eyebrow mb-3 px-2">Spaces</p>
+            {SPACES.map(({ href, label, Icon }, index) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={index === 0 ? "page" : undefined}
+                className={
+                  index === 0
+                    ? "flex items-center gap-2.5 rounded-md bg-white/[0.055] px-2.5 py-2 text-[13px] font-medium text-fg"
+                    : "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.035] hover:text-fg"
+                }
+              >
+                <Icon size={15} />
+                {label}
+              </Link>
+            ))}
+            <div className="my-4 hairline" />
+            {publicUser ? (
+              <Link
+                href="/forum/new"
+                className="flex items-center gap-2.5 rounded-md border border-line px-2.5 py-2 text-[13px] text-muted transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <PencilIcon size={15} /> New post
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="flex items-center gap-2.5 rounded-md border border-line px-2.5 py-2 text-[13px] text-muted transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <SparkIcon size={15} /> Join VYRON
+              </Link>
+            )}
+          </nav>
+        </aside>
+
+        <section aria-labelledby="feed-heading">
+          {publicUser && (
+            <Link
+              href="/forum/new"
+              className="mb-5 flex items-center gap-3 rounded-xl border border-line bg-panel px-4 py-3.5 transition-colors hover:border-line-strong"
+            >
+              <Avatar name={publicUser.username} size={32} dev={publicUser.dev} />
+              <span className="flex-1 text-sm text-subtle">
+                Share something with the community…
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted">
+                <PencilIcon size={14} />
+              </span>
+            </Link>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+            <h2 id="feed-heading" className="text-sm font-medium text-fg">
+              {popular ? "Popular conversations" : "Latest conversations"}
+            </h2>
+            <div className="flex items-center gap-1 rounded-lg border border-line p-0.5">
+              <Link
+                href="/"
+                className={
+                  popular
+                    ? "rounded-md px-2.5 py-1 text-[11px] text-muted transition-colors hover:text-fg"
+                    : "rounded-md bg-white/[0.06] px-2.5 py-1 text-[11px] text-fg"
+                }
+              >
+                Latest
+              </Link>
+              <Link
+                href="/?sort=popular"
+                className={
+                  popular
+                    ? "rounded-md bg-white/[0.06] px-2.5 py-1 text-[11px] text-fg"
+                    : "rounded-md px-2.5 py-1 text-[11px] text-muted transition-colors hover:text-fg"
+                }
+              >
+                Popular
+              </Link>
+            </div>
+          </div>
+
+          {visibleTopics.length === 0 ? (
+            <EmptyState
+              className="mt-5"
+              icon={<ForumIcon size={18} />}
+              title="The first conversation is yours"
+              description="VYRON only shows real posts from real members. There is no seeded feed and no invented activity."
+              action={
+                <Link
+                  href={publicUser ? "/forum/new" : "/register"}
+                  className={buttonClass("primary", "sm")}
+                >
+                  {publicUser ? "Start a conversation" : "Join and start one"}
+                </Link>
+              }
+            />
+          ) : (
+            <div className="divide-y divide-line">
+              {visibleTopics.map(({ topic, author }) => (
+                <PostRow
+                  key={topic.id}
+                  topic={serializeTopic(topic, author)}
+                  user={publicUser}
+                  liked={liked.has(topic.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex justify-end">
+            <Link
+              href="/forum"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-fg"
+            >
+              Open the full forum <ArrowRightIcon size={13} />
+            </Link>
+          </div>
+        </section>
+
+        <aside className="space-y-8">
+          <section aria-labelledby="rooms-heading">
+            <div className="flex items-center justify-between border-b border-line pb-2.5">
+              <h2 id="rooms-heading" className="text-sm font-medium text-fg">
+                Rooms
+              </h2>
+              <Link href="/chat" className="text-[11px] text-subtle hover:text-fg">
+                All
+              </Link>
+            </div>
+            <div className="mt-2 divide-y divide-line/70">
+              {roomRows.map((room) => {
+                const display = roomDisplay(room);
+                return (
+                  <Link
+                    key={room.slug}
+                    href={`/chat/${room.slug}`}
+                    className="group flex items-start gap-3 py-3 transition-colors hover:bg-white/[0.02]"
+                  >
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-line text-muted transition-colors group-hover:text-fg">
+                      <RoomGlyph icon={display.icon} size={14} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-[13px] font-medium text-fg">
+                        {display.name}
+                        {room.isVault && <LockIcon size={11} className="text-subtle" />}
+                      </span>
+                      <span className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-subtle">
+                        {display.description}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          <section aria-labelledby="people-heading">
+            <div className="flex items-center justify-between border-b border-line pb-2.5">
+              <h2 id="people-heading" className="text-sm font-medium text-fg">
+                Top members
+              </h2>
+              <Link href="/players" className="text-[11px] text-subtle hover:text-fg">
+                All
+              </Link>
+            </div>
+            <div className="mt-2 divide-y divide-line/70">
+              {topMembers.map((member) => (
+                <Link
+                  key={member.id}
+                  href={`/players/${encodeURIComponent(member.username)}`}
+                  className="flex items-center gap-2.5 py-2.5 transition-colors hover:bg-white/[0.02]"
+                >
+                  <Avatar name={member.username} size={26} dev={member.dev} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] text-fg">{member.username}</span>
+                    <span className="block truncate text-[10px] text-subtle">{member.rank.name}</span>
+                  </span>
+                  <span className="mono-meta shrink-0">{member.xp.toLocaleString()} XP</span>
+                </Link>
+              ))}
+              {topMembers.length === 0 && (
+                <p className="py-4 text-xs text-subtle">No members yet.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-line p-4">
+            <p className="flex items-center gap-2 text-[12px] font-medium text-fg">
+              <ClockIcon size={14} className="text-muted" /> Ephemeral by design
+            </p>
+            <p className="mt-2 text-[11px] leading-relaxed text-subtle">
+              Public room messages clear after three hours. The Vault clears after
+              fourteen minutes and burns its voice notes when anyone leaves. The
+              forum is the permanent record.
+            </p>
+          </section>
+        </aside>
       </div>
 
-      {/* ================= FOUNDING MEMBERS ================= */}
-      <section className="relative border-b border-white/10 bg-gradient-to-b from-white/5 via-black to-black">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <div className="mx-auto max-w-7xl px-4 py-20">
-          <Reveal>
-            <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-              {"// 10 seats · never reopened"}
-            </p>
-            <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
-              The <span className="text-vyron">Founding Members</span>
-            </h2>
-            <p className="mt-4 max-w-2xl leading-relaxed text-white/50">
-              The first 10 members through the doors shape VYRON forever — and
-              carry the 🛡️ <span className="font-bold text-white">FOUNDER</span>{" "}
-              badge in every post, chat, and leaderboard. When all 10 seats are
-              claimed, the doors close.
-            </p>
-          </Reveal>
+      {/* ---------------- Founding members ---------------- */}
+      <section className="border-y border-line bg-panel/40">
+        <div className="page-shell py-12">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Founding members</p>
+              <h2 className="display-title mt-2 text-2xl text-fg sm:text-3xl">
+                The people who were here first.
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                A permanent badge, a seat number, and a vote in the direction of
+                the community. No payment, no tier above anyone else.
+              </p>
+            </div>
+            {seats.open && (
+              <Link href="/register" className={buttonClass("secondary", "sm")}>
+                Claim seat #{seats.taken + 1} <ArrowRightIcon size={13} />
+              </Link>
+            )}
+          </div>
 
-          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {Array.from({ length: FOUNDING_LIMIT }, (_, i) => {
-              const member = founding[i];
+          <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: seats.max }, (_, index) => {
+              const member = founders[index];
               if (member) {
                 return (
-                  <Reveal key={member.id} delay={i * 60}>
-                    <Link
-                      href={`/players/${encodeURIComponent(member.username)}`}
-                      className="vyron-corners group block card-base p-4 text-center transition duration-300 hover:-translate-y-1.5 hover:border-white/20"
-                    >
-                      <p className="vyron-tag inline-block bg-white/5 px-2 py-0.5 font-hud text-[10px] font-bold uppercase tracking-widest text-white/60">
-                        seat #{i + 1}
-                      </p>
-                      <Avatar
-                        name={member.username}
-                        color={member.avatarColor}
-                        size={54}
-                        dev={member.dev}
-                        className="mx-auto mt-3 transition-transform duration-300 group-hover:scale-110 avatar-ring"
-                      />
-                      <p className="mt-3 truncate font-display text-sm uppercase tracking-wide text-white">
-                        {member.username}
-                      </p>
-                      <p className="mt-1 font-hud text-[10px] font-bold text-white/50">
-                        🛡️ FOUNDER
-                      </p>
-                    </Link>
-                  </Reveal>
+                  <Link
+                    key={`member-${member.id}`}
+                    href={`/players/${encodeURIComponent(member.username)}`}
+                    className="group rounded-lg border border-line bg-ink/40 p-3.5 transition-colors hover:border-line-strong"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="mono-meta">Seat {String(index + 1).padStart(2, "0")}</span>
+                      <FounderChip size="xs" />
+                    </div>
+                    <div className="mt-3 flex items-center gap-2.5">
+                      <Avatar name={member.username} size={30} dev={member.isDev} />
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-medium text-fg">
+                          {member.username}
+                        </p>
+                        <p className="truncate text-[10px] text-subtle">
+                          {getRank(member.xp).name} · {member.xp.toLocaleString()} XP
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
                 );
               }
-              return seats.open ? (
-                <Reveal key={`open-${i}`} delay={i * 60}>
-                  <Link
-                    href="/register"
-                    className="group flex h-full flex-col items-center justify-center border-2 border-dashed border-white/10 p-4 text-center transition duration-300 hover:-translate-y-1.5 hover:border-white/40 hover:bg-white/5"
-                  >
-                    <p className="vyron-tag inline-block bg-white/5 px-2 py-0.5 font-hud text-[10px] font-bold uppercase tracking-widest text-white/40">
-                      seat #{i + 1}
-                    </p>
-                    <span className="mt-3 flex h-[54px] w-[54px] items-center justify-center rounded-full border border-dashed border-white/15 font-display text-xl text-white/30 transition group-hover:border-white/40 group-hover:text-white">
-                      ?
-                    </span>
-                    <p className="mt-3 font-display text-sm uppercase tracking-wide text-white/40 transition group-hover:text-white">
-                      Your name here
-                    </p>
-                    <p className="mt-1 font-hud text-[10px] font-bold text-white/30 transition group-hover:text-white/60">
-                      claim it free →
-                    </p>
-                  </Link>
-                </Reveal>
-              ) : (
-                <div
-                  key={`closed-${i}`}
-                  className="flex flex-col items-center justify-center border border-white/10 bg-black/50 p-4 text-center opacity-50"
+              return (
+                <Link
+                  key={`open-${index}`}
+                  href={seats.open ? "/register" : "/register#waitlist"}
+                  className="flex min-h-[88px] flex-col justify-between rounded-lg border border-dashed border-line p-3.5 transition-colors hover:border-line-strong"
                 >
-                  <p className="font-hud text-[10px] font-bold uppercase tracking-widest text-white/30">
-                    seat #{i + 1}
-                  </p>
-                  <span className="mt-3 flex h-[54px] w-[54px] items-center justify-center rounded-full border border-white/10 text-xl">
-                    🔒
+                  <span className="mono-meta">Seat {String(index + 1).padStart(2, "0")}</span>
+                  <span className="flex items-center justify-between text-[12px] text-muted">
+                    Open
+                    <ArrowRightIcon size={13} className="text-subtle" />
                   </span>
-                  <p className="mt-3 font-display text-sm uppercase text-white/30">
-                    Claimed
-                  </p>
-                </div>
+                </Link>
               );
             })}
           </div>
-
-          <Reveal className="mt-8 text-center">
-            {seats.open ? (
-              <p className="font-hud text-sm font-bold text-white/60">
-                <span className="text-white">{seats.left} seats remaining.</span>{" "}
-                When they&apos;re gone, they&apos;re gone.
-              </p>
-            ) : (
-              <p className="font-hud text-sm font-bold text-white/60">
-                All seats claimed.{" "}
-                <Link href="/register" className="text-white hover:underline">
-                  Join the waitlist →
-                </Link>{" "}
-                ({fmt(seats.waitlistCount)} in line)
-              </p>
-            )}
-          </Reveal>
         </div>
       </section>
 
-      {/* ================= ROOMS ================= */}
-      <section className="bg-grid-subtle relative">
-        <div className="mx-auto max-w-7xl px-4 py-20">
-          <Reveal>
-            <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-              {"// join the conversation"}
-            </p>
-            <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
-              Jump Into a <span className="text-vyron">Chat Room</span>
-            </h2>
-          </Reveal>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {allRooms.map((room, i) => (
-              <Reveal key={room.slug} delay={(i % 3) * 80}>
-                <Link
-                  href={`/chat/${room.slug}`}
-                  className="vyron-corners group relative block overflow-hidden card-base p-5 transition duration-300 hover:-translate-y-1.5 hover:border-white/20"
-                >
-                  <div
-                    className="absolute inset-x-0 top-0 h-1 opacity-40 transition-opacity group-hover:opacity-100"
-                    style={{ background: room.color }}
-                  />
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="vyron-tag flex h-11 w-11 items-center justify-center text-xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110"
-                      style={{ backgroundColor: `${room.color}1a` }}
-                    >
-                      {room.icon}
-                    </span>
-                    <span className="flex items-center gap-1.5 font-hud text-[10px] font-bold uppercase tracking-widest text-white/50">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/40" />
-                      live
-                    </span>
-                  </div>
-                  <h3 className="mt-4 font-display text-lg uppercase tracking-wide text-white transition group-hover:text-white">
-                    {room.name}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">
-                    {room.description}
-                  </p>
-                  <p className="mt-4 font-hud text-xs font-bold uppercase tracking-[0.18em] text-white/40 transition group-hover:text-white/70">
-                    enter room →
-                  </p>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= LOADOUT / FEATURES ================= */}
-      <section className="mx-auto max-w-7xl px-4 py-20">
-        <Reveal>
-          <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-            {"// equipped by default"}
-          </p>
-          <h2 className="mt-3 font-display text-4xl uppercase text-white sm:text-5xl">
-            Built For <span className="text-vyron">Connection</span>
-          </h2>
-        </Reveal>
-        <div className="mt-10 grid gap-x-12 md:grid-cols-2">
-          {LOADOUT.map((f, i) => (
-            <Reveal key={f.n} delay={(i % 2) * 80}>
-              <div className="group flex gap-5 border-l border-white/10 py-6 pl-6 transition duration-300 hover:border-white/30 hover:pl-8">
-                <span className="font-hud text-sm font-bold text-white/40">
-                  {f.n}
-                </span>
-                <div>
-                  <h3 className="flex items-center gap-2.5 font-display text-lg uppercase tracking-wide text-white">
-                    <span className="transition-transform duration-300 group-hover:scale-125">
-                      {f.icon}
-                    </span>
-                    {f.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/50">
-                    {f.desc}
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ================= LEGENDS ================= */}
-      <section className="mx-auto max-w-7xl px-4 pb-20">
-        <Reveal>
-          <div className="vyron-corners card-base p-6 sm:p-10">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* ---------------- Principles ---------------- */}
+      <section className="page-shell py-12">
+        <div className="grid gap-8 sm:grid-cols-3">
+          {[
+            {
+              Icon: ChatIcon,
+              title: "Conversation, not noise",
+              body: "No algorithmic rage bait, no invented popularity. Posts are written by people you can open a profile and reply to.",
+            },
+            {
+              Icon: ActivityIcon,
+              title: "Earned, never bought",
+              body: "Reputation comes from posting, replying and being appreciated by others. There is no paid tier and no shortcut.",
+            },
+            {
+              Icon: LockIcon,
+              title: "Private where it matters",
+              body: "Rooms self-destruct, the Vault is passcode-sealed, and blocks remove both people from each other's view.",
+            },
+          ].map(({ Icon, title, body }) => (
+            <div key={title} className="flex gap-3">
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-muted">
+                <Icon size={15} />
+              </span>
               <div>
-                <p className="font-hud text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-                  {"// hall of fame"}
-                </p>
-                <h2 className="mt-2 font-display text-3xl uppercase text-white sm:text-4xl">
-                  This Week&apos;s <span className="text-vyron">Legends</span>
-                </h2>
+                <h3 className="text-sm font-medium text-fg">{title}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{body}</p>
               </div>
-              <Link
-                href="/players"
-                className="vyron-btn border border-white/10 bg-white/5 px-6 py-3 font-hud text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 hover:border-white/20"
-              >
-                full leaderboard →
-              </Link>
             </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {topPlayers.map((p, i) => (
-                <Link
-                  key={p.id}
-                  href={`/players/${encodeURIComponent(p.username)}`}
-                  className="group flex items-center gap-3 border border-white/10 bg-black/60 p-4 transition duration-300 hover:-translate-y-1 hover:border-white/20"
-                >
-                  <span className="font-hud text-lg font-bold text-white/30 transition group-hover:text-white/60">
-                    {i + 1}
-                  </span>
-                  <Avatar name={p.username} color={p.avatarColor} size={40} dev={p.dev} className="avatar-ring" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-white">{p.username}</p>
-                    <RankBadge rank={p.rank} size="xs" />
-                    <p className="mt-0.5 font-hud text-[10px] text-white/40">
-                      ⭐ {fmt(p.xp)} XP
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ================= MISSION PLAN ================= */}
-      <section className="bg-grid-subtle border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-20">
-          <Reveal>
-            <h2 className="text-center font-display text-4xl uppercase text-white sm:text-5xl">
-              From Newcomer To <span className="text-vyron">Legend</span>
-            </h2>
-          </Reveal>
-          <div className="relative mt-12 grid gap-10 md:grid-cols-3 md:gap-6">
-            <div className="absolute left-1/2 top-7 hidden h-0.5 w-[66%] -translate-x-1/2 border-t border-dashed border-white/10 md:block" />
-            {STEPS.map((s, i) => (
-              <Reveal key={s.n} delay={i * 120} className="relative">
-                <div className="text-center">
-                  <span className="vyron-tag relative z-10 inline-flex h-14 w-14 items-center justify-center bg-white text-black font-display text-lg">
-                    {s.n}
-                  </span>
-                  <h3 className="mt-4 font-display text-xl uppercase tracking-wide text-white">
-                    {s.title}
-                  </h3>
-                  <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/50">
-                    {s.desc}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= FINAL CTA ================= */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black via-[#1a1a1a] to-black" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(255,255,255,0.02)_0%,_transparent_70%)]" />
-        </div>
-        <div className="relative mx-auto max-w-3xl px-4 py-28 text-center">
-          <span className="animate-floaty inline-block text-5xl">✨</span>
-          <h2 className="mt-5 font-display text-4xl uppercase leading-tight text-white sm:text-6xl">
-            The doors close at{" "}
-            <span className="text-vyron">{seats.max} members</span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl leading-relaxed text-white/60">
-            {seats.open
-              ? `${seats.left} founding seats remain. After that, VYRON goes waitlist-only and everyone else waits in line. Your people are already inside.`
-              : `All ${seats.max} founding seats are claimed — but ${fmt(seats.waitlistCount)} people are holding their spot on the waitlist. Get in line before it grows.`}
-          </p>
-          <Link
-            href="/register"
-            className="vyron-btn bg-white text-black mt-9 inline-block px-10 py-4 font-display text-base uppercase tracking-widest transition hover:-translate-y-0.5 hover:brightness-110"
-          >
-            {seats.open ? `Claim seat #${seats.taken + 1} — free forever` : "Join the waitlist"}
-          </Link>
-          <p className="mt-4 font-hud text-xs text-white/30">
-            no payment · no credit card · no ads · just connection ✨
-          </p>
+          ))}
         </div>
       </section>
     </div>

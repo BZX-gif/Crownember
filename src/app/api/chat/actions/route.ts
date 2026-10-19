@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
   const room = await getRoom(roomSlug);
   if (!room) return NextResponse.json({ error: "Room not found." }, { status: 404 });
-  if (room.isVault && !(await getVaultUser())) return NextResponse.json({ error: "The Vault is sealed. 🔐" }, { status: 403 });
+  if (room.isVault && !(await getVaultUser())) return NextResponse.json({ error: "The Vault is sealed." }, { status: 403 });
 
   await ensureChatActionTables();
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
   const content = String(body.content ?? "").trim();
   if (!content || content.length > MAX_MESSAGE_LENGTH) return NextResponse.json({ error: `Message must be 1-${MAX_MESSAGE_LENGTH} characters.` }, { status: 400 });
-  if (containsInjection(content)) return NextResponse.json({ error: "Messages can't contain code or script tags. 🛡️" }, { status: 400 });
+  if (containsInjection(content)) return NextResponse.json({ error: "Messages cannot contain code or script tags." }, { status: 400 });
 
   // Abuse check — the offending text is never posted, edit or reply alike.
   const verdict = await enforceAbuseRule(user, content);

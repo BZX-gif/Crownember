@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Field, Input, Notice, Textarea } from "@/components/primitives";
+import { USERNAME_RE } from "@/lib/lookup";
+
+const MIN_PASSWORD = 8;
 
 export function RegisterForm({
   seatNumber,
@@ -11,17 +15,31 @@ export function RegisterForm({
 }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [uid, setUid] = useState("");
   const [bio, setBio] = useState("");
   const [honey, setHoney] = useState("");
   const [error, setError] = useState("");
+  const [full, setFull] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const usernameValid = USERNAME_RE.test(username);
+  const passwordValid = password.length >= MIN_PASSWORD;
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError("");
+    setFull(false);
+
+    if (!usernameValid) {
+      setError("Usernames are 3-16 characters: letters, numbers and underscore only.");
+      return;
+    }
+    if (!passwordValid) {
+      setError(`Passwords need at least ${MIN_PASSWORD} characters.`);
+      return;
+    }
+
+    setBusy(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -29,38 +47,26 @@ export function RegisterForm({
         body: JSON.stringify({
           username: username.trim(),
           password,
-          uid: uid.trim(),
           bio: bio.trim(),
-          website: honey, // honeypot — real users never fill this
+          website: honey,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string };
       if (!res.ok) {
-        if (res.status === 403) {
-          // Seats filled up while the form was open
-          setError(
-            data.error ?? "The Founding Members just filled up. Join the waitlist!",
-          );
-          setTimeout(() => window.location.reload(), 2500);
-          return;
-        }
-        setError(data.error ?? "Registration failed. Try again.");
+        if (res.status === 403) setFull(true);
+        setError(data.error ?? "Your account could not be created.");
         return;
       }
       window.location.href = "/";
     } catch {
-      setError("Network error — try again.");
+      setError("Network error — your account was not created. Try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base sm:text-sm text-white placeholder:text-white/30 focus:border-white/30 focus:outline-none";
-
   return (
-    <form onSubmit={submit} className="mt-6 space-y-4">
-      {/* Honeypot: invisible to humans, irresistible to bots */}
+    <form onSubmit={submit} className="mt-6 space-y-4" noValidate>
       <input
         type="text"
         value={honey}
@@ -70,88 +76,95 @@ export function RegisterForm({
         autoComplete="off"
         aria-hidden="true"
       />
-      <div>
-        <label htmlFor="username" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          Username *
-        </label>
-        <input
-          id="username"
+
+      <Field
+        label="Username"
+        htmlFor="register-username"
+        hint="3-16 characters: letters, numbers, underscore."
+      >
+        <Input
+          id="register-username"
           value={username}
-          onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-          placeholder="alex"
-          maxLength={16}
-          minLength={3}
+          onChange={(e) =>
+            setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 16))
+          }
+          placeholder="yourname"
           autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          maxLength={16}
           required
-          className={inputCls}
+          autoFocus
+          aria-invalid={username.length > 0 && !usernameValid}
         />
-        <p className="mt-1 text-[11px] text-white/40">
-          3-16 characters: letters, numbers, underscore.
-        </p>
-      </div>
-      <div>
-        <label htmlFor="password" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          Password *
-        </label>
-        <input
-          id="password"
+      </Field>
+
+      <Field
+        label="Password"
+        htmlFor="register-password"
+        hint="At least 8 characters. Length beats complexity."
+      >
+        <Input
+          id="register-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="At least 8 characters"
-          minLength={8}
-          maxLength={128}
+          placeholder="Choose a password"
           autoComplete="new-password"
+          minLength={MIN_PASSWORD}
+          maxLength={128}
           required
-          className={inputCls}
+          aria-invalid={password.length > 0 && !passwordValid}
         />
-        <p className="mt-1 text-[11px] text-white/40">
-          At least 8 characters. Make it something only you would pick.
-        </p>
-      </div>
-      <div>
-        <label htmlFor="uid" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          External ID <span className="text-white/30">(optional)</span>
-        </label>
-        <input
-          id="uid"
-          value={uid}
-          onChange={(e) => setUid(e.target.value.replace(/\D/g, "").slice(0, 15))}
-          placeholder="123456789"
-          className={inputCls}
-        />
-      </div>
-      <div>
-        <label htmlFor="bio" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-white/50">
-          Bio <span className="text-white/30">(optional)</span>
-        </label>
-        <input
-          id="bio"
+      </Field>
+
+      <Field
+        label="Bio"
+        htmlFor="register-bio"
+        hint={`${bio.length}/160 · optional`}
+      >
+        <Textarea
+          id="register-bio"
           value={bio}
-          onChange={(e) => setBio(e.target.value.slice(0, 200))}
-          placeholder="Designer. Builder. Coffee enthusiast."
-          className={inputCls}
+          onChange={(e) => setBio(e.target.value.slice(0, 160))}
+          placeholder="One line about what you write or care about."
+          rows={2}
+          maxLength={160}
+          className="min-h-[60px]"
         />
-      </div>
+      </Field>
+
       {error && (
-        <p
-          role="alert"
-          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-400"
-        >
+        <Notice variant="error">
           {error}
+          {full && (
+            <>
+              {" "}
+              <a href="#waitlist" className="underline underline-offset-2">
+                Join the waitlist
+              </a>
+              .
+            </>
+          )}
+        </Notice>
+      )}
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="md"
+        loading={busy}
+        disabled={!usernameValid || !passwordValid}
+        className="w-full"
+      >
+        {busy ? "Creating account…" : "Create account"}
+      </Button>
+
+      {seatNumber && maxSeats && (
+        <p className="text-center text-[10px] text-subtle">
+          Claiming founding seat {seatNumber} of {maxSeats}.
         </p>
       )}
-      <button
-        type="submit"
-        disabled={busy || !username.trim() || !password}
-        className="vyron-btn bg-white text-black w-full px-4 py-3.5 text-sm font-black transition hover:brightness-110 disabled:opacity-40"
-      >
-        {busy
-          ? "Creating…"
-          : seatNumber
-            ? `Claim Seat #${seatNumber} of ${maxSeats} — Free Forever`
-            : "Create Account — Free Forever"}
-      </button>
     </form>
   );
 }

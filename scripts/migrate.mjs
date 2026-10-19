@@ -9,10 +9,10 @@
  *   - creates every missing table
  *   - adds every missing column (e.g. after a rebrand/feature drop)
  *   - recreates missing indexes
- *   - reshapes rooms to the live 3-room layout (Global / Guides / Vault)
- *   - one-time: refreshes ancient seeded chat timestamps so rooms don't
- *     open empty right after a deploy (only fires when every message is
- *     older than the 3h self-destruct window)
+ *   - marks the Vault room and creates it only when no Vault exists
+ *
+ * It never deletes rooms, rewrites room copy, or adjusts message timestamps:
+ * community data is not reshaped by a deploy.
  */
 import pg from "pg";
 
@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS users (
   likes integer NOT NULL DEFAULT 0,
   is_bot boolean NOT NULL DEFAULT false,
   founder boolean NOT NULL DEFAULT false,
+  is_dev boolean NOT NULL DEFAULT false,
+  avatar_data bytea,
+  avatar_mime text,
+  avatar_version timestamptz NOT NULL DEFAULT now(),
   strikes integer NOT NULL DEFAULT 0,
   last_strike_at timestamptz,
   muted_until timestamptz,
@@ -183,6 +187,24 @@ END $$;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_bot boolean NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS founder boolean NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_dev boolean NOT NULL DEFAULT false;
+-- Profile pictures. These were only ever added by a hand-run SQL file,
+-- which is why production served a 500 from /api/profile/avatar after the
+-- November deploy. They are part of the normal build migration now.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data bytea;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_version timestamptz NOT NULL DEFAULT now();
+
+-- Chat reactions/replies were created lazily by the first action request,
+-- so the read path raced a missing table. Create them up front.
+CREATE TABLE IF NOT EXISTS chat_message_reactions (
+  id serial PRIMARY KEY,
+  message_id integer NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (message_id, user_id)
+);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_id integer;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS strikes integer NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_strike_at timestamptz;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS muted_until timestamptz;
@@ -195,6 +217,8 @@ ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_vault boolean NOT NULL DEFAULT fal
 CREATE INDEX IF NOT EXISTS users_lower_username_idx ON users (lower(username));
 CREATE INDEX IF NOT EXISTS waitlist_lower_nickname_idx ON waitlist (lower(nickname));
 CREATE INDEX IF NOT EXISTS messages_room_id_idx ON messages (room_id, id);
+CREATE INDEX IF NOT EXISTS chat_message_reactions_message_idx ON chat_message_reactions (message_id);
+CREATE INDEX IF NOT EXISTS messages_reply_to_idx ON messages (reply_to_id);
 CREATE INDEX IF NOT EXISTS messages_user_created_idx ON messages (user_id, created_at);
 CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages (created_at);
 CREATE INDEX IF NOT EXISTS topics_activity_idx ON topics (last_activity_at);
@@ -210,54 +234,24 @@ CREATE INDEX IF NOT EXISTS dm_out_idx ON direct_messages (sender_id, recipient_i
 CREATE INDEX IF NOT EXISTS dm_in_idx ON direct_messages (recipient_id, sender_id, id);
 CREATE INDEX IF NOT EXISTS dm_created_idx ON direct_messages (created_at);
 
--- ============ live room layout (Global / Guides / Vault) ============
--- Legacy cleanup only: renames/deletes from the original 6-room layout.
-UPDATE rooms SET
-  slug = 'guides',
-  name = 'Community Guides',
-  icon = '📖',
-  color = '#38bdf8',
-  description = 'Loadouts, sensitivity settings, drop spots and pro wisdom. Read, learn, booyah.'
-WHERE slug = 'tips';
-
-DELETE FROM rooms WHERE slug IN ('squads', 'tournaments', 'memes', 'news');
-
--- Mark whichever room IS the vault (any name: vault, omega-vault, ...).
+-- ============ vault classification ============
+-- Room names, descriptions, icons and colours are community data: they are
+-- never rewritten or deleted by a deploy. The interface owns presentation
+-- (see lib/rooms.ts), so legacy rows cannot leak old copy into the product.
 UPDATE rooms SET is_vault = true WHERE slug IN ('vault', 'omega-vault');
 
 -- Only create the default Vault if no vault-marked room exists.
 -- (Never duplicates or renames a customized vault.)
-INSERT INTO rooms (slug, name, description, icon, color, is_vault)
+INSERT INTO rooms (slug, name, description, is_vault)
 SELECT 'vault', 'The Vault',
-       'Password-sealed inner circle. Voice notes burn the moment anyone leaves.',
-       '🔐', '#f59e0b', true
+       'Members-only. Sealed by passcode, cleared every 14 minutes.',
+       true
 WHERE NOT EXISTS (SELECT 1 FROM rooms WHERE is_vault);
-`;
-
-/** One-time demo refresh: if EVERY chat message is older than the 3h
- *  self-destruct window, redistribute them across the last ~45 minutes so
- *  rooms don't open empty right after a deploy. Skips itself once any
- *  fresh message exists. */
-const REFRESH_SQL = `
-WITH stale AS (
-  SELECT count(*) AS old_count FROM messages WHERE created_at < now() - interval '3 hours'
-), fresh AS (
-  SELECT count(*) AS new_count FROM messages WHERE created_at >= now() - interval '3 hours'
-)
-UPDATE messages m SET created_at = now() - make_interval(mins => (5 + r.rn * 4)::int)
-FROM (
-  SELECT id, row_number() OVER (PARTITION BY room_id ORDER BY id DESC) AS rn
-  FROM messages
-) r, stale, fresh
-WHERE m.id = r.id
-  AND stale.old_count > 0
-  AND fresh.new_count = 0;
 `;
 
 try {
   await client.connect();
   await client.query(SCHEMA_SQL);
-  const refreshed = await client.query(REFRESH_SQL);
   const counts = await client.query(`
     SELECT
       (SELECT count(*) FROM rooms) AS rooms,
@@ -267,8 +261,7 @@ try {
   `);
   const c = counts.rows[0];
   console.log(
-    `✅ migrate: schema reconciled · rooms=${c.rooms} users=${c.users} messages=${c.messages} topics=${c.topics}` +
-      (refreshed.rowCount > 0 ? ` · refreshed ${refreshed.rowCount} stale messages` : ""),
+    `✅ migrate: schema reconciled · rooms=${c.rooms} users=${c.users} messages=${c.messages} topics=${c.topics}`,
   );
   await client.end();
   process.exit(0);
