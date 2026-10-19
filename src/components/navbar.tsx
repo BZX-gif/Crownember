@@ -17,7 +17,7 @@ import {
   UserIcon,
   UsersIcon,
 } from "@/components/icons";
-import { cn, type PublicUser } from "@/lib/utils";
+import { avatarUrlFor, cn, type PublicUser } from "@/lib/utils";
 
 const LINKS = [
   { href: "/", label: "Feed", short: "Feed", Icon: FeedIcon },
@@ -43,6 +43,8 @@ export function Navbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -50,10 +52,14 @@ export function Navbar({
       if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
     }
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
+    menuPanelRef.current?.focus();
     return () => {
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
@@ -93,11 +99,6 @@ export function Navbar({
                   )}
                 >
                   {label}
-                  {href === "/messages" && pendingRequests > 0 && (
-                    <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-fg px-1 text-[9px] font-semibold leading-none text-ink">
-                      {pendingRequests > 9 ? "9+" : pendingRequests}
-                    </span>
-                  )}
                 </Link>
               );
             })}
@@ -109,29 +110,38 @@ export function Navbar({
             {user ? (
               <div className="relative" ref={menuRef}>
                 <button
+                  ref={menuButtonRef}
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  aria-haspopup="menu"
+                  aria-haspopup="true"
                   aria-expanded={menuOpen}
-                  aria-label="Account menu"
-                  className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-1.5 text-muted transition-colors hover:bg-white/[0.05] hover:text-fg sm:pr-2"
+                  aria-label={
+                    pendingRequests > 0
+                      ? `${user.username} account menu, ${pendingRequests} pending friend ${pendingRequests === 1 ? "request" : "requests"}`
+                      : `${user.username} account menu`
+                  }
+                  className="relative flex items-center gap-2 rounded-lg py-0.5 pl-1 pr-1.5 text-muted transition-colors hover:bg-white/[0.05] hover:text-fg sm:pr-2"
                 >
-                  <Avatar name={user.username} size={28} dev={user.dev} />
+                  <Avatar name={user.username} size={28} dev={user.dev} avatarUrl={avatarUrlFor(user)} />
                   <span className="hidden max-w-[110px] truncate text-[13px] font-medium text-fg sm:block">
                     {user.username}
                   </span>
                   <ChevronDownIcon size={13} className="hidden sm:block" />
+                  {pendingRequests > 0 && (
+                    <span className="absolute left-[22px] top-0 h-1.5 w-1.5 rounded-full bg-fg ring-2 ring-ink" />
+                  )}
                 </button>
 
                 {menuOpen && (
                   <div
-                    role="menu"
-                    aria-label="Account"
-                    className="animate-fade-in absolute right-0 top-[calc(100%+8px)] w-64 overflow-hidden rounded-xl border border-line-strong bg-[#0b0b0c] shadow-2xl shadow-black/60"
+                    ref={menuPanelRef}
+                    tabIndex={-1}
+                    aria-label="Account menu"
+                    className="animate-fade-in absolute right-0 top-[calc(100%+8px)] w-64 overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_24px_60px_rgba(0,0,0,0.65)] focus:outline-none"
                   >
                     <div className="border-b border-line px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <Avatar name={user.username} size={38} dev={user.dev} decorative={false} />
+                        <Avatar name={user.username} size={38} dev={user.dev} decorative={false} avatarUrl={avatarUrlFor(user)} />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-fg">{user.username}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -144,35 +154,39 @@ export function Navbar({
                         {user.xp.toLocaleString()} XP · Level {user.rank.level}
                       </p>
                     </div>
-                    <div className="p-1.5">
+                    <nav aria-label="Account" className="p-1.5">
                       <Link
                         href={`/players/${encodeURIComponent(user.username)}`}
+                        onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
-                        role="menuitem"
                       >
                         <UserIcon size={15} /> Profile
                       </Link>
                       <Link
                         href="/forum/new"
+                        onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
-                        role="menuitem"
                       >
                         <PencilIcon size={15} /> New post
                       </Link>
                       <Link
                         href="/messages"
+                        onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
-                        role="menuitem"
                       >
                         <MailIcon size={15} /> Messages
+                        {pendingRequests > 0 && (
+                          <span className="ml-auto rounded-full border border-line-strong px-1.5 py-0.5 text-[11px] font-medium text-fg">
+                            {pendingRequests} pending
+                          </span>
+                        )}
                       </Link>
-                    </div>
+                    </nav>
                     <div className="border-t border-line p-1.5">
                       <button
                         type="button"
                         onClick={() => void logout()}
                         disabled={busy}
-                        role="menuitem"
                         className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] text-muted transition-colors hover:bg-white/[0.05] hover:text-fg disabled:opacity-50"
                       >
                         <LogOutIcon size={15} /> {busy ? "Signing out…" : "Sign out"}
@@ -204,6 +218,7 @@ export function Navbar({
       {/* Mobile tab bar — the primary navigation on small screens. */}
       <nav
         aria-label="Primary mobile"
+        data-mobile-tabbar
         className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       >
         <div className="grid grid-cols-5">
@@ -215,15 +230,19 @@ export function Navbar({
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
+                  "relative flex min-h-[56px] flex-col items-center justify-center gap-1 pb-2.5 pt-2 text-[11px] font-medium leading-none tracking-[0.01em] transition-colors",
                   active ? "text-fg" : "text-subtle hover:text-muted",
                 )}
               >
-                <Icon size={19} />
+                <Icon size={20} />
                 {short}
-                {href === "/messages" && pendingRequests > 0 && (
-                  <span className="absolute right-[24%] top-1.5 h-1.5 w-1.5 rounded-full bg-fg" />
-                )}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute inset-x-[30%] top-0 h-px rounded-full transition-colors",
+                    active ? "bg-fg" : "bg-transparent",
+                  )}
+                />
               </Link>
             );
           })}

@@ -13,7 +13,7 @@ import { replies, topicLikes, topics, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { eqLower } from "@/lib/lookup";
 import { getBlockState, getRelationship } from "@/lib/social";
-import { serializeTopic, serializeUser, formatDate } from "@/lib/utils";
+import { cn, formatDate, serializeTopic, serializeUser } from "@/lib/utils";
 import { getRank } from "@/lib/ranks";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +40,7 @@ export default async function ProfilePage({
       username: users.username,
       bio: users.bio,
       avatarColor: users.avatarColor,
+      avatarMime: users.avatarMime,
       xp: users.xp,
       likes: users.likes,
       createdAt: users.createdAt,
@@ -119,15 +120,18 @@ export default async function ProfilePage({
   const stats = countsRows.rows[0] as unknown as { topics: number; replies: number };
   const isSelf = viewer?.id === profile.id;
   const publicViewer = viewer ? serializeUser(viewer) : null;
-  const avatarUrl = `/api/profile/avatar?username=${encodeURIComponent(profile.username)}`;
+  const hasAvatar = Boolean(profile.avatarMime);
+  const avatarUrl = hasAvatar
+    ? `/api/profile/avatar?username=${encodeURIComponent(profile.username)}`
+    : undefined;
 
   return (
     <div className="page-shell max-w-4xl py-8 sm:py-10">
       <section className="overflow-hidden rounded-xl border border-line bg-panel">
-        <div className="h-16 border-b border-line bg-[#0c0c0e]" aria-hidden="true" />
+        <div className="h-20 border-b border-line bg-raised sm:h-24" aria-hidden="true" />
         <div className="px-5 pb-6 sm:px-7">
-          <div className="-mt-8 flex flex-wrap items-end gap-4">
-            <div className="rounded-full border-4 border-panel">
+          <div className="flex flex-col gap-3 sm:-mt-11 sm:flex-row sm:items-end sm:gap-5">
+            <div className="-mt-9 relative z-10 w-fit rounded-full border-4 border-panel bg-panel shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:mt-0">
               {isSelf ? (
                 <EditableAvatar
                   username={profile.username}
@@ -146,16 +150,16 @@ export default async function ProfilePage({
                 />
               )}
             </div>
-            <div className="min-w-0 flex-1 pb-0.5">
+            <div className="min-w-0 flex-1 sm:pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-[-0.02em] text-fg">
+                <h1 className="display-title text-[26px] text-fg sm:text-[30px]">
                   {profile.username}
                 </h1>
                 <RankBadge rank={rank} size="md" />
                 {profile.founder && <FounderChip size="md" />}
                 {profile.isDev && <DevChip size="sm" />}
               </div>
-              <p className="mono-meta mt-1.5">
+              <p className="mono-meta mt-2">
                 {rank.name} · Level {rank.level} · Joined {formatDate(profile.createdAt)}
               </p>
             </div>
@@ -186,20 +190,22 @@ export default async function ProfilePage({
 
           <div className="mt-6 rounded-lg border border-line bg-ink/40 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="text-muted">{rank.name}</span>
+              <span className="text-muted">
+                {rank.name} · Level {rank.level}
+              </span>
               <span className="mono-meta">
                 {rank.nextMinXp !== null
                   ? `${profile.xp.toLocaleString()} / ${rank.nextMinXp.toLocaleString()} XP`
                   : `${profile.xp.toLocaleString()} XP · highest tier`}
               </span>
             </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.07]">
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
               <div
                 className="h-full rounded-full bg-fg/80"
                 style={{ width: `${Math.max(2, rank.progress * 100)}%` }}
               />
             </div>
-            <p className="mt-2 text-[10px] text-subtle">
+            <p className="mt-2 text-[11px] text-subtle">
               {rank.nextMinXp !== null
                 ? `${Math.max(0, rank.nextMinXp - profile.xp).toLocaleString()} XP to ${getRank(rank.nextMinXp).name}.`
                 : "The highest reputation tier on VYRON."}
@@ -215,21 +221,22 @@ export default async function ProfilePage({
             ].map((item, index) => (
               <div
                 key={item.label}
-                className={index > 1 ? "border-t border-line sm:border-t-0" : ""}
+                className={cn(
+                  "px-4 py-3.5",
+                  index > 1 && "border-t border-line sm:border-t-0",
+                )}
               >
-                <div className="px-4 py-3">
-                  <dd className="text-base font-medium tabular-nums text-fg">
-                    {item.value.toLocaleString()}
-                  </dd>
-                  <dt className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-subtle">
-                    {item.label}
-                  </dt>
-                </div>
+                <dt className="text-[11px] uppercase tracking-[0.08em] text-subtle">
+                  {item.label}
+                </dt>
+                <dd className="mt-1.5 text-lg font-medium leading-none tabular-nums text-fg">
+                  {item.value.toLocaleString()}
+                </dd>
               </div>
             ))}
           </dl>
 
-          <p className="mt-3 text-[10px] text-subtle">
+          <p className="mt-3 text-[11px] leading-relaxed text-subtle">
             Chat history is private. Only forum activity is shown here.
           </p>
         </div>
@@ -243,7 +250,7 @@ export default async function ProfilePage({
           {isSelf && (
             <Link
               href="/forum/new"
-              className="inline-flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-fg"
+              className="tap-target inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted transition-colors hover:bg-white/[0.04] hover:text-fg"
             >
               <PencilIcon size={13} /> New post
             </Link>

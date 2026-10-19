@@ -22,6 +22,13 @@ export const users = pgTable("users", {
   uid: text("uid").notNull().default(""),
   bio: text("bio").notNull().default(""),
   avatarColor: text("avatar_color").notNull().default("#ff6a00"),
+  // Profile pictures are stored outside this schema's write path (raw SQL in
+  // /api/profile/avatar), but the public flag and version are read-only fields
+  // every query needs so the UI never requests an avatar that does not exist.
+  avatarMime: text("avatar_mime"),
+  avatarVersion: timestamp("avatar_version", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
   xp: integer("xp").notNull().default(0),
   likes: integer("likes").notNull().default(0),
   isBot: boolean("is_bot").notNull().default(false),

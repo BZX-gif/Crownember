@@ -26,9 +26,7 @@ export default async function MessagesPage() {
       <div className="flex min-h-[100dvh] flex-col bg-ink">
         <header className="border-b border-line">
           <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-3">
-            <Link href="/" aria-label="VYRON home">
-              <Brand />
-            </Link>
+            <Brand />
             <Link href="/" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
               <ArrowLeftIcon size={14} /> Site
             </Link>
@@ -115,14 +113,20 @@ export default async function MessagesPage() {
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-3">
-          <Link href="/" aria-label="VYRON home" className="shrink-0">
-            <Brand />
-          </Link>
+          <Brand />
           <span className="ml-auto flex items-center gap-1.5">
-            <Link href="/chat" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
+            <Link
+              href="/chat"
+              aria-label="Rooms"
+              className={buttonClass("ghost", "sm", "h-8 px-2.5")}
+            >
               <ChatIcon size={14} /> <span className="hidden sm:inline">Rooms</span>
             </Link>
-            <Link href="/" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
+            <Link
+              href="/"
+              aria-label="Back to the site"
+              className={buttonClass("ghost", "sm", "h-8 px-2.5")}
+            >
               <ArrowLeftIcon size={14} /> <span className="hidden sm:inline">Site</span>
             </Link>
           </span>

@@ -18,7 +18,7 @@ import { messageCutoff } from "@/lib/retention";
 import { roomDisplay } from "@/lib/rooms";
 import { getHiddenUserIds } from "@/lib/social";
 import { getVaultUser } from "@/lib/vault";
-import { timeAgo } from "@/lib/utils";
+import { RelativeTime } from "@/components/relative-time";
 
 export const dynamic = "force-dynamic";
 
@@ -85,14 +85,20 @@ export default async function ChatHomePage() {
         style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-3">
-          <Link href="/" aria-label="VYRON home" className="shrink-0">
-            <Brand />
-          </Link>
+          <Brand />
           <span className="ml-auto flex items-center gap-1.5">
-            <Link href="/messages" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
+            <Link
+              href="/messages"
+              aria-label="Messages"
+              className={buttonClass("ghost", "sm", "h-8 px-2.5")}
+            >
               <MailIcon size={14} /> <span className="hidden sm:inline">Messages</span>
             </Link>
-            <Link href="/" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
+            <Link
+              href="/"
+              aria-label="Back to the site"
+              className={buttonClass("ghost", "sm", "h-8 px-2.5")}
+            >
               <ArrowLeftIcon size={14} /> <span className="hidden sm:inline">Site</span>
             </Link>
           </span>
@@ -153,15 +159,18 @@ export default async function ChatHomePage() {
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-fg">{display.name}</span>
                         {isVault && (
-                          <span className="inline-flex items-center gap-1 rounded border border-line-strong px-1.5 py-0.5 text-[9px] uppercase tracking-[0.1em] text-subtle">
+                          <span className="inline-flex items-center gap-1 rounded border border-line-strong px-1.5 py-0.5 text-[11px] uppercase tracking-[0.08em] text-subtle">
                             {locked ? <LockIcon size={9} /> : <UnlockIcon size={9} />}
                             {locked ? "Locked" : "Open"}
                           </span>
                         )}
                         {here > 0 && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-muted">
+                          <span
+                            className="inline-flex items-center gap-1 text-[11px] text-muted"
+                            title="Members who sent a message in the last 3 minutes"
+                          >
                             <span className="h-1 w-1 rounded-full bg-success" />
-                            {here} here
+                            {here} active
                           </span>
                         )}
                       </span>
@@ -181,7 +190,7 @@ export default async function ChatHomePage() {
                         {!isVault && latest && (
                           <>
                             <span aria-hidden="true">·</span>
-                            <span>{timeAgo(latest.createdAt)}</span>
+                            <RelativeTime date={latest.createdAt} />
                           </>
                         )}
                       </span>

@@ -15,6 +15,7 @@ import {
   categoryMeta,
   formatDate,
   serializeReply,
+  avatarUrlFor,
   serializeTopic,
   serializeUser,
   type ReplyDTO,
@@ -87,7 +88,7 @@ export default async function TopicPage({
 
   return (
     <div className="page-shell max-w-3xl py-8 sm:py-10">
-      <nav className="flex flex-wrap items-center gap-2 text-[11px] text-subtle">
+      <nav className="flex flex-wrap items-center gap-2 text-xs text-subtle">
         <Link
           href="/forum"
           className="inline-flex items-center gap-1.5 transition-colors hover:text-fg"
@@ -122,7 +123,7 @@ export default async function TopicPage({
             href={`/players/${encodeURIComponent(topic.author.username)}`}
             className="flex items-center gap-2.5"
           >
-            <Avatar name={topic.author.username} size={36} dev={topic.author.dev} />
+            <Avatar name={topic.author.username} size={36} dev={topic.author.dev} avatarUrl={avatarUrlFor(topic.author)} />
             <span>
               <span className="block text-[13px] font-medium text-fg">
                 {topic.author.username}

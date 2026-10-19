@@ -39,7 +39,7 @@ export function TopicActions({
         />
         <Link
           href={`/forum/${topicId}#composer`}
-          className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+          className="tap-target inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
           aria-label={`${count} ${count === 1 ? "reply" : "replies"}. Open conversation.`}
         >
           <ReplyIcon size={14} />
@@ -50,14 +50,14 @@ export function TopicActions({
             type="button"
             onClick={() => setRepliesOpen((v) => !v)}
             aria-expanded={repliesOpen}
-            className="inline-flex h-7 items-center rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+            className="tap-target inline-flex h-7 items-center rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
           >
             {repliesOpen ? "Cancel" : "Reply"}
           </button>
         ) : (
           <Link
             href="/login"
-            className="inline-flex h-7 items-center rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+            className="tap-target inline-flex h-7 items-center rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
           >
             Reply
           </Link>

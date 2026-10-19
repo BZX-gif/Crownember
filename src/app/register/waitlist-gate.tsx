@@ -73,7 +73,7 @@ export function WaitlistGate({
             <span key={index} className="h-1.5 rounded-full bg-fg/60" />
           ))}
         </div>
-        <p className="mt-2 flex items-center gap-1.5 text-[10px] text-subtle">
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-subtle">
           <UsersIcon size={11} /> Everyone in line is a real person.
         </p>
       </div>

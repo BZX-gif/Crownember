@@ -14,7 +14,7 @@ export function RankBadge({
   className?: string;
 }) {
   const sizes = {
-    xs: "h-5 px-1.5 text-[10px] gap-1",
+    xs: "h-5 px-1.5 text-[11px] gap-1",
     sm: "h-6 px-2 text-xs gap-1.5",
     md: "h-7 px-2.5 text-xs gap-1.5",
   } as const;
@@ -41,7 +41,7 @@ export function FounderChip({
   className?: string;
 }) {
   const sizes = {
-    xs: "h-5 px-1.5 text-[10px] gap-1",
+    xs: "h-5 px-1.5 text-[11px] gap-1",
     sm: "h-6 px-2 text-xs gap-1.5",
     md: "h-7 px-2.5 text-xs gap-1.5",
   } as const;
@@ -68,7 +68,7 @@ export function DevChip({
   className?: string;
 }) {
   const sizes = {
-    xs: "h-5 px-1.5 text-[10px] gap-1",
+    xs: "h-5 px-1.5 text-[11px] gap-1",
     sm: "h-6 px-2 text-xs gap-1.5",
   } as const;
   return (
@@ -86,13 +86,4 @@ export function DevChip({
   );
 }
 
-export function OnlineDot({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn("relative flex h-1.5 w-1.5", className)}
-      aria-hidden="true"
-    >
-      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success/80" />
-    </span>
-  );
-}
+

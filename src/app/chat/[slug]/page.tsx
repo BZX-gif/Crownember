@@ -61,9 +61,7 @@ export default async function RoomPage({
           style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         >
           <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
-            <Link href="/" aria-label="VYRON home">
-              <Brand />
-            </Link>
+            <Brand />
             <Link href="/chat" className={buttonClass("ghost", "sm", "h-8 px-2.5")}>
               <ArrowLeftIcon size={14} /> Rooms
             </Link>

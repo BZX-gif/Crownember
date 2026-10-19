@@ -76,7 +76,7 @@ export function LikeButton({
       title={liked ? "Remove like" : "Like"}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50",
-        size === "md" ? "h-9 px-3 text-sm" : "h-7 px-2 text-xs",
+        size === "md" ? "h-9 px-3 text-sm" : "tap-target h-7 px-2 text-xs",
         liked ? "text-fg" : "text-muted hover:bg-white/[0.05] hover:text-fg",
         className,
       )}

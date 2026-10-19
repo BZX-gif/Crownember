@@ -143,6 +143,19 @@ export const CheckIcon = (p: IconProps) => (
     <path d="m4.5 12.5 5 5 10-11" />
   </Icon>
 );
+export const AlertIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 8v5" />
+    <path d="M12 16.5h.01" />
+    <path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />
+  </Icon>
+);
+export const InfoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 11v5M12 8h.01" />
+  </Icon>
+);
 export const MoreIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="5" cy="12" r="1" fill="currentColor" />

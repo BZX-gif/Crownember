@@ -15,7 +15,7 @@ import {
 } from "@/components/icons";
 import { useToast } from "@/components/toast";
 import { isSticker, STICKER_SECTIONS } from "@/lib/stickers";
-import { cn, type ChatMessageDTO, type PublicUser } from "@/lib/utils";
+import { avatarUrlFor, cn, type ChatMessageDTO, type PublicUser } from "@/lib/utils";
 
 const MAX_LEN = 400;
 const REACTION_OPTIONS = ["❤️", "👍", "😂", "🔥", "😮", "🙏"];
@@ -33,7 +33,7 @@ interface RoomInfo {
 function Clock({ date }: { date: Date | string }) {
   const d = typeof date === "string" ? new Date(date) : date;
   return (
-    <time dateTime={d.toISOString()} className="text-[10px] tabular-nums text-subtle">
+    <time dateTime={d.toISOString()} className="text-[11px] tabular-nums text-subtle">
       {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
     </time>
   );
@@ -277,9 +277,9 @@ export function ChatRoom({
           <Link
             href="/chat"
             aria-label="Back to rooms"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/[0.05] hover:text-fg"
           >
-            <ArrowLeftIcon size={17} />
+            <ArrowLeftIcon size={18} />
           </Link>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-sm font-medium text-fg">{room.name}</h1>
@@ -289,7 +289,9 @@ export function ChatRoom({
               {online > 0 && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span>{online} active</span>
+                  <span title="Members who sent a message in the last 3 minutes">
+                    {online} active
+                  </span>
                 </>
               )}
             </p>
@@ -304,6 +306,8 @@ export function ChatRoom({
         ref={scrollerRef}
         onScroll={onScroll}
         className="nice-scroll flex-1 overflow-y-auto"
+        role="log"
+        aria-label={`${room.name} messages`}
         aria-live="polite"
         aria-relevant="additions"
       >
@@ -332,12 +336,14 @@ export function ChatRoom({
                     <div className={cn("shrink-0", isGrouped && "invisible")}>
                       <Link
                         href={`/players/${encodeURIComponent(message.user.username)}`}
-                        aria-label={message.user.username}
+                        aria-hidden="true"
+                        tabIndex={-1}
                       >
                         <Avatar
                           name={message.user.username}
                           size={34}
                           dev={message.user.dev}
+                          avatarUrl={avatarUrlFor(message.user)}
                         />
                       </Link>
                     </div>
@@ -352,14 +358,19 @@ export function ChatRoom({
                         >
                           <Link
                             href={`/players/${encodeURIComponent(message.user.username)}`}
-                            className="text-xs font-medium text-fg hover:underline"
+                            className="max-w-[12rem] truncate text-xs font-medium text-fg hover:underline sm:max-w-none"
                           >
                             {mine ? "You" : message.user.username}
                           </Link>
-                          <RankBadge rank={message.user.rank} size="xs" />
-                          {message.user.founder && <FounderChip size="xs" />}
+                          <span className="hidden items-center gap-2 sm:inline-flex">
+                            <RankBadge rank={message.user.rank} size="xs" />
+                            {message.user.founder && <FounderChip size="xs" />}
+                          </span>
                           <Clock date={message.createdAt} />
-                          <ExpiryCountdown createdAt={message.createdAt} vault={room.isVault} />
+                          <span className="inline-flex items-center gap-1 text-[11px] tabular-nums text-subtle">
+                            <span aria-hidden="true">·</span>
+                            <ExpiryCountdown createdAt={message.createdAt} vault={room.isVault} />
+                          </span>
                         </div>
                       )}
 
@@ -400,7 +411,7 @@ export function ChatRoom({
                               }
                               aria-label="React to this message"
                               aria-expanded={paletteOpen}
-                              className="flex h-6 w-6 items-center justify-center rounded-md text-subtle opacity-0 transition-opacity hover:bg-white/[0.06] hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
+                              className="tap-target flex h-8 w-8 items-center justify-center rounded-md text-subtle opacity-0 transition-opacity hover:bg-white/[0.06] hover:text-fg focus-visible:opacity-100 focus:opacity-100 group-hover:opacity-100"
                             >
                               <SmileIcon size={13} />
                             </button>
@@ -419,7 +430,7 @@ export function ChatRoom({
                                     type="button"
                                     role="menuitem"
                                     onClick={() => void react(message.id, emoji)}
-                                    className="rounded px-1.5 py-1 text-sm transition-colors hover:bg-white/10"
+                                    className="flex h-9 w-9 items-center justify-center rounded text-base transition-colors hover:bg-white/10"
                                   >
                                     {emoji}
                                   </button>
@@ -445,7 +456,7 @@ export function ChatRoom({
                               onClick={() => void react(message.id, emoji)}
                               aria-pressed={state?.selected === emoji}
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] tabular-nums transition-colors",
+                                "inline-flex min-h-6 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] tabular-nums transition-colors",
                                 state?.selected === emoji
                                   ? "border-line-strong bg-white/[0.08] text-fg"
                                   : "border-line text-muted hover:border-line-strong hover:text-fg",
@@ -487,7 +498,7 @@ export function ChatRoom({
                 <div className="nice-scroll mb-2 max-h-44 overflow-y-auto rounded-lg border border-line bg-panel p-2">
                   {STICKER_SECTIONS.map((section) => (
                     <div key={section.label} className="mb-1.5 last:mb-0">
-                      <p className="px-1 pb-1 text-[9px] uppercase tracking-[0.12em] text-subtle">
+                      <p className="px-1 pb-1 text-[11px] uppercase tracking-[0.12em] text-subtle">
                         {section.label}
                       </p>
                       <div className="flex flex-wrap gap-0.5">
@@ -513,9 +524,9 @@ export function ChatRoom({
                   onClick={() => setStickersOpen((open) => !open)}
                   aria-label="Stickers"
                   aria-expanded={stickersOpen}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-fg"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-fg"
                 >
-                  <SmileIcon size={16} />
+                  <SmileIcon size={17} />
                 </button>
                 <label htmlFor="chat-message" className="sr-only">
                   Message {room.name}
@@ -529,9 +540,9 @@ export function ChatRoom({
                   }
                   autoComplete="off"
                   disabled={silenced || busy}
-                  className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-panel px-3 text-[13px] text-fg placeholder:text-subtle focus:border-line-strong focus:outline-none disabled:opacity-50"
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-panel px-3.5 text-sm text-fg placeholder:text-subtle transition-colors hover:border-line-strong/70 focus:border-line-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-white/[0.08] disabled:opacity-50"
                 />
-                <span className="hidden w-12 text-right text-[10px] tabular-nums text-subtle sm:block">
+                <span className="hidden w-12 text-right text-[11px] tabular-nums text-subtle sm:block">
                   {input.length}/{MAX_LEN}
                 </span>
                 <Button
@@ -541,12 +552,12 @@ export function ChatRoom({
                   disabled={!input.trim() || silenced}
                   loading={busy}
                   aria-label="Send message"
-                  className="h-10 w-10 px-0"
+                  className="h-11 w-11 px-0"
                 >
                   <SendIcon size={16} />
                 </Button>
               </div>
-              <p className="mt-1.5 hidden text-[10px] text-subtle sm:block">
+              <p className="mt-1.5 hidden text-[11px] text-subtle sm:block">
                 Messages clear {room.isVault ? "14 minutes" : "3 hours"} after
                 sending. Abuse is reviewed and rate-limited.
               </p>

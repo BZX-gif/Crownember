@@ -105,7 +105,7 @@ export default async function ForumPage({
           <Link
             href={forumHref({ sort: dir.sort })}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
               !validCategory
                 ? "border-line-strong bg-white/[0.07] text-fg"
                 : "border-line text-muted hover:border-line-strong hover:text-fg",
@@ -118,7 +118,7 @@ export default async function ForumPage({
               key={c.slug}
               href={forumHref({ category: c.slug, sort: dir.sort })}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
                 validCategory === c.slug
                   ? "border-line-strong bg-white/[0.07] text-fg"
                   : "border-line text-muted hover:border-line-strong hover:text-fg",
@@ -130,11 +130,11 @@ export default async function ForumPage({
           ))}
         </nav>
 
-        <div className="flex items-center gap-1 rounded-lg border border-line p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg border border-line p-0.5">
           <Link
             href={forumHref({ category: dir.category })}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] transition-colors",
+              "inline-flex h-8 items-center rounded-md px-3 text-xs font-medium transition-colors",
               popular ? "text-muted hover:text-fg" : "bg-white/[0.06] text-fg",
             )}
           >
@@ -143,7 +143,7 @@ export default async function ForumPage({
           <Link
             href={forumHref({ category: dir.category, sort: "popular" })}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] transition-colors",
+              "inline-flex h-8 items-center rounded-md px-3 text-xs font-medium transition-colors",
               popular ? "bg-white/[0.06] text-fg" : "text-muted hover:text-fg",
             )}
           >
