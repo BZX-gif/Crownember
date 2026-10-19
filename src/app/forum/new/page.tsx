@@ -48,7 +48,7 @@ export default async function NewTopicPage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_250px]">
         <NewTopicForm />
 
-        <aside className="order-first space-y-4 lg:order-last">
+        <aside className="space-y-4">
           <div className="rounded-xl border border-line bg-panel p-4">
             <p className="text-xs font-medium text-fg">Before you post</p>
             <ul className="mt-2.5 space-y-2 text-[11px] leading-relaxed text-muted">

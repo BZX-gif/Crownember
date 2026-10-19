@@ -136,6 +136,7 @@ export function Navbar({
                   <div
                     ref={menuPanelRef}
                     tabIndex={-1}
+                    role="dialog"
                     aria-label="Account menu"
                     className="animate-fade-in absolute right-0 top-[calc(100%+8px)] w-64 overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_24px_60px_rgba(0,0,0,0.65)] focus:outline-none"
                   >
@@ -197,18 +198,22 @@ export function Navbar({
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
-                <Link
-                  href="/login"
-                  className="hidden rounded-lg px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-fg sm:block"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/register"
-                  className="rounded-lg bg-fg px-3.5 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-white"
-                >
-                  Join VYRON
-                </Link>
+                {pathname !== "/login" && (
+                  <Link
+                    href="/login"
+                    className="hidden rounded-lg px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-fg sm:block"
+                  >
+                    Sign in
+                  </Link>
+                )}
+                {pathname !== "/register" && (
+                  <Link
+                    href="/register"
+                    className="rounded-lg bg-fg px-3.5 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-white"
+                  >
+                    Join VYRON
+                  </Link>
+                )}
               </div>
             )}
           </div>

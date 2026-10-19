@@ -135,8 +135,8 @@ export default async function MessagesPage() {
 
       <div className="nice-scroll flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-2xl px-4 pb-12 pt-6">
-          <p className="eyebrow">Messages</p>
-          <h1 className="display-title mt-1.5 text-3xl text-fg sm:text-4xl">Private</h1>
+          <p className="eyebrow">Inbox</p>
+          <h1 className="display-title mt-1.5 text-3xl text-fg sm:text-4xl">Private messages</h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
             Direct conversation, invisible to the public rooms and cleared after
             three hours.

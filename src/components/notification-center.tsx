@@ -263,7 +263,7 @@ export function NotificationBell({ user }: { user: PublicUser | null }) {
           tabIndex={-1}
           role="dialog"
           aria-label="Notifications"
-          className="animate-fade-in absolute right-0 top-[calc(100%+8px)] z-50 max-h-[calc(100dvh-6rem)] w-[min(92vw,384px)] overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_24px_60px_rgba(0,0,0,0.65)] focus:outline-none"
+          className="animate-fade-in fixed inset-x-4 top-[68px] z-50 max-h-[calc(100dvh-6rem)] overflow-hidden rounded-xl border border-line-strong bg-elevated shadow-[0_24px_60px_rgba(0,0,0,0.65)] focus:outline-none sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(92vw,384px)]"
         >
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
             <div>

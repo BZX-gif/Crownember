@@ -11,7 +11,7 @@ const EXPLORE = [
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-line pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <footer className="mt-16 border-t border-line pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
       <div className="page-shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Brand size={28} />

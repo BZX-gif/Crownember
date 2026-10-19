@@ -60,6 +60,48 @@ dependencies, no route changes, no data changes.
   definition in the tooltip, and DM "clears in 2h 59m" wording.
 - **Error state** now uses the shared buttons and says what actually happened.
 
+### Second review pass (caught in the before/after comparison)
+
+- **The notification panel was clipped on phones.** Positioned `right-0` against a
+  bell that sits ~60 px from the right edge, its 92vw width overflowed the viewport
+  by 323 px. It is now a fixed sheet inset 16 px on phones and only anchors to the
+  bell from `sm` up.
+- **The fixed tab bar sat on top of the footer's last line.** The footer reserved
+  the bar's height but the page bottom added no breathing room of its own; the
+  clearance is now 68 px, so the copyright and the bar no longer touch.
+- **Auth pages rendered the brand twice on phones** — once in the header and again
+  inside the page — and the header showed "Join VYRON" while the visitor was
+  already on `/register` (and "Sign in" on `/login`). Both are gone; the redundant
+  top margin that only existed for the second logo went with them.
+- **`/forum/new` opened with advice cards instead of the form on phones.** On a
+  narrow screen the sidebar comes first in DOM order, so the title field began
+  below the fold. The form now leads and the two reference cards follow it.
+- **The 404 page left a dead band under the copy.** Its min-height was 70dvh
+  inside a layout that already accounts for the header; it now fills the viewport
+  minus the header.
+- **Inbox heading said "Private".** A single adjective as the page's only h1 was
+  vague; it reads "Private messages" and the eyebrow says "Inbox".
+- **The account menu carried no role.** It is a dialog-like popover with focus
+  management, so it now has `role="dialog"` and an accessible name to match the
+  notification panel.
+
+### Before / after
+
+Captured from the same database, same account, same viewport, from the pre-polish
+build (`3c6fbaa`) and this branch: `docs/polish/` —
+
+| File | What to look at |
+| --- | --- |
+| `home-desktop.jpg` | Broken-image glyphs replaced by initials; post metadata on one line |
+| `players-mobile.jpg` | Leaderboard chips/progress no longer colliding at 390 px |
+| `profile-mobile.jpg` | Cover band, stacked hero, label-above-value stats |
+| `notifications-mobile.jpg` | Panel no longer clipped off the left edge |
+| `login-mobile.jpg`, `register-mobile.jpg` | One brand lockup, no contradictory header CTA |
+| `messages-mobile.jpg` | "Private messages" heading |
+| `topic-mobile.jpg` | Reply composer clear of the tab bar |
+| `notfound-mobile.jpg` | Content vertically centred, no dead band |
+
+
 ## Verification
 
 Local production build against a real Postgres-compatible database (PGlite over the
