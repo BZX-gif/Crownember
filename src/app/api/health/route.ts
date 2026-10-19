@@ -60,7 +60,10 @@ export async function GET() {
         (select count(*)::int from information_schema.columns
          where table_name = 'messages' and column_name = 'reply_to_id') as reply_col,
         (select count(*)::int from information_schema.tables
-         where table_name = 'chat_message_reactions') as reaction_table
+         where table_name = 'chat_message_reactions') as reaction_table,
+        (select count(*)::int from information_schema.columns
+         where table_name = 'users'
+           and column_name in ('avatar_data','avatar_mime','avatar_version')) as avatar_cols
     `);
     const c = probe.rows[0] as Record<string, number>;
     const e = extra.rows[0] as Record<string, number>;
@@ -70,9 +73,14 @@ export async function GET() {
       Number(e.reaction_table) >= 1;
     return Response.json({
       ok: true,
+      version: "2.0",
       db: "connected",
       ms: Date.now() - startedAt,
       schema: schemaOk ? "up to date" : "OUTDATED — run the build command again",
+      features: {
+        profilePictures: Number(e.avatar_cols) >= 3,
+        chatReactions: Number(e.reaction_table) >= 1 && Number(e.reply_col) >= 1,
+      },
       counts: c,
     });
   } catch (err) {
