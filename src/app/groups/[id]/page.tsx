@@ -9,13 +9,13 @@ import {
   readEntitlement,
 } from "@/lib/groups/service";
 import { describeLimit } from "@/lib/groups/limits";
-import { GroupAvatar, groupPictureUrl } from "@/components/group-avatar";
+import { GroupAvatar } from "@/components/group-avatar";
 import { GroupManagePanel } from "@/components/groups/group-manage";
 import { GroupMemberRow } from "@/components/groups/member-row";
 import { GroupInvitationReview } from "@/components/groups/invitation-review";
 import { EmptyState, PageHeader, buttonClass } from "@/components/primitives";
 import { ArrowLeftIcon, LockIcon, UsersIcon } from "@/components/icons";
-import { avatarVersion, formatDate } from "@/lib/utils";
+import { avatarVersion, formatDate, groupPictureUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +106,9 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
             <span aria-hidden="true">·</span>
             <span>Created {formatDate(access.group.createdAt)}</span>
             <span aria-hidden="true">·</span>
-            <span>You are {access.role === "owner" ? "the owner" : `an ${access.role}`}</span>
+            <span>
+              You are {access.role === "owner" ? "the owner" : access.role === "admin" ? "an admin" : "a member"}
+            </span>
           </p>
         </div>
       </header>

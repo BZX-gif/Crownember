@@ -122,6 +122,11 @@ export function avatarUrlFor(
   return `/api/profile/avatar?username=${encodeURIComponent(user.username)}`;
 }
 
+/** Members-only picture URL. Safe to call from both Server and Client Components. */
+export function groupPictureUrl(groupId: number, version?: string | number | null): string {
+  return version ? `/api/groups/${groupId}/picture?v=${version}` : `/api/groups/${groupId}/picture`;
+}
+
 export interface ChatMessageDTO {
   id: number;
   content: string;

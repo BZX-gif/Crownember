@@ -53,6 +53,8 @@ import {
   isExpired,
   isOpenInvitation,
 } from "@/lib/groups/invitations";
+import { isCheckViolation, isUniqueViolation } from "@/lib/groups/service";
+import { groupPictureUrl } from "@/lib/utils";
 import {
   MAX_IMAGE_BYTES,
   TEST_IMAGES,
@@ -312,6 +314,9 @@ test("invitations: an expired invitation cannot be decided", () => {
   assert.equal(result.ok, false);
   assert.equal(!result.ok && result.code, "expired");
   assert.equal(decideInvitation({ ...expired, decision: "revoke" }).ok, false);
+  const expiredInvited = decideInvitation({ ...expired, status: "invited", decision: "approve" });
+  assert.equal(expiredInvited.ok, false, "an expired invited row must not report idempotent approval");
+  assert.equal(!expiredInvited.ok && expiredInvited.code, "expired");
 });
 
 const INVITEE = 42;
@@ -556,6 +561,28 @@ test("migration: it is idempotent — every creation is guarded", () => {
   assert.equal(duplicateGuards, constraintAdds, "each ADD CONSTRAINT needs a duplicate_object guard");
   assert.match(ALL_MIGRATION_SQL, /CREATE OR REPLACE FUNCTION group_members_enforce_owner/);
   assert.match(ALL_MIGRATION_SQL, /CREATE OR REPLACE FUNCTION group_members_enforce_capacity/);
+
+  // PostgreSQL rejects REFERENCING transition tables on multi-event triggers
+  // ("transition tables cannot be specified for triggers with more than one event").
+  const triggerStatements = statements.filter((s: string) => /CREATE\s+TRIGGER/i.test(s));
+  for (const trig of triggerStatements) {
+    if (/REFERENCING/i.test(trig)) {
+      assert.equal(
+        /\b(INSERT|UPDATE|DELETE)\s+OR\s+(INSERT|UPDATE|DELETE)\b/i.test(trig),
+        false,
+        `trigger with REFERENCING must be single-event: ${trig}`,
+      );
+    }
+  }
+});
+
+test("errors: unique and check violations are detected even when wrapped by Drizzle on cause", () => {
+  assert.equal(isUniqueViolation({ code: "23505" }), true);
+  assert.equal(isUniqueViolation({ message: "Failed query", cause: { code: "23505" } }), true);
+  assert.equal(isUniqueViolation({ message: "Failed query", cause: { code: "23514" } }), false);
+  assert.equal(isCheckViolation({ code: "23514" }), true);
+  assert.equal(isCheckViolation({ message: "Failed query", cause: { code: "23514" } }), true);
+  assert.equal(isCheckViolation({ message: "Failed query", cause: { code: "23505" } }), false);
 });
 
 test("migration: the core VYRON schema is still fully present and unchanged in spirit", () => {
@@ -595,4 +622,48 @@ test("migration: the file really exists on disk and matches what the runner impo
   assert.match(runner, /import \{ MIGRATION_SQL \} from "\.\/migrations\/schema\.mjs"/);
   assert.match(runner, /--dry-run/);
   assert.equal(/DROP TABLE|TRUNCATE/i.test(runner), false);
+});
+
+test("server-safe helpers: groupPictureUrl lives in @/lib/utils for Server Components", () => {
+  assert.equal(groupPictureUrl(7), "/api/groups/7/picture");
+  assert.equal(groupPictureUrl(7, "1700000000"), "/api/groups/7/picture?v=1700000000");
+
+  // Server Components must not import groupPictureUrl from a "use client" module
+  // (React 19 / Next 16 throws when invoking a client reference on the server).
+  for (const page of ["src/app/groups/page.tsx", "src/app/groups/[id]/page.tsx"]) {
+    const src = readFileSync(join(process.cwd(), page), "utf8");
+    assert.equal(
+      /import\s*\{[^}]*groupPictureUrl[^}]*\}\s*from\s*["']@\/components\/group-avatar["']/.test(src),
+      false,
+      `${page} must import groupPictureUrl from @/lib/utils, not a client module`,
+    );
+  }
+});
+
+test("operator scripts: async work is wrapped in main() so tsx CJS execution succeeds", () => {
+  for (const script of ["scripts/group-entitlement.ts", "scripts/fix-avatar-mimes.ts"]) {
+    const src = readFileSync(join(process.cwd(), script), "utf8");
+    assert.match(src, /async function main\(\)/, `${script} wraps async work in main()`);
+    assert.match(src, /main\(\)\.catch/, `${script} invokes main()`);
+  }
+});
+
+test("route guards: mutating group subroutes authorize with requireGroup before parsing JSON body", () => {
+  for (const route of [
+    "src/app/api/groups/[id]/invitations/route.ts",
+    "src/app/api/groups/[id]/members/[userId]/role/route.ts",
+    "src/app/api/groups/[id]/transfer/route.ts",
+  ]) {
+    const src = readFileSync(join(process.cwd(), route), "utf8");
+    const handlers = src.split(/export async function /).slice(1);
+    for (const handler of handlers) {
+      if (!handler.includes("readJsonBody")) continue;
+      const guardIdx = handler.indexOf("requireGroup(");
+      const bodyIdx = handler.indexOf("readJsonBody(");
+      assert.ok(
+        guardIdx !== -1 && guardIdx < bodyIdx,
+        `${route}: requireGroup() must run before readJsonBody()`,
+      );
+    }
+  }
 });

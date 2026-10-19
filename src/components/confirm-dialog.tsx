@@ -41,6 +41,13 @@ export function ConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement>(null);
   const phraseRef = useRef<HTMLInputElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  const busyRef = useRef(busy);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    busyRef.current = busy;
+    onCloseRef.current = onClose;
+  }, [busy, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +61,7 @@ export function ConfirmDialog({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.stopPropagation();
-        if (!busy) onClose();
+        if (!busyRef.current) onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) return;
@@ -82,7 +89,7 @@ export function ConfirmDialog({
       document.body.style.overflow = previousOverflow;
       restoreRef.current?.focus?.();
     };
-  }, [open, busy, onClose, requirePhrase]);
+  }, [open, requirePhrase]);
 
   if (!open) return null;
 

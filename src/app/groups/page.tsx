@@ -1,13 +1,14 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSessionUser } from "@/lib/auth";
 import { listGroupsForUser, listMyGroupInvitations } from "@/lib/groups/service";
 import { FREE_MEMBER_LIMIT } from "@/lib/groups/limits";
-import { GroupAvatar, groupPictureUrl } from "@/components/group-avatar";
+import { GroupAvatar } from "@/components/group-avatar";
 import { GroupInvitationInbox } from "@/components/groups/invitation-inbox";
 import { EmptyState, PageHeader, buttonClass } from "@/components/primitives";
 import { LockIcon, PlusIcon, ShieldIcon, UsersIcon } from "@/components/icons";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, groupPictureUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,117 @@ export const metadata: Metadata = {
 };
 
 const ROLE_LABEL = { owner: "Owner", admin: "Admin", member: "Member" } as const;
+
+function GroupsSkeleton() {
+  return (
+    <div className="mt-8 grid gap-3 sm:grid-cols-2" aria-busy="true" aria-label="Loading groups">
+      {[0, 1, 2, 3].map((row) => (
+        <div key={row} className="flex items-start gap-3.5 rounded-xl border border-line bg-panel p-4">
+          <div className="skeleton h-[46px] w-[46px] shrink-0 rounded-xl" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="skeleton h-4 w-2/3 rounded" />
+            <div className="skeleton h-3 w-full rounded" />
+            <div className="skeleton h-2.5 w-1/2 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+async function GroupsListSection({ userId }: { userId: number }) {
+  const [items, invitations] = await Promise.all([
+    listGroupsForUser(userId),
+    listMyGroupInvitations(userId),
+  ]);
+
+  return (
+    <div className="mt-8 space-y-6">
+      <GroupInvitationInbox
+        invitations={invitations.map((invitation) => ({
+          id: invitation.id,
+          groupId: invitation.groupId,
+          groupName: invitation.groupName ?? "Private group",
+          hasPicture: Boolean(invitation.hasPicture),
+          status: invitation.status,
+          message: invitation.message,
+          invitedByUsername: invitation.invitedByUsername,
+          expiresAt: invitation.expiresAt.toISOString(),
+          approvedAt: invitation.approvedAt ? invitation.approvedAt.toISOString() : null,
+        }))}
+      />
+
+      {items.length === 0 ? (
+        <EmptyState
+          icon={<UsersIcon size={18} />}
+          title="No groups yet"
+          description={`Create one and you become its owner. Free groups hold up to ${FREE_MEMBER_LIMIT} members, you included, and every join is invitation plus approval.`}
+          action={
+            <Link href="/groups/new" className={buttonClass("primary", "md")}>
+              <PlusIcon size={15} /> Create a private group
+            </Link>
+          }
+        />
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {items.map((group) => (
+            <li key={group.id}>
+              <Link
+                href={`/groups/${group.id}`}
+                className="group flex h-full items-start gap-3.5 rounded-xl border border-line bg-panel p-4 transition-colors hover:border-line-strong"
+              >
+                <GroupAvatar
+                  name={group.name}
+                  pictureUrl={group.hasPicture ? groupPictureUrl(group.id, group.pictureVersion) : undefined}
+                  size={46}
+                  square
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-fg group-hover:underline">
+                      {group.name}
+                    </p>
+                    <span
+                      className={cn(
+                        "inline-flex h-5 shrink-0 items-center rounded-full border px-1.5 text-[11px] font-medium",
+                        group.role === "owner"
+                          ? "border-line-strong bg-white/[0.08] text-fg"
+                          : "border-line text-subtle",
+                      )}
+                    >
+                      {ROLE_LABEL[group.role]}
+                    </span>
+                  </div>
+                  {group.description && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted wrap-anywhere">
+                      {group.description}
+                    </p>
+                  )}
+                  <p className="mono-meta mt-2 flex flex-wrap items-center gap-x-2">
+                    <span>
+                      {group.memberCount} of {group.memberLimit} seats
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>Created {formatDate(group.createdAt)}</span>
+                    {group.pendingReviewCount ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1 text-fg">
+                          <ShieldIcon size={11} />
+                          {group.pendingReviewCount} to review
+                        </span>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default async function GroupsPage() {
   const user = await getSessionUser();
@@ -50,11 +162,6 @@ export default async function GroupsPage() {
     );
   }
 
-  const [items, invitations] = await Promise.all([
-    listGroupsForUser(user.id),
-    listMyGroupInvitations(user.id),
-  ]);
-
   return (
     <div className="page-shell py-9 pb-24 sm:py-12 md:pb-12">
       <PageHeader
@@ -68,90 +175,9 @@ export default async function GroupsPage() {
         }
       />
 
-      <div className="mt-8 space-y-6">
-        <GroupInvitationInbox
-          invitations={invitations.map((invitation) => ({
-            id: invitation.id,
-            groupId: invitation.groupId,
-            groupName: invitation.groupName ?? "Private group",
-            hasPicture: Boolean(invitation.hasPicture),
-            status: invitation.status,
-            message: invitation.message,
-            invitedByUsername: invitation.invitedByUsername,
-            expiresAt: invitation.expiresAt.toISOString(),
-            approvedAt: invitation.approvedAt ? invitation.approvedAt.toISOString() : null,
-          }))}
-        />
-
-        {items.length === 0 ? (
-          <EmptyState
-            icon={<UsersIcon size={18} />}
-            title="No groups yet"
-            description={`Create one and you become its owner. Free groups hold up to ${FREE_MEMBER_LIMIT} members, you included, and every join is invitation plus approval.`}
-            action={
-              <Link href="/groups/new" className={buttonClass("primary", "md")}>
-                <PlusIcon size={15} /> Create a private group
-              </Link>
-            }
-          />
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {items.map((group) => (
-              <li key={group.id}>
-                <Link
-                  href={`/groups/${group.id}`}
-                  className="group flex h-full items-start gap-3.5 rounded-xl border border-line bg-panel p-4 transition-colors hover:border-line-strong"
-                >
-                  <GroupAvatar
-                    name={group.name}
-                    pictureUrl={group.hasPicture ? groupPictureUrl(group.id, group.pictureVersion) : undefined}
-                    size={46}
-                    square
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-fg group-hover:underline">
-                        {group.name}
-                      </p>
-                      <span
-                        className={cn(
-                          "inline-flex h-5 shrink-0 items-center rounded-full border px-1.5 text-[11px] font-medium",
-                          group.role === "owner"
-                            ? "border-line-strong bg-white/[0.08] text-fg"
-                            : "border-line text-subtle",
-                        )}
-                      >
-                        {ROLE_LABEL[group.role]}
-                      </span>
-                    </div>
-                    {group.description && (
-                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted wrap-anywhere">
-                        {group.description}
-                      </p>
-                    )}
-                    <p className="mono-meta mt-2 flex flex-wrap items-center gap-x-2">
-                      <span>
-                        {group.memberCount} of {group.memberLimit} seats
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span>Created {formatDate(group.createdAt)}</span>
-                      {group.pendingReviewCount ? (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="inline-flex items-center gap-1 text-fg">
-                            <ShieldIcon size={11} />
-                            {group.pendingReviewCount} to review
-                          </span>
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Suspense fallback={<GroupsSkeleton />}>
+        <GroupsListSection userId={user.id} />
+      </Suspense>
     </div>
   );
 }

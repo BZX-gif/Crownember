@@ -92,12 +92,14 @@ export function decideInvitation(input: {
 
   if (!wanted) {
     // Already in the state the actor asked for: idempotent, not an error.
-    const already =
-      (input.decision === "approve" && status === "invited") ||
-      (input.decision === "revoke" && status === "revoked");
-    if (already) return { ok: true, status, already: true };
+    if (input.decision === "revoke" && status === "revoked") {
+      return { ok: true, status, already: true };
+    }
     if (isExpired(input.expiresAt, now)) {
       return { ok: false, code: "expired", error: "That invitation has expired." };
+    }
+    if (input.decision === "approve" && status === "invited") {
+      return { ok: true, status, already: true };
     }
     return {
       ok: false,

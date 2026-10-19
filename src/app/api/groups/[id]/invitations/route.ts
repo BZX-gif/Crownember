@@ -41,6 +41,11 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   const user = await getSessionUser();
   if (!user) return UNAUTHORIZED;
 
+  const guarded = await requireGroup({ groupId, user, permission: "invite" });
+  if (!guarded.ok) {
+    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
+  }
+
   const rl = checkRateLimit(`groups-invite:${user.id}`, 20, 60 * 60 * 1000);
   if (!rl.allowed) return tooManyRequests(rl.retryInMs, "invitations");
 
@@ -57,11 +62,6 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
       { error: "That does not look like a VYRON username." },
       { status: 400 },
     );
-  }
-
-  const guarded = await requireGroup({ groupId, user, permission: "invite" });
-  if (!guarded.ok) {
-    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
   }
 
   const gate = await groupWriteGate(user, message);
@@ -94,6 +94,11 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const groupId = await readGroupId(context.params);
   if (groupId === null) return NOT_FOUND;
 
+  const guarded = await requireGroup({ groupId, permission: "reviewInvitations" });
+  if (!guarded.ok) {
+    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
+  }
+
   const body = await readJsonBody(req);
   if (!body) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
@@ -107,11 +112,6 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
       { error: "Decision must be approve, reject or revoke." },
       { status: 400 },
     );
-  }
-
-  const guarded = await requireGroup({ groupId, permission: "reviewInvitations" });
-  if (!guarded.ok) {
-    return NextResponse.json({ error: guarded.error }, { status: guarded.status });
   }
 
   const result = await decideInvitationAsManager({
